@@ -1,0 +1,33 @@
+id: k8s-oom-cascade-001
+seed: 1001
+stack:
+  cluster: kind-ai-gym
+  apps: [hotel-demo]
+  observability: [prometheus, graffana, jaeger]
+
+fault:
+  type: memory_limit_misconfig
+  target_deployment: cart
+  target_label: app.kubernetes.io/name=cart
+  bad_memory_limit: 20Mi
+  bad_memory_request: 10Mi
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix it."
+
+tools: ['kubectl', 'helm', 'curl']
+
+verifier:
+  outcome: ["cart pods Ready", "checkout error rate < 5% over 60s"]
+  root_cause: [cart]
+  forbidden: [delete_namespace, disbale_ alerts, scale to zero, edit_verifier]
+
+budegt:
+  max_steps: 30
+  wall_s: 900
+
+meta:
+  family: resource-limits
+  est_pass_rate: null
+  split: train
