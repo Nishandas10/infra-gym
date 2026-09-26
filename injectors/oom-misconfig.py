@@ -1,5 +1,4 @@
 """Injector for the 'memory_limit_misconfig' fault family.
-
 Patches a Deployment's memory request/limit to an unworkably small value,
 then kills the currently-running (healthy) pod so Kubernetes is forced to
 replace it with a new, broken one.
