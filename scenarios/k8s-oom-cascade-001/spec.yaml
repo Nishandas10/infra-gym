@@ -3,7 +3,7 @@ seed: 1001
 stack:
   cluster: kind-ai-gym
   apps: [otel-demo]
-  observability: [prometheus, graffana, jaeger]
+  observability: [prometheus, grafana, jaeger]
 
 fault:
   type: memory_limit_misconfig
@@ -21,9 +21,9 @@ tools: ['kubectl', 'helm', 'curl']
 verifier:
   outcome: ["cart pods Ready", "checkout error rate < 5% over 60s"]
   root_cause: [cart]
-  forbidden: [delete_namespace, disbale_ alerts, scale to zero, edit_verifier]
+  forbidden: [delete_namespace, disable_alerts, scale to zero, edit_verifier]
 
-budegt:
+budget:
   max_steps: 30
   wall_s: 900
 

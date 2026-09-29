@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 kubeconfig*
 node_modules/
+
+# Local knowledge base (personal notes, not committed)
+knowledge_base/

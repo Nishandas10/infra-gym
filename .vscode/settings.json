@@ -1,0 +1,5 @@
+{
+  // The folder name "scenarios/" makes the YAML extension auto-apply the unrelated
+  // "CrowdSec Scenario" schema from SchemaStore to spec.yaml, flagging valid keys.
+  "yaml.schemaStore.enable": false
+}

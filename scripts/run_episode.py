@@ -14,7 +14,7 @@ from pathlib import Path
 SLEEP_AFTER_INJECT_SEC = 30
 RESET_SCRIPT = "./scripts/reset_world.sh"
 VERIFIER_SCRIPT = "verifiers/check_checkout_health.py"
-INJECTOR_SCRIPT = "injectors/oom_misconfig.py"
+INJECTOR_SCRIPT = "injectors/oom-misconfig.py"
 
 
 def run_command(cmd: list, check: bool = True) -> subprocess.CompletedProcess:
@@ -38,7 +38,7 @@ def reset_world() -> None:
     """Reset the cluster to a known-good state via Helm."""
     print("\n1/4 Resetting world...")
     try:
-        run_command([RESET_SCRIPT], check=True)
+        run_command(["bash", RESET_SCRIPT], check=True)
         print("✓ World reset successfully")
     except subprocess.CalledProcessError as e:
         print(f"✗ Reset failed with exit code {e.returncode}", file=sys.stderr)
@@ -106,8 +106,8 @@ def main() -> None:
     parser.add_argument(
         "spec_path",
         nargs="?",
-        default="scenarios/k8s-oom-cascade-0001/spec.yaml",
-        help="Path to scenario spec.yaml (default: k8s-oom-cascade-0001)",
+        default="scenarios/k8s-oom-cascade-001/spec.yaml",
+        help="Path to scenario spec.yaml (default: k8s-oom-cascade-001)",
     )
     args = parser.parse_args()
 
