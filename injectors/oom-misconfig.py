@@ -26,22 +26,38 @@ def main():
     spec = yaml.safe_load(open(args.spec_path))
     f = spec["fault"]
 
-    patch = [
-        {
-            "op": "replace",
-            "path": "/spec/template/spec/containers/0/resources/limits/memory",
-            "value": f["bad_memory_limit"],
-        },
-        {
-            "op": "replace",
-            "path": "/spec/template/spec/containers/0/resources/requests/memory",
-            "value": f["bad_memory_request"],
-        },
-    ]
+    # Look up the target container's name instead of assuming it's index 0 --
+    # this also lets the patch below merge by name instead of by position.
+    container_name = run([
+        "kubectl", "get", "deployment", f["target_deployment"],
+        "-o", "jsonpath={.spec.template.spec.containers[0].name}",
+    ]).strip()
+
+    # A strategic merge patch (kubectl's default -- no --type flag needed)
+    # creates missing fields instead of requiring them to already exist,
+    # unlike a JSON patch "replace" op. This matters because some containers
+    # only define resources.limits and have no resources.requests at all.
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": container_name,
+                            "resources": {
+                                "limits": {"memory": f["bad_memory_limit"]},
+                                "requests": {"memory": f["bad_memory_request"]},
+                            },
+                        }
+                    ]
+                }
+            }
+        }
+    }
 
     run([
         "kubectl", "patch", "deployment", f["target_deployment"],
-        "--type=json", "-p", json.dumps(patch),
+        "-p", json.dumps(patch),
     ])
 
     # Force the currently-healthy pod out so the broken template takes over
