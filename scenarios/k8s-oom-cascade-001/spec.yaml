@@ -9,8 +9,8 @@ fault:
   type: memory_limit_misconfig
   target_deployment: cart
   target_label: app.kubernetes.io/name=cart
-  bad_memory_limit: 20Mi
-  bad_memory_request: 10Mi
+  bad_memory_limit: 10Mi
+  bad_memory_request: 5Mi
 
 task:
   mode: diagnose_and_mitigate
