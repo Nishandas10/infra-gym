@@ -1,0 +1,17 @@
+21:23:26 === net-bandwidth-053 (chaos_mesh)
+21:23:26   0. world healthy?
+21:23:34   1. baseline must PASS
+21:23:35       [PASS   ] journey:images - 3/3 ok, avg 25ms
+21:23:35   2. inject
+21:23:41   3. verifier must FAIL (<= 240s)
+21:24:15       [FAIL   ] journey:images - 3/3 ok, avg 11200ms (> 1500ms)
+21:24:15   4. do-nothing agent: still FAIL after 30s?
+21:25:38       [FAIL   ] journey:images - 3/3 ok, avg 12343ms (> 1500ms)
+21:25:38       failing in 1/1 checks during the hold
+21:25:38   5. reference solution
+21:25:38     $ kubectl delete networkchaos.chaos-mesh.org images-bandwidth
+21:25:39       networkchaos.chaos-mesh.org "images-bandwidth" deleted from default namespace
+21:25:39   6. verifier must PASS (<= 300s)
+21:25:39       [PASS   ] journey:images - 3/3 ok, avg 18ms
+21:25:39   7. restore exactly
+21:25:47   => VALIDATED  {'world_ready_s': 8, 'detect_s': 35, 'recover_s': 1, 'restore_s': 8}

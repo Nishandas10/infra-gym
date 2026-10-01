@@ -1,0 +1,39 @@
+id: kafka-backlog-010
+seed: 1010
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: feature_flag
+  flag: kafkaQueueProblems
+  variant: "on"
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "Checkout works and customers get order confirmations, but the fraud team says new orders reach their system minutes late or not at all. Investigate and fix it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["fraud-detection consumer lag stays small", "checkout still works"]
+  root_cause: [kafka, checkout, fraud-detection]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  note: "checkout itself keeps returning 200. Checking the checkout success rate alone would call this fixed."
+  checks:
+    - {type: kafka_lag, group: fraud-detection, max_lag: 50}
+    - {type: journey, journey: checkout, repeat: 2, max_error_pct: 0, max_avg_ms: 5000}
+
+solution:
+  commands:
+    - python injectors/toggle_flag.py kafkaQueueProblems --off
+
+validation:
+  detect_timeout_s: 600
+  recover_timeout_s: 900
+  hold_s: 60
+  poll_s: 15
+
+budget: {max_steps: 40, wall_s: 1800}
+meta: {family: application, mechanism: app-flag/kafka-queue-overload, title: "Kafka flooded and consumers slowed (kafkaQueueProblems)", golden: true, est_pass_rate: null, split: train}

@@ -1,0 +1,74 @@
+id: net-bandwidth-053
+seed: 1053
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: chaos_mesh
+  manifest:
+  - apiVersion: chaos-mesh.org/v1alpha1
+    kind: NetworkChaos
+    metadata:
+      name: images-bandwidth
+      namespace: default
+    spec:
+      action: bandwidth
+      mode: all
+      selector:
+        namespaces:
+        - default
+        labelSelectors:
+          opentelemetry.io/name: image-provider
+      bandwidth:
+        rate: 2kbps
+        limit: 20971520
+        buffer: 10000
+      direction: to
+task:
+  mode: diagnose_and_mitigate
+  prompt: Pages load quickly but product images take forever or never appear. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:images
+  root_cause:
+  - image-provider
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: images
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+    timeout_s: 10
+solution:
+  commands:
+  - kubectl delete networkchaos.chaos-mesh.org images-bandwidth
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: chaos
+  mechanism: chaos/network-bandwidth-limit
+  title: Bandwidth throttled to a trickle on the image server
+  generated: true
+  est_pass_rate: null
+  split: train

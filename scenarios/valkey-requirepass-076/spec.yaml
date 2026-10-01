@@ -1,0 +1,75 @@
+id: valkey-requirepass-076
+seed: 1076
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: exec_commands
+  target: deploy/valkey-cart
+  restart_after:
+  - deployment/cart
+  commands:
+  - - valkey-cli
+    - CONFIG
+    - SET
+    - requirepass
+    - rotated-s3cret
+  undo_commands:
+  - - valkey-cli
+    - -a
+    - rotated-s3cret
+    - --no-auth-warning
+    - CONFIG
+    - SET
+    - requirepass
+    - ''
+task:
+  mode: diagnose_and_mitigate
+  prompt: Since the cart service restarted, every cart operation fails with an authentication error. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  root_cause:
+  - valkey-cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''
+  - kubectl rollout restart deployment/cart
+  - kubectl rollout status deployment/cart --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/kv-credential-mismatch
+  title: Valkey password set; the client does not know it
+  generated: true
+  est_pass_rate: null
+  split: train

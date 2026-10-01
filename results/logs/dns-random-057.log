@@ -1,0 +1,17 @@
+19:47:41 === dns-random-057 (chaos_mesh)
+19:47:41   0. world healthy?
+19:47:51   1. baseline must PASS
+19:47:52       [PASS   ] journey:recommendations - 3/3 ok, avg 98ms
+19:47:52   2. inject
+19:48:02   3. verifier must FAIL (<= 240s)
+19:48:22       [FAIL   ] journey:recommendations - 0/3 ok, avg 6031ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+19:48:22   4. do-nothing agent: still FAIL after 30s?
+19:48:53       [FAIL   ] journey:recommendations - 0/3 ok, avg 37ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+19:48:53       failing in 2/2 checks during the hold
+19:48:53   5. reference solution
+19:48:53     $ kubectl delete dnschaos.chaos-mesh.org catalog-dns-random
+19:48:54       dnschaos.chaos-mesh.org "catalog-dns-random" deleted from default namespace
+19:48:54   6. verifier must PASS (<= 300s)
+19:49:06       [PASS   ] journey:recommendations - 3/3 ok, avg 53ms
+19:49:06   7. restore exactly
+19:49:16   => VALIDATED  {'world_ready_s': 10, 'detect_s': 20, 'recover_s': 12, 'restore_s': 9}

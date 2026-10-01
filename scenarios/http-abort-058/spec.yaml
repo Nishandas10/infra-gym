@@ -1,0 +1,72 @@
+id: http-abort-058
+seed: 1058
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: chaos_mesh
+  manifest:
+  - apiVersion: chaos-mesh.org/v1alpha1
+    kind: HTTPChaos
+    metadata:
+      name: email-http-abort
+      namespace: default
+    spec:
+      mode: all
+      target: Request
+      port: 8080
+      path: '*'
+      abort: true
+      selector:
+        namespaces:
+        - default
+        labelSelectors:
+          opentelemetry.io/name: email
+task:
+  mode: diagnose_and_mitigate
+  prompt: Order confirmation emails are no longer being sent; the email pod is Running with no errors in its logs.
+    Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:email
+  root_cause:
+  - email
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: email
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl delete httpchaos.chaos-mesh.org email-http-abort
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: chaos
+  mechanism: chaos/http-fault-abort
+  title: HTTP requests to a service aborted at layer 7
+  generated: true
+  est_pass_rate: null
+  split: train

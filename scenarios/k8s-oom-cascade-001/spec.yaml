@@ -9,25 +9,49 @@ fault:
   type: memory_limit_misconfig
   target_deployment: cart
   target_label: app.kubernetes.io/name=cart
-  bad_memory_limit: 10Mi
-  bad_memory_request: 5Mi
+  # The cart is a native-compiled .NET binary that needs only a few MiB. Measured
+  # on this cluster: at 5-20Mi it starts and is only OOM-killed after 6-15 minutes
+  # of traffic growth; at 3Mi the container is OOM-killed while starting, every
+  # time ("container init was OOM-killed (memory limit too low?)").
+  bad_memory_limit: 3Mi
+  bad_memory_request: 3Mi
+  # Single-replica service deployed with Recreate, so the old healthy pod is gone.
+  strategy: Recreate
 
 task:
   mode: diagnose_and_mitigate
   prompt: "Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix it."
 
-tools: ['kubectl', 'helm', 'curl']
+tools: [kubectl, helm, curl]
 
 verifier:
-  outcome: ["cart pods Ready", "checkout error rate < 5% over 60s"]
+  outcome: ["cart pods Ready and not restarting for 2 minutes", "cart and checkout journeys succeed"]
   root_cause: [cart]
-  forbidden: [delete_namespace, disable_alerts, scale to zero, edit_verifier]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: pods_ready, selector: opentelemetry.io/name=cart}
+    - {type: pods_stable, selector: opentelemetry.io/name=cart, min_age_s: 120}
+    - {type: journey, journey: cart, repeat: 3, max_error_pct: 0, max_avg_ms: 3000}
+    - {type: journey, journey: checkout, repeat: 2, max_error_pct: 0, max_avg_ms: 5000}
+
+solution:
+  commands:
+    - kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
+    - kubectl rollout status deployment/cart --timeout=180s
+
+validation:
+  detect_timeout_s: 600
+  recover_timeout_s: 360
+  hold_s: 45
 
 budget:
   max_steps: 30
   wall_s: 900
 
 meta:
-  family: resource-limits
+  family: workload
+  mechanism: workload/oom-memory-limit
+  title: "Memory limit far below what the service needs -> OOMKilled / CrashLoopBackOff"
+  golden: true
   est_pass_rate: null
   split: train

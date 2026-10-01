@@ -1,0 +1,697 @@
+16:45:49 === net-bandwidth-053 (chaos_mesh)
+16:45:49   0. world healthy?
+16:46:04   1. baseline must PASS
+16:46:06       [PASS   ] journey:images - 3/3 ok, avg 101ms
+16:46:06   2. inject
+16:46:13   3. verifier must FAIL (<= 240s)
+16:46:49       [FAIL   ] journey:images - 3/3 ok, avg 11048ms (> 1500ms)
+16:46:49   4. do-nothing agent: still FAIL after 30s?
+16:48:00       [FAIL   ] journey:images - 3/3 ok, avg 12271ms (> 1500ms)
+16:48:00       failing in 1/1 checks during the hold
+16:48:00   5. reference solution
+16:48:00     $ kubectl delete networkchaos.chaos-mesh.org images-bandwidth
+16:48:02       networkchaos.chaos-mesh.org "images-bandwidth" deleted from default namespace
+16:48:02   6. verifier must PASS (<= 300s)
+16:48:04       [PASS   ] journey:images - 3/3 ok, avg 113ms
+16:48:04   7. restore exactly
+16:48:17   => VALIDATED  {'world_ready_s': 15, 'detect_s': 36, 'recover_s': 2, 'restore_s': 13}
+16:48:18 === jvm-exception-062 (chaos_mesh)
+16:48:18   0. world healthy?
+16:48:31   1. baseline must PASS
+16:48:32       [PASS   ] journey:ads - 3/3 ok, avg 65ms
+16:48:32   2. inject
+16:48:40   3. verifier must FAIL (<= 240s)
+16:48:41       [FAIL   ] journey:ads - 0/3 ok, avg 95ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:48:41   4. do-nothing agent: still FAIL after 30s?
+16:49:14       [FAIL   ] journey:ads - 0/3 ok, avg 363ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:49:14       failing in 2/2 checks during the hold
+16:49:14   5. reference solution
+16:49:14     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
+16:49:16       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
+16:49:16   6. verifier must PASS (<= 300s)
+16:49:18       [PASS   ] journey:ads - 3/3 ok, avg 28ms
+16:49:18   7. restore exactly
+16:49:32   => VALIDATED  {'world_ready_s': 13, 'detect_s': 1, 'recover_s': 1, 'restore_s': 14}
+16:49:32 === valkey-maxmemory-075 (exec_commands)
+16:49:32   0. world healthy?
+16:49:46   1. baseline must PASS
+16:49:47       [PASS   ] journey:cart - 3/3 ok, avg 140ms
+16:49:47   2. inject
+16:49:48   3. verifier must FAIL (<= 240s)
+16:49:49       [FAIL   ] journey:cart - 0/3 ok, avg 104ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+16:49:49   4. do-nothing agent: still FAIL after 30s?
+16:50:22       [FAIL   ] journey:cart - 0/3 ok, avg 136ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+16:50:22       failing in 2/2 checks during the hold
+16:50:22   5. reference solution
+16:50:22     $ kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
+16:50:22       OK
+16:50:22   6. verifier must PASS (<= 300s)
+16:50:24       [PASS   ] journey:cart - 3/3 ok, avg 168ms
+16:50:24   7. restore exactly
+16:50:39   => VALIDATED  {'world_ready_s': 14, 'detect_s': 1, 'recover_s': 1, 'restore_s': 14}
+16:50:39 === valkey-requirepass-076 (exec_commands)
+16:50:39   0. world healthy?
+16:50:53   1. baseline must PASS
+16:50:55       [PASS   ] journey:cart - 3/3 ok, avg 87ms
+16:50:55   2. inject
+16:50:59   3. verifier must FAIL (<= 240s)
+16:51:02       [FAIL   ] journey:cart - 0/3 ok, avg 19ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+16:51:02   4. do-nothing agent: still FAIL after 30s?
+16:51:35       [FAIL   ] journey:cart - 0/3 ok, avg 60ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+16:51:35       failing in 2/2 checks during the hold
+16:51:35   5. reference solution
+16:51:35     $ kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''
+16:51:36       OK
+16:51:36     $ kubectl rollout restart deployment/cart
+16:51:36       deployment.apps/cart restarted
+16:51:36     $ kubectl rollout status deployment/cart --timeout=180s
+16:51:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+16:51:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+16:51:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+16:51:42       deployment "cart" successfully rolled out
+16:51:42   6. verifier must PASS (<= 300s)
+16:53:25       [PASS   ] journey:cart - 3/3 ok, avg 238ms
+16:53:25   7. restore exactly
+16:56:23   => VALIDATED  {'world_ready_s': 15, 'detect_s': 3, 'recover_s': 103, 'restore_s': 175}
+16:56:23 === valkey-client-pause-077 (exec_commands)
+16:56:23   0. world healthy?
+16:56:40   1. baseline must PASS
+16:56:42       [PASS   ] journey:cart - 3/3 ok, avg 74ms
+16:56:42   2. inject
+16:56:42   3. verifier must FAIL (<= 240s)
+16:57:02       [FAIL   ] journey:cart - 0/3 ok, avg 5975ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+16:57:02   4. do-nothing agent: still FAIL after 30s?
+16:57:50       [FAIL   ] journey:cart - 0/3 ok, avg 4736ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+16:57:50       failing in 1/1 checks during the hold
+16:57:50   5. reference solution
+16:57:50     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+16:57:51       OK
+16:57:51   6. verifier must PASS (<= 300s)
+16:57:53       [PASS   ] journey:cart - 3/3 ok, avg 177ms
+16:57:53   7. restore exactly
+16:58:09   => VALIDATED  {'world_ready_s': 17, 'detect_s': 20, 'recover_s': 2, 'restore_s': 14}
+16:58:09 === pg-revoked-grant-078 (exec_commands)
+16:58:09   0. world healthy?
+16:58:23   1. baseline must PASS
+16:58:26       [PASS   ] journey:browse - 3/3 ok, avg 232ms
+16:58:26       [PASS   ] journey:catalog - 3/3 ok, avg 25ms
+16:58:26   2. inject
+16:58:27   3. verifier must FAIL (<= 240s)
+16:58:28       [FAIL   ] journey:browse - 0/3 ok, avg 37ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+16:58:28       [FAIL   ] journey:catalog - 0/3 ok, avg 12ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+16:58:28   4. do-nothing agent: still FAIL after 30s?
+16:59:01       [FAIL   ] journey:browse - 0/3 ok, avg 182ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
+16:59:01       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+16:59:01       failing in 2/2 checks during the hold
+16:59:01   5. reference solution
+16:59:01     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'
+16:59:01       GRANT
+16:59:01   6. verifier must PASS (<= 300s)
+16:59:02       [PASS   ] journey:browse - 3/3 ok, avg 55ms
+16:59:02       [PASS   ] journey:catalog - 3/3 ok, avg 12ms
+16:59:02   7. restore exactly
+16:59:19   => VALIDATED  {'world_ready_s': 14, 'detect_s': 1, 'recover_s': 1, 'restore_s': 16}
+16:59:19 === pg-password-rotated-079 (exec_commands)
+16:59:19   0. world healthy?
+16:59:32   1. baseline must PASS
+16:59:34       [PASS   ] journey:browse - 3/3 ok, avg 39ms
+16:59:34       [PASS   ] journey:catalog - 3/3 ok, avg 19ms
+16:59:34   2. inject
+16:59:35   3. verifier must FAIL (<= 240s)
+16:59:37       [FAIL   ] journey:browse - 0/3 ok, avg 53ms; e.g. GET /api/products/0PUK6V6EV0 -> 500 b'Internal Server Error'
+16:59:37       [FAIL   ] journey:catalog - 0/3 ok, avg 19ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+16:59:37   4. do-nothing agent: still FAIL after 30s?
+17:00:09       [FAIL   ] journey:browse - 0/3 ok, avg 174ms; e.g. GET /api/products/L9ECAV7KIM -> 500 b'Internal Server Error'
+17:00:09       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+17:00:09       failing in 2/2 checks during the hold
+17:00:09   5. reference solution
+17:00:09     $ kubectl exec deploy/astronomy-db -- psql -U postgres -c "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
+17:00:10       ALTER ROLE
+17:00:10   6. verifier must PASS (<= 300s)
+17:00:11       [PASS   ] journey:browse - 3/3 ok, avg 18ms
+17:00:11       [PASS   ] journey:catalog - 3/3 ok, avg 14ms
+17:00:11   7. restore exactly
+17:00:26   => VALIDATED  {'world_ready_s': 13, 'detect_s': 2, 'recover_s': 1, 'restore_s': 14}
+17:00:26 === pg-connection-limit-080 (exec_commands)
+17:00:26   0. world healthy?
+17:00:40   1. baseline must PASS
+17:00:42       [PASS   ] journey:browse - 3/3 ok, avg 55ms
+17:00:42       [PASS   ] journey:catalog - 3/3 ok, avg 15ms
+17:00:42   2. inject
+17:00:43   3. verifier must FAIL (<= 240s)
+17:00:44       [FAIL   ] journey:browse - 0/3 ok, avg 27ms; e.g. GET /api/products/1YMWWN1N4O -> 500 b'Internal Server Error'
+17:00:44       [FAIL   ] journey:catalog - 0/3 ok, avg 17ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+17:00:44   4. do-nothing agent: still FAIL after 30s?
+17:01:17       [FAIL   ] journey:browse - 0/3 ok, avg 70ms; e.g. GET /api/products/LS4PSXUNUM -> 500 b'Internal Server Error'
+17:01:17       [FAIL   ] journey:catalog - 0/3 ok, avg 17ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+17:01:17       failing in 2/2 checks during the hold
+17:01:17   5. reference solution
+17:01:17     $ kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
+17:01:18       ALTER ROLE
+17:01:18   6. verifier must PASS (<= 300s)
+17:01:18       [PASS   ] journey:browse - 3/3 ok, avg 43ms
+17:01:18       [PASS   ] journey:catalog - 3/3 ok, avg 9ms
+17:01:18   7. restore exactly
+17:01:33   => VALIDATED  {'world_ready_s': 14, 'detect_s': 1, 'recover_s': 1, 'restore_s': 14}
+17:01:33 === pg-lock-held-081 (create_objects)
+17:01:33   0. world healthy?
+17:01:48   1. baseline must PASS
+17:01:51       [PASS   ] journey:browse - 3/3 ok, avg 140ms
+17:01:51       [PASS   ] journey:catalog - 3/3 ok, avg 9ms
+17:01:51   2. inject
+17:01:51   3. verifier must FAIL (<= 240s)
+17:03:44       [FAIL   ] journey:browse - 0/3 ok, avg 6025ms; e.g. GET /api/products/LS4PSXUNUM -> no response b'TimeoutError: timed out'
+17:03:44       [FAIL   ] journey:catalog - 0/3 ok, avg 6016ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+17:03:44   4. do-nothing agent: still FAIL after 30s?
+17:04:50       [FAIL   ] journey:browse - 0/3 ok, avg 4627ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+17:04:50       [FAIL   ] journey:catalog - 0/3 ok, avg 20ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+17:04:50       failing in 1/1 checks during the hold
+17:04:50   5. reference solution
+17:04:50     $ kubectl delete deployment catalog-maintenance
+17:04:50       deployment.apps "catalog-maintenance" deleted from default namespace
+17:04:50   6. verifier must PASS (<= 300s)
+17:05:08       [PASS   ] journey:browse - 3/3 ok, avg 472ms
+17:05:08       [PASS   ] journey:catalog - 3/3 ok, avg 22ms
+17:05:08   7. restore exactly
+17:05:23   => VALIDATED  {'world_ready_s': 15, 'detect_s': 113, 'recover_s': 18, 'restore_s': 15}
+17:05:23 === kafka-message-too-large-082 (exec_commands)
+17:05:23   0. world healthy?
+17:05:38   1. baseline must PASS
+17:05:46       [PASS   ] journey:checkout - 2/2 ok, avg 594ms
+17:05:46       [PASS   ] orders_recorded - accounting recorded the new order (7 -> 8 rows)
+17:05:46   2. inject
+17:05:51   3. verifier must FAIL (<= 240s)
+17:07:02       [PASS   ] journey:checkout - 2/2 ok, avg 606ms
+17:07:02       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 8 rows)
+17:07:02   4. do-nothing agent: still FAIL after 30s?
+17:09:27       [PASS   ] journey:checkout - 2/2 ok, avg 594ms
+17:09:27       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 8 rows)
+17:09:27       failing in 1/1 checks during the hold
+17:09:27   5. reference solution
+17:09:27     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
+17:09:33       Completed updating config for topic orders.
+17:09:33       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+17:09:33       [otel.javaagent 2026-09-30 17:09:29:496 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
+17:09:33   6. verifier must PASS (<= 300s)
+17:09:40       [PASS   ] journey:checkout - 2/2 ok, avg 1081ms
+17:09:40       [PASS   ] orders_recorded - accounting recorded the new order (10 -> 11 rows)
+17:09:40   7. restore exactly
+17:12:39   => VALIDATED  {'world_ready_s': 15, 'detect_s': 70, 'recover_s': 7, 'restore_s': 171}
+17:12:39 === kafka-broker-down-083 (workload_patch)
+17:12:39   0. world healthy?
+17:12:52   1. baseline must PASS
+17:12:57       [PASS   ] orders_recorded - accounting recorded the new order (16 -> 17 rows)
+17:12:57       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+17:12:57   2. inject
+17:12:57   3. verifier must FAIL (<= 240s)
+17:14:06       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 17 rows)
+17:14:06       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+17:14:06   4. do-nothing agent: still FAIL after 30s?
+17:16:24       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 17 rows)
+17:16:24       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+17:16:24       failing in 1/1 checks during the hold
+17:16:24   5. reference solution
+17:16:24     $ kubectl scale deployment kafka --replicas=1
+17:16:24       deployment.apps/kafka scaled
+17:16:24     $ kubectl rollout status deployment/kafka --timeout=180s
+17:16:25       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
+17:16:25       deployment "kafka" successfully rolled out
+17:16:25     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
+17:16:40       [2026-09-30 17:16:35,050] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
+17:16:40       [2026-09-30 17:16:36,056] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
+17:16:40       [2026-09-30 17:16:37,062] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
+17:16:40       [2026-09-30 17:16:38,068] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
+17:16:40     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+17:16:40       deployment.apps/checkout restarted
+17:16:40       deployment.apps/accounting restarted
+17:16:40       deployment.apps/fraud-detection restarted
+17:16:40     $ kubectl rollout status deployment/checkout --timeout=180s
+17:16:47       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+17:16:47       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+17:16:47       deployment "checkout" successfully rolled out
+17:16:47     $ kubectl rollout status deployment/accounting --timeout=180s
+17:16:48       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+17:16:48       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+17:16:48       deployment "accounting" successfully rolled out
+17:16:48     $ kubectl rollout status deployment/fraud-detection --timeout=180s
+17:16:50       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
+17:16:50       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
+17:16:50       deployment "fraud-detection" successfully rolled out
+17:16:50   6. verifier must PASS (<= 480s)
+17:17:00       [PASS   ] orders_recorded - accounting recorded the new order (18 -> 19 rows)
+17:17:00       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+17:17:00   7. restore exactly
+17:18:00   => VALIDATED  {'world_ready_s': 13, 'detect_s': 69, 'recover_s': 10, 'restore_s': 53}
+17:18:00 === otel-exporter-broken-085 (configmap_edit)
+17:18:00   0. world healthy?
+17:18:12   1. baseline must PASS
+17:18:13       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+17:18:13       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:18:13   2. inject
+17:18:15   3. verifier must FAIL (<= 300s)
+17:23:17       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+17:23:17       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:23:17   7. restore exactly
+17:23:56   => NOT_DETECTED  {'world_ready_s': 12, 'detect_s': 302, 'restore_s': 38}
+17:23:56 === otel-collector-unscheduled-086 (workload_patch)
+17:23:56   0. world healthy?
+17:24:08   1. baseline must PASS
+17:24:09       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+17:24:09       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:24:09   2. inject
+17:24:10   3. verifier must FAIL (<= 300s)
+17:24:25       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+17:24:25       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:24:25   4. do-nothing agent: still FAIL after 30s?
+17:24:57       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+17:24:57       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:24:57       failing in 2/2 checks during the hold
+17:24:57   5. reference solution
+17:24:57     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
+17:24:57       daemonset.apps/otel-collector-agent patched
+17:24:57     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+17:25:10       Waiting for daemon set spec update to be observed...
+17:25:10       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
+17:25:10       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+17:25:10       daemon set "otel-collector-agent" successfully rolled out
+17:25:10   6. verifier must PASS (<= 300s)
+17:25:12       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+17:25:12       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+17:25:12   7. restore exactly
+17:25:23   => VALIDATED  {'world_ready_s': 12, 'detect_s': 15, 'recover_s': 2, 'restore_s': 11}
+17:25:23 === otel-service-endpoint-087 (workload_patch)
+17:25:23   0. world healthy?
+17:25:34   1. baseline must PASS
+17:25:36       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+17:25:36   2. inject
+17:25:36   3. verifier must FAIL (<= 300s)
+17:30:41       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+17:30:41   7. restore exactly
+17:31:22   => NOT_DETECTED  {'world_ready_s': 11, 'detect_s': 305, 'restore_s': 40}
+17:31:22 === prometheus-otlp-disabled-088 (workload_patch)
+17:31:22   0. world healthy?
+17:31:37   1. baseline must PASS
+17:31:39       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 3.78267
+17:31:39   2. inject
+17:31:39   3. verifier must FAIL (<= 300s)
+17:31:41       [UNKNOWN] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - prometheus query failed: HTTP 0
+17:31:41   4. do-nothing agent: still FAIL after 30s?
+17:32:12       [UNKNOWN] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - prometheus query failed: HTTP 0
+17:32:12       failing in 2/2 checks during the hold
+17:32:12   5. reference solution
+17:32:12     $ kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
+17:32:12       deployment.apps/prometheus patched
+17:32:12     $ kubectl rollout status deployment/prometheus --timeout=240s
+17:32:45       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+17:32:45       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+17:32:45       Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+17:32:45       deployment "prometheus" successfully rolled out
+17:32:45   6. verifier must PASS (<= 360s)
+17:32:47       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 3.3346
+17:32:47   7. restore exactly
+17:32:57   => VALIDATED  {'world_ready_s': 15, 'detect_s': 2, 'recover_s': 1, 'restore_s': 10}
+17:32:57 === grafana-datasource-089 (configmap_edit)
+17:32:57   0. world healthy?
+17:33:07   1. baseline must PASS
+17:33:09       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 620ms
+17:33:09   2. inject
+17:33:10   3. verifier must FAIL (<= 300s)
+17:33:19       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 26ms (expected 200) 'URLError: <urlopen error [Errno 111] Connection refused>'
+17:33:19   4. do-nothing agent: still FAIL after 30s?
+17:33:50       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 37ms (expected 200) 'URLError: <urlopen error [Errno 111] Connection refused>'
+17:33:50       failing in 2/2 checks during the hold
+17:33:50   5. reference solution
+17:33:50     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl apply -f -
+17:33:51       configmap/grafana-datasources configured
+17:33:51       Warning: resource configmaps/grafana-datasources is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. 
+17:33:51     $ kubectl rollout restart deployment/grafana
+17:33:51       deployment.apps/grafana restarted
+17:33:51     $ kubectl rollout status deployment/grafana --timeout=240s
+17:37:54       Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+17:37:54       Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+17:37:54       Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+17:37:54       error: timed out waiting for the condition
+17:37:54   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/grafana --timeout=240s
+17:37:54   7. restore exactly
+17:39:18   => ERROR  {'world_ready_s': 10, 'detect_s': 9, 'restore_s': 18}
+17:39:18 === compound-quota-blocks-fix-090 (composite)
+17:39:18   0. world healthy?
+17:39:24   1. baseline must PASS
+17:39:25       [PASS   ] journey:checkout - 3/3 ok, avg 63ms
+17:39:25   2. inject
+17:40:11   3. verifier must FAIL (<= 240s)
+17:42:08       [FAIL   ] journey:checkout - 0/3 ok, avg 8646ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:42:08   4. do-nothing agent: still FAIL after 30s?
+17:43:59       [FAIL   ] journey:checkout - 0/3 ok, avg 7173ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:43:59       failing in 1/1 checks during the hold
+17:43:59   5. reference solution
+17:43:59     $ kubectl delete resourcequota namespace-pod-quota
+17:44:00       resourcequota "namespace-pod-quota" deleted from default namespace
+17:44:00     $ kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
+17:44:01       deployment.apps/shipping env updated
+17:44:01     $ kubectl rollout status deployment/shipping --timeout=180s
+17:47:06       Waiting for deployment spec update to be observed...
+17:47:07       error: timed out waiting for the condition
+17:47:08   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/shipping --timeout=180s
+17:47:09   7. restore exactly
+17:48:06   => ERROR  {'world_ready_s': 6, 'detect_s': 117, 'restore_s': 44}
+17:48:06 === compound-two-faults-091 (composite)
+17:48:06   0. world healthy?
+17:48:12   1. baseline must PASS
+17:48:14       [PASS   ] journey:recommendations - 30/30 ok, avg 26ms
+17:48:14       [PASS   ] journey:ads - 30/30 ok, avg 11ms
+17:48:14   2. inject
+17:48:15   3. verifier must FAIL (<= 240s)
+17:48:17       [PASS   ] journey:recommendations - 30/30 ok, avg 24ms
+17:48:17       [FAIL   ] journey:ads - 29/30 ok, avg 12ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+17:48:17   4. do-nothing agent: still FAIL after 30s?
+17:49:08       [FAIL   ] journey:recommendations - 0/30 ok, avg 682ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+17:49:08       [FAIL   ] journey:ads - 27/30 ok, avg 11ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+17:49:08       failing in 2/2 checks during the hold
+17:49:08   5. reference solution
+17:49:08     $ kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
+17:49:08       deployment.apps/recommendation env updated
+17:49:08     $ kubectl rollout status deployment/recommendation --timeout=180s
+17:49:09       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+17:49:09       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+17:49:09       deployment "recommendation" successfully rolled out
+17:49:09     $ python injectors/toggle_flag.py adFailure --off
+17:49:11       'adFailure' -> off (flagd is serving it now)
+17:49:11   6. verifier must PASS (<= 300s)
+17:49:47       [PASS   ] journey:recommendations - 30/30 ok, avg 25ms
+17:49:47       [PASS   ] journey:ads - 30/30 ok, avg 11ms
+17:49:47   7. restore exactly
+17:49:53   => VALIDATED  {'world_ready_s': 5, 'detect_s': 2, 'recover_s': 37, 'restore_s': 6}
+17:49:53 === compound-red-herring-092 (composite)
+17:49:53   0. world healthy?
+17:49:59   1. baseline must PASS
+17:49:59       [PASS   ] journey:checkout - 3/3 ok, avg 52ms
+17:49:59   2. inject
+17:50:00   3. verifier must FAIL (<= 240s)
+17:50:05       [FAIL   ] journey:checkout - 0/3 ok, avg 1694ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:50:05   4. do-nothing agent: still FAIL after 30s?
+17:50:36       [FAIL   ] journey:checkout - 0/3 ok, avg 24ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:50:36       failing in 2/2 checks during the hold
+17:50:36   5. reference solution
+17:50:36     $ kubectl scale deployment quote --replicas=1
+17:50:36       deployment.apps/quote scaled
+17:50:36     $ kubectl rollout status deployment/quote --timeout=300s
+17:50:37       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+17:50:37       deployment "quote" successfully rolled out
+17:50:37   6. verifier must PASS (<= 300s)
+17:50:37       [PASS   ] journey:checkout - 3/3 ok, avg 72ms
+17:50:37   7. restore exactly
+17:50:43   => VALIDATED  {'world_ready_s': 5, 'detect_s': 6, 'recover_s': 1, 'restore_s': 5}
+17:50:43 === node-cordoned-045 (composite)
+17:50:43   0. world healthy?
+17:50:48   1. baseline must PASS
+17:50:49       [PASS   ] journey:cart - 3/3 ok, avg 19ms
+17:50:49       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+17:50:49   2. inject
+17:50:53   3. verifier must FAIL (<= 240s)
+17:50:54       [FAIL   ] journey:cart - 0/3 ok, avg 11ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+17:50:54       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-8699cc945f-5q7b2 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+17:50:54   4. do-nothing agent: still FAIL after 30s?
+17:51:24       [FAIL   ] journey:cart - 0/3 ok, avg 7ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+17:51:24       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-8699cc945f-5q7b2 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+17:51:24       failing in 2/2 checks during the hold
+17:51:24   5. reference solution
+17:51:24     $ kubectl uncordon ai-gym-worker ai-gym-worker2
+17:51:24       node/ai-gym-worker uncordoned
+17:51:24       node/ai-gym-worker2 uncordoned
+17:51:24     $ kubectl rollout status deployment/cart --timeout=300s
+17:51:27       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+17:51:27       deployment "cart" successfully rolled out
+17:51:27   6. verifier must PASS (<= 300s)
+17:51:49       [PASS   ] journey:cart - 3/3 ok, avg 28ms
+17:51:49       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+17:51:49   7. restore exactly
+17:51:55   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 22, 'restore_s': 6}
+17:51:55 === node-taint-046 (composite)
+17:51:55   0. world healthy?
+17:52:00   1. baseline must PASS
+17:52:00       [PASS   ] journey:currency - 3/3 ok, avg 28ms
+17:52:00       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+17:52:00   2. inject
+17:52:04   3. verifier must FAIL (<= 240s)
+17:52:05       [FAIL   ] journey:currency - 0/3 ok, avg 10ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+17:52:05       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-bm9gz (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+17:52:05   4. do-nothing agent: still FAIL after 30s?
+17:52:36       [FAIL   ] journey:currency - 0/3 ok, avg 10ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+17:52:36       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-bm9gz (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+17:52:36       failing in 2/2 checks during the hold
+17:52:36   5. reference solution
+17:52:36     $ kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+17:52:36       node/ai-gym-worker untainted
+17:52:36       node/ai-gym-worker2 untainted
+17:52:36     $ kubectl rollout status deployment/currency --timeout=300s
+17:53:08       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+17:53:08       deployment "currency" successfully rolled out
+17:53:08   6. verifier must PASS (<= 300s)
+17:53:19       [PASS   ] journey:currency - 3/3 ok, avg 12ms
+17:53:19       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+17:53:19   7. restore exactly
+17:53:41   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 11, 'restore_s': 21}
+17:53:41 === quota-blocks-pods-047 (create_objects)
+17:53:41   0. world healthy?
+17:53:46   1. baseline must PASS
+17:53:46       [PASS   ] journey:checkout - 3/3 ok, avg 47ms
+17:53:46       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+17:53:47   2. inject
+17:53:50   3. verifier must FAIL (<= 240s)
+17:53:51       [FAIL   ] journey:checkout - 0/3 ok, avg 28ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:53:51       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+17:53:51   4. do-nothing agent: still FAIL after 30s?
+17:54:21       [FAIL   ] journey:checkout - 0/3 ok, avg 24ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:54:21       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+17:54:21       failing in 2/2 checks during the hold
+17:54:21   5. reference solution
+17:54:21     $ kubectl delete resourcequota namespace-pod-quota
+17:54:21       resourcequota "namespace-pod-quota" deleted from default namespace
+17:54:21     $ kubectl rollout restart deployment/shipping
+17:54:21       deployment.apps/shipping restarted
+17:54:21     $ kubectl rollout status deployment/shipping --timeout=300s
+17:54:24       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
+17:54:24       deployment "shipping" successfully rolled out
+17:54:24   6. verifier must PASS (<= 300s)
+17:54:25       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
+17:54:25       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+17:54:25   7. restore exactly
+17:54:31   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 1, 'restore_s': 6}
+17:54:31 === limitrange-rejects-048 (create_objects)
+17:54:31   0. world healthy?
+17:54:36   1. baseline must PASS
+17:54:37       [PASS   ] journey:ads - 3/3 ok, avg 12ms
+17:54:37       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+17:54:37   2. inject
+17:54:40   3. verifier must FAIL (<= 240s)
+17:54:41       [FAIL   ] journey:ads - 0/3 ok, avg 34ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+17:54:41       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+17:54:41   4. do-nothing agent: still FAIL after 30s?
+17:55:11       [FAIL   ] journey:ads - 0/3 ok, avg 10ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+17:55:11       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+17:55:11       failing in 2/2 checks during the hold
+17:55:11   5. reference solution
+17:55:11     $ kubectl delete limitrange container-memory-cap
+17:55:11       limitrange "container-memory-cap" deleted from default namespace
+17:55:11     $ kubectl rollout restart deployment/ad
+17:55:12       deployment.apps/ad restarted
+17:55:12     $ kubectl rollout status deployment/ad --timeout=300s
+17:55:12       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+17:55:12       deployment "ad" successfully rolled out
+17:55:12   6. verifier must PASS (<= 300s)
+17:55:24       [PASS   ] journey:ads - 3/3 ok, avg 21ms
+17:55:24       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+17:55:24   7. restore exactly
+17:55:30   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 11, 'restore_s': 6}
+17:55:30 === webhook-blocks-pods-050 (create_objects)
+17:55:30   0. world healthy?
+17:55:35   1. baseline must PASS
+17:55:35       [PASS   ] journey:email - 3/3 ok, avg 8ms
+17:55:35       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+17:55:35   2. inject
+17:55:39   3. verifier must FAIL (<= 240s)
+17:55:39       [FAIL   ] journey:email - 0/3 ok, avg 3ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+17:55:39       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+17:55:39   4. do-nothing agent: still FAIL after 30s?
+17:56:10       [FAIL   ] journey:email - 0/3 ok, avg 3ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+17:56:10       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+17:56:10       failing in 2/2 checks during the hold
+17:56:10   5. reference solution
+17:56:10     $ kubectl delete validatingwebhookconfiguration pod-policy-guard
+17:56:10       validatingwebhookconfiguration.admissionregistration.k8s.io "pod-policy-guard" deleted
+17:56:10     $ kubectl rollout restart deployment/email
+17:56:10       deployment.apps/email restarted
+17:56:10     $ kubectl rollout status deployment/email --timeout=300s
+17:56:11       Waiting for deployment "email" rollout to finish: 0 of 1 updated replicas are available...
+17:56:11       deployment "email" successfully rolled out
+17:56:11   6. verifier must PASS (<= 300s)
+17:56:22       [PASS   ] journey:email - 3/3 ok, avg 52ms
+17:56:22       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+17:56:22   7. restore exactly
+17:56:28   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 11, 'restore_s': 6}
+17:56:28 === pod-security-restricted-049 (object_patch)
+17:56:28   0. world healthy?
+17:56:33   1. baseline must PASS
+17:56:34       [PASS   ] journey:images - 3/3 ok, avg 17ms
+17:56:34       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+17:56:34   2. inject
+17:56:37   3. verifier must FAIL (<= 240s)
+17:56:43       [FAIL   ] journey:images - 0/3 ok, avg 1687ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+17:56:43       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+17:56:43   4. do-nothing agent: still FAIL after 30s?
+17:57:14       [FAIL   ] journey:images - 0/3 ok, avg 14ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+17:57:14       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+17:57:14       failing in 2/2 checks during the hold
+17:57:14   5. reference solution
+17:57:14     $ kubectl label namespace default pod-security.kubernetes.io/enforce-
+17:57:14       namespace/default unlabeled
+17:57:14     $ kubectl rollout restart deployment/image-provider
+17:57:14       deployment.apps/image-provider restarted
+17:57:14     $ kubectl rollout status deployment/image-provider --timeout=300s
+17:57:32       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
+17:57:32       deployment "image-provider" successfully rolled out
+17:57:32   6. verifier must PASS (<= 300s)
+17:57:33       [PASS   ] journey:images - 3/3 ok, avg 15ms
+17:57:33       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+17:57:33   7. restore exactly
+17:57:39   => VALIDATED  {'world_ready_s': 5, 'detect_s': 6, 'recover_s': 1, 'restore_s': 6}
+17:57:39 === coredns-down-043 (workload_patch)
+17:57:39   0. world healthy?
+17:57:44   1. baseline must PASS
+17:57:44       [PASS   ] journey:home - 3/3 ok, avg 13ms
+17:57:44       [PASS   ] journey:browse - 3/3 ok, avg 10ms
+17:57:44   2. inject
+17:57:45   3. verifier must FAIL (<= 240s)
+17:58:25       [FAIL   ] journey:home - 0/3 ok, avg 5006ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+17:58:25       [FAIL   ] journey:browse - 0/3 ok, avg 5006ms; e.g. GET /api/products/LS4PSXUNUM -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+17:58:25   4. do-nothing agent: still FAIL after 30s?
+17:59:37       [FAIL   ] journey:home - 0/3 ok, avg 5004ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+17:59:37       [FAIL   ] journey:browse - 0/3 ok, avg 5004ms; e.g. GET /api/products/9SIQT8TOJO -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+17:59:37       failing in 1/1 checks during the hold
+17:59:37   5. reference solution
+17:59:37     $ kubectl -n kube-system scale deployment coredns --replicas=2
+17:59:37       deployment.apps/coredns scaled
+17:59:37     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+17:59:48       Waiting for deployment "coredns" rollout to finish: 0 of 2 updated replicas are available...
+17:59:48       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+17:59:48       deployment "coredns" successfully rolled out
+17:59:48   6. verifier must PASS (<= 300s)
+17:59:49       [PASS   ] journey:home - 3/3 ok, avg 7ms
+17:59:49       [PASS   ] journey:browse - 3/3 ok, avg 15ms
+17:59:49   7. restore exactly
+17:59:55   => VALIDATED  {'world_ready_s': 5, 'detect_s': 41, 'recover_s': 1, 'restore_s': 6}
+17:59:55 === coredns-rewrite-poison-044 (configmap_edit)
+17:59:55   0. world healthy?
+18:00:00   1. baseline must PASS
+18:00:01       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
+18:00:01   2. inject
+18:00:27   3. verifier must FAIL (<= 300s)
+18:01:12       [FAIL   ] journey:checkout - 0/3 ok, avg 15017ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+18:01:12   4. do-nothing agent: still FAIL after 30s?
+18:02:42       [FAIL   ] journey:checkout - 0/3 ok, avg 11320ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+18:02:42       failing in 1/1 checks during the hold
+18:02:42   5. reference solution
+18:02:42     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
+18:02:43       configmap/coredns configured
+18:02:43       Warning: resource configmaps/coredns is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl appl
+18:02:43     $ kubectl -n kube-system rollout restart deployment/coredns
+18:02:43       deployment.apps/coredns restarted
+18:02:43     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+18:02:54       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+18:02:54       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+18:02:54       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+18:02:54       deployment "coredns" successfully rolled out
+18:02:54     $ kubectl rollout restart deployment/checkout
+18:02:54       deployment.apps/checkout restarted
+18:02:54     $ kubectl rollout status deployment/checkout --timeout=300s
+18:02:57       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+18:02:57       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+18:02:57       deployment "checkout" successfully rolled out
+18:02:57   6. verifier must PASS (<= 300s)
+18:02:58       [PASS   ] journey:checkout - 3/3 ok, avg 71ms
+18:02:58   7. restore exactly
+18:05:21   => VALIDATED  {'world_ready_s': 5, 'detect_s': 46, 'recover_s': 1, 'restore_s': 142}
+18:05:21 === kube-proxy-stopped-051 (composite)
+18:05:21   0. world healthy?
+18:05:26   1. baseline must PASS
+18:05:27       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
+18:05:27   2. inject
+18:05:50   3. verifier must FAIL (<= 300s)
+18:05:51       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+18:05:51   4. do-nothing agent: still FAIL after 30s?
+18:06:21       [FAIL   ] journey:checkout - 0/3 ok, avg 27ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+18:06:21       failing in 2/2 checks during the hold
+18:06:21   5. reference solution
+18:06:21     $ kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
+18:06:22       daemonset.apps/kube-proxy patched
+18:06:22     $ kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
+18:06:22       Waiting for daemon set "kube-proxy" rollout to finish: 0 of 3 updated pods are available...
+18:06:22       Waiting for daemon set "kube-proxy" rollout to finish: 2 of 3 updated pods are available...
+18:06:22       daemon set "kube-proxy" successfully rolled out
+18:06:22   6. verifier must PASS (<= 300s)
+18:06:33       [PASS   ] journey:checkout - 3/3 ok, avg 69ms
+18:06:33   7. restore exactly
+18:06:40   => VALIDATED  {'world_ready_s': 5, 'detect_s': 1, 'recover_s': 11, 'restore_s': 6}
+18:06:40 === cache-leak-009 (feature_flag)
+18:06:40   0. world healthy?
+18:06:45   1. baseline must PASS
+18:06:46       [PASS   ] journey:recommendations - 3/3 ok, avg 23ms
+18:06:46       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=52Mi (max 150Mi)
+18:06:46       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:06:46   2. inject
+18:06:47   3. verifier must FAIL (<= 1200s)
+18:13:44       [FAIL   ] journey:recommendations - 3/3 ok, avg 346ms (> 300ms)
+18:13:44       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=133Mi (max 150Mi)
+18:13:44       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:13:44   4. do-nothing agent: still FAIL after 630s?
+18:24:15       [PASS   ] journey:recommendations - 3/3 ok, avg 22ms
+18:24:15       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=53Mi (max 150Mi)
+18:24:15       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-79fc7b964d-lxr4p/recommendation restarted 148s ago (OOMKilled)
+18:24:15       failing in 39/39 checks during the hold
+18:24:15   5. reference solution
+18:24:15     $ python injectors/toggle_flag.py recommendationCacheFailure --off
+18:24:16       'recommendationCacheFailure' -> off (flagd is serving it now)
+18:24:16     $ kubectl rollout restart deployment/recommendation
+18:24:16       deployment.apps/recommendation restarted
+18:24:16     $ kubectl rollout status deployment/recommendation --timeout=180s
+18:24:17       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+18:24:17       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+18:24:17       deployment "recommendation" successfully rolled out
+18:24:17   6. verifier must PASS (<= 900s)
+18:34:24       [PASS   ] journey:recommendations - 3/3 ok, avg 23ms
+18:34:24       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=55Mi (max 150Mi)
+18:34:24       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:34:24   7. restore exactly
+18:34:30   => VALIDATED  {'world_ready_s': 5, 'detect_s': 417, 'recover_s': 606, 'restore_s': 6}
+
+SUMMARY
+  VALIDATED            net-bandwidth-053
+  VALIDATED            jvm-exception-062
+  VALIDATED            valkey-maxmemory-075
+  VALIDATED            valkey-requirepass-076
+  VALIDATED            valkey-client-pause-077
+  VALIDATED            pg-revoked-grant-078
+  VALIDATED            pg-password-rotated-079
+  VALIDATED            pg-connection-limit-080
+  VALIDATED            pg-lock-held-081
+  VALIDATED            kafka-message-too-large-082
+  VALIDATED            kafka-broker-down-083
+  NOT_DETECTED         otel-exporter-broken-085
+  VALIDATED            otel-collector-unscheduled-086
+  NOT_DETECTED         otel-service-endpoint-087
+  VALIDATED            prometheus-otlp-disabled-088
+  ERROR                grafana-datasource-089
+  ERROR                compound-quota-blocks-fix-090
+  VALIDATED            compound-two-faults-091
+  VALIDATED            compound-red-herring-092
+  VALIDATED            node-cordoned-045
+  VALIDATED            node-taint-046
+  VALIDATED            quota-blocks-pods-047
+  VALIDATED            limitrange-rejects-048
+  VALIDATED            webhook-blocks-pods-050
+  VALIDATED            pod-security-restricted-049
+  VALIDATED            coredns-down-043
+  VALIDATED            coredns-rewrite-poison-044
+  VALIDATED            kube-proxy-stopped-051
+  VALIDATED            cache-leak-009

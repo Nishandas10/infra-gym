@@ -1,0 +1,26 @@
+22:51:30 === wl-init-container-stuck-026 (workload_patch)
+22:51:30   0. world healthy?
+22:51:41   1. baseline must PASS
+22:51:42       [PASS   ] journey:cart - 3/3 ok, avg 54ms
+22:51:42       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+22:51:42   2. inject
+22:51:42   3. verifier must FAIL (<= 240s)
+22:51:44       [FAIL   ] journey:cart - 0/3 ok, avg 34ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:51:44       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/0 pods ready for opentelemetry.io/name=cart; no pods exist
+22:51:44   4. do-nothing agent: still FAIL after 30s?
+22:52:15       [FAIL   ] journey:cart - 0/3 ok, avg 24ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:52:15       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-84587b9d87-hrkcb (cart: PodInitializing)
+22:52:15       failing in 2/2 checks during the hold
+22:52:15   5. reference solution
+22:52:15     $ kubectl rollout undo deployment/cart
+22:52:16       deployment.apps/cart rolled back
+22:52:16     $ kubectl rollout status deployment/cart --timeout=300s
+22:52:51       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+22:52:51       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+22:52:51       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+22:52:51       deployment "cart" successfully rolled out
+22:52:51   6. verifier must PASS (<= 300s)
+22:53:16       [PASS   ] journey:cart - 3/3 ok, avg 68ms
+22:53:16       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+22:53:16   7. restore exactly
+22:53:29   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 25, 'restore_s': 12}

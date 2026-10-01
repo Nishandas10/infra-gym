@@ -1,0 +1,70 @@
+id: wl-run-as-non-root-021
+seed: 1021
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: astronomy-db
+  strategy: Recreate
+  ops:
+  - op: set
+    path: /spec/template/spec/securityContext/runAsNonRoot
+    value: true
+task:
+  mode: diagnose_and_mitigate
+  prompt: Product pages and the catalog fail to load after a security hardening change. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:browse
+  - journey:catalog
+  - pods_ready:opentelemetry.io/name=astronomy-db
+  root_cause:
+  - astronomy-db
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=astronomy-db
+solution:
+  commands:
+  - kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
+  - kubectl rollout status deployment/astronomy-db --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/security-context-run-as-non-root
+  title: runAsNonRoot on an image that runs as root -> CreateContainerConfigError
+  generated: true
+  est_pass_rate: null
+  split: train

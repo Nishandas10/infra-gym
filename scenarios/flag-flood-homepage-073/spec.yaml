@@ -1,0 +1,59 @@
+id: flag-flood-homepage-073
+seed: 1073
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: feature_flag
+  flag: loadGeneratorFloodHomepage
+  variant: 'on'
+task:
+  mode: diagnose_and_mitigate
+  prompt: Homepage traffic jumped far above normal and the frontend's CPU went with it, yet there were no releases
+    or marketing campaigns. Find the source and stop it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - traffic:^/$
+  root_cause:
+  - load-generator
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: traffic
+    match: ^/$
+    window_s: 30
+    max_error_pct: 100
+    max_avg_ms: 100000
+    min_requests: 0
+    max_rps: 2.0
+solution:
+  commands:
+  - python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
+validation:
+  detect_timeout_s: 180
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: application
+  mechanism: app-flag/traffic-flood
+  title: Synthetic traffic flood against the homepage (loadGeneratorFloodHomepage)
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -1,0 +1,61 @@
+id: otel-service-endpoint-087
+seed: 1087
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: checkout
+  recreate_pods: false
+  ops:
+  - op: replace
+    path: /spec/template/spec/containers/$c/env/$name:OTEL_EXPORTER_OTLP_ENDPOINT/value
+    value: http://otel-collector-gateway:4318
+task:
+  mode: diagnose_and_mitigate
+  prompt: Checkout's spans are missing from every trace (traces jump from the frontend straight to payment and shipping).
+    Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - jaeger_traces:checkout
+  root_cause:
+  - checkout
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: jaeger_traces
+    service: checkout
+    lookback: 1m
+    min_traces: 1
+solution:
+  commands:
+  - kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
+  - kubectl rollout status deployment/checkout --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: observability
+  mechanism: observability/service-exporter-misconfigured
+  title: One service exports telemetry to a collector name that does not exist
+  generated: true
+  est_pass_rate: null
+  split: train

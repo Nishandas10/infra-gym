@@ -1,0 +1,57 @@
+13:03:08 === dns-error-005 (chaos_mesh)
+13:03:08   0. world healthy?
+13:03:17   1. baseline must PASS
+13:03:19       [PASS   ] journey:cart - 3/3 ok, avg 60ms
+13:03:19       [PASS   ] journey:checkout - 3/3 ok, avg 206ms
+13:03:19   2. inject
+13:03:29   3. verifier must FAIL (<= 180s)
+13:04:18       [FAIL   ] journey:cart - 0/3 ok, avg 8024ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+13:04:18       [FAIL   ] journey:checkout - 0/3 ok, avg 8027ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+13:04:18   4. do-nothing agent: still FAIL after 30s?
+13:05:38       [FAIL   ] journey:cart - 0/3 ok, avg 8020ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+13:05:38       [FAIL   ] journey:checkout - 0/3 ok, avg 8019ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+13:05:38   5. reference solution
+13:05:38     $ kubectl delete dnschaos.chaos-mesh.org dns-error-005
+13:05:39       dnschaos.chaos-mesh.org "dns-error-005" deleted from default namespace
+13:05:39   6. verifier must PASS (<= 240s)
+13:05:42       [PASS   ] journey:cart - 3/3 ok, avg 611ms
+13:05:42       [PASS   ] journey:checkout - 3/3 ok, avg 97ms
+13:05:42   7. restore exactly
+13:05:52   => VALIDATED  {'world_ready_s': 9, 'detect_s': 50, 'recover_s': 3, 'restore_s': 9}
+13:05:52 === k8s-oom-cascade-001 (memory_limit_misconfig)
+13:05:52   0. world healthy?
+13:06:01   1. baseline must PASS
+13:06:03       [PASS   ] journey:cart - 3/3 ok, avg 32ms
+13:06:03       [PASS   ] journey:checkout - 3/3 ok, avg 165ms
+13:06:03       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:06:03       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+13:06:03   2. inject
+13:06:04   3. verifier must FAIL (<= 600s)
+13:06:06       [FAIL   ] journey:cart - 0/3 ok, avg 24ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:06:06       [FAIL   ] journey:checkout - 0/3 ok, avg 8ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:06:06       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/0 pods ready for opentelemetry.io/name=cart; no pods exist
+13:06:06       [FAIL   ] pods_stable:opentelemetry.io/name=cart - cart-84f77b449f-mf82z is only 0s old
+13:06:06   4. do-nothing agent: still FAIL after 45s?
+13:06:52       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:06:52       [FAIL   ] journey:checkout - 0/3 ok, avg 6ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:06:52       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:06:52       [FAIL   ] pods_stable:opentelemetry.io/name=cart - cart-84f77b449f-mf82z is only 46s old
+13:06:52   5. reference solution
+13:06:52     $ kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
+13:06:52       deployment.apps/cart resource requirements updated
+13:06:52     $ kubectl rollout status deployment/cart --timeout=180s
+13:06:57       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+13:06:57       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+13:06:57       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+13:06:57       deployment "cart" successfully rolled out
+13:06:57   6. verifier must PASS (<= 360s)
+13:09:03       [PASS   ] journey:cart - 3/3 ok, avg 37ms
+13:09:03       [PASS   ] journey:checkout - 3/3 ok, avg 206ms
+13:09:03       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:09:03       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+13:09:03   7. restore exactly
+13:09:36   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 126, 'restore_s': 33}
+
+SUMMARY
+  VALIDATED            dns-error-005
+  VALIDATED            k8s-oom-cascade-001

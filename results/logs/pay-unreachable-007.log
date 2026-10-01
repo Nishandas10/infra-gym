@@ -1,0 +1,17 @@
+21:58:07 === pay-unreachable-007 (feature_flag)
+21:58:07   0. world healthy?
+21:58:17   1. baseline must PASS
+21:58:18       [PASS   ] journey:checkout - 3/3 ok, avg 149ms
+21:58:18   2. inject
+21:58:20   3. verifier must FAIL (<= 120s)
+21:58:33       [FAIL   ] journey:checkout - 0/3 ok, avg 4223ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+21:58:33   4. do-nothing agent: still FAIL after 30s?
+21:59:17       [FAIL   ] journey:checkout - 0/3 ok, avg 4167ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+21:59:17       failing in 1/1 checks during the hold
+21:59:17   5. reference solution
+21:59:17     $ python injectors/toggle_flag.py paymentUnreachable --off
+21:59:20       'paymentUnreachable' -> off (flagd is serving it now)
+21:59:20   6. verifier must PASS (<= 120s)
+21:59:21       [PASS   ] journey:checkout - 3/3 ok, avg 163ms
+21:59:21   7. restore exactly
+21:59:30   => VALIDATED  {'world_ready_s': 10, 'detect_s': 14, 'recover_s': 1, 'restore_s': 9}

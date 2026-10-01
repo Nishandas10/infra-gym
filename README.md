@@ -1,4 +1,64 @@
 # AI Infra Gym
-README.md :
-Safe, resettable, realistic	broken infrastructure for training and testing AI agents.
-See	/docs for the environment cards	and	architecture notes.
+
+Safe, resettable, realistic broken infrastructure for training and testing AI agents.
+
+The "world" is the OpenTelemetry Demo (an online telescope shop, ~20 services)
+on a 3-node kind cluster. Each **scenario** breaks it in one specific way, tells
+the agent only the symptoms, and uses an out-of-band **verifier** that checks
+real outcomes (pods, real user journeys, Kafka lag, telemetry) to decide
+whether it was fixed. All scenarios are listed in [scenarios/CATALOG.md](scenarios/CATALOG.md).
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `scenarios/<id>/spec.yaml` | The scenario: fault, task prompt, verifier checks, reference solution commands |
+| `scenarios/<id>/reference_solution.md` | How a competent SRE diagnoses and fixes it |
+| `gym/` | Library: fault mechanisms (with exact undo), verifier checks, validation harness |
+| `gym/catalog.py` | Definitions of the generated (non-golden) scenarios |
+| `injectors/inject.py` | Inject any scenario (`--revert` undoes it exactly) |
+| `injectors/toggle_flag.py` | Flip the demo's feature flags (works with demo 3.x) |
+| `verifiers/verify.py` | Run a scenario's verifier (exit 0 = healthy) |
+| `scripts/validate_scenario.py` | Prove scenarios work end to end; results in `results/validation.jsonl` |
+| `scripts/reset_world.sh` | Re-sync the shop from Helm (pinned chart + `values-local.yaml`) |
+
+## Setup (inside WSL, from the repo root)
+
+```bash
+source .venv/bin/activate
+bash scripts/reset_world.sh          # shop, trimmed to fit a 6 GB WSL VM (see values-local.yaml)
+bash scripts/install_chaos_mesh.sh   # needed by the chaos-* scenarios
+python scripts/gym_setup.py          # helper pods in namespace gym-system (probe, kafka tools)
+```
+
+## Play one scenario by hand
+
+```bash
+python verifiers/verify.py scenarios/pay-fail-006          # PASS: healthy
+python injectors/inject.py scenarios/pay-fail-006          # break it
+python verifiers/verify.py scenarios/pay-fail-006          # FAIL
+# ...investigate and fix it yourself (or let an agent do it)...
+python verifiers/verify.py scenarios/pay-fail-006          # PASS again?
+python injectors/inject.py scenarios/pay-fail-006 --revert # always clean up exactly
+```
+
+`python scripts/run_episode.py scenarios/<id>` does reset -> baseline -> inject -> confirm broken.
+
+## Validate scenarios
+
+```bash
+python scripts/validate_scenario.py scenarios/net-delay-002
+python scripts/validate_scenario.py --all            # hours; stops if the cluster is left unhealthy
+python scripts/generate_scenarios.py --index         # refresh scenarios/CATALOG.md with verdicts
+```
+
+Each run proves: baseline healthy -> inject -> verifier FAILs -> still FAILs for
+a do-nothing agent -> the reference solution fixes it -> verifier PASSes ->
+the world is restored exactly.
+
+## What counts as a unique scenario
+
+A scenario is unique only if its root-cause mechanism differs from every other
+scenario's (`meta.mechanism`, enforced by `scripts/lint_scenarios.py`).
+Changing only numbers (memory size, latency, percentage), service names or
+random seeds creates a variant, not a new scenario.

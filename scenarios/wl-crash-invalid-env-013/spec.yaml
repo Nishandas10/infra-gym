@@ -1,0 +1,64 @@
+id: wl-crash-invalid-env-013
+seed: 1013
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: shipping
+  strategy: Recreate
+  ops:
+  - op: replace
+    path: /spec/template/spec/containers/$c/env/$name:SHIPPING_PORT/value
+    value: eighty-eighty
+task:
+  mode: diagnose_and_mitigate
+  prompt: Since the last configuration change every order fails at the shipping step. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - pods_ready:opentelemetry.io/name=shipping
+  root_cause:
+  - shipping
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=shipping
+solution:
+  commands:
+  - kubectl set env deployment/shipping SHIPPING_PORT=8080
+  - kubectl rollout status deployment/shipping --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/invalid-config-crash
+  title: Invalid configuration value makes the service crash at startup
+  generated: true
+  est_pass_rate: null
+  split: train

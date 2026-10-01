@@ -1,0 +1,26 @@
+22:29:56 === wl-bad-command-012 (workload_patch)
+22:29:56   0. world healthy?
+22:30:06   1. baseline must PASS
+22:30:07       [PASS   ] journey:checkout - 3/3 ok, avg 190ms
+22:30:07       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+22:30:07   2. inject
+22:30:08   3. verifier must FAIL (<= 240s)
+22:30:09       [FAIL   ] journey:checkout - 0/3 ok, avg 116ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:30:09       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/0 pods ready for opentelemetry.io/name=quote; no pods exist
+22:30:09   4. do-nothing agent: still FAIL after 30s?
+22:30:41       [FAIL   ] journey:checkout - 0/3 ok, avg 93ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:30:41       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-tftd4 (quote: RunContainerError)
+22:30:41       failing in 2/2 checks during the hold
+22:30:41   5. reference solution
+22:30:41     $ kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
+22:30:41       deployment.apps/quote patched
+22:30:41     $ kubectl rollout status deployment/quote --timeout=300s
+22:30:44       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+22:30:44       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+22:30:44       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+22:30:44       deployment "quote" successfully rolled out
+22:30:44   6. verifier must PASS (<= 300s)
+22:30:45       [PASS   ] journey:checkout - 3/3 ok, avg 213ms
+22:30:45       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+22:30:45   7. restore exactly
+22:30:55   => VALIDATED  {'world_ready_s': 10, 'detect_s': 2, 'recover_s': 2, 'restore_s': 9}

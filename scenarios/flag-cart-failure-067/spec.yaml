@@ -1,0 +1,62 @@
+id: flag-cart-failure-067
+seed: 1067
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: feature_flag
+  flag: cartFailure
+  variant: 100%
+task:
+  mode: diagnose_and_mitigate
+  prompt: Customers report errors around their cart and when placing orders. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  - journey:checkout
+  root_cause:
+  - cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - python injectors/toggle_flag.py cartFailure --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: application
+  mechanism: app-flag/cart-failure
+  title: Cart service errors (cartFailure)
+  generated: true
+  est_pass_rate: null
+  split: train

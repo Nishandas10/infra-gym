@@ -1,0 +1,64 @@
+id: grafana-datasource-089
+seed: 1089
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: configmap_edit
+  name: grafana-datasources
+  key: default.yaml
+  replace:
+  - - 'url: http://prometheus:9090'
+    - 'url: http://prometheus:9099'
+task:
+  mode: diagnose_and_mitigate
+  prompt: Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health
+  root_cause:
+  - grafana
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: http
+    url: http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health
+    expect_status: 200
+    contains: '"status":"OK"'
+    max_ms: 10000
+solution:
+  commands:
+  - kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace
+    -f -
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: observability
+  mechanism: observability/dashboard-datasource-misconfigured
+  title: Grafana's Prometheus datasource points at the wrong port
+  generated: true
+  est_pass_rate: null
+  split: train
+  notes: An earlier version restarted Grafana on inject and fix. The verifier then failed only because Grafana itself
+    was down, and each rolling restart briefly ran two 4-container Grafana pods, which thrashed the 6 GB VM late
+    in long batches.

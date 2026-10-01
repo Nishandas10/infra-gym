@@ -1,0 +1,67 @@
+id: valkey-client-pause-077
+seed: 1077
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: exec_commands
+  target: deploy/valkey-cart
+  commands:
+  - - valkey-cli
+    - CLIENT
+    - PAUSE
+    - '86400000'
+    - WRITE
+  undo_commands:
+  - - valkey-cli
+    - CLIENT
+    - UNPAUSE
+task:
+  mode: diagnose_and_mitigate
+  prompt: Adding to cart spins forever and then times out; viewing the cart still works. Find the cause and fix
+    it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  root_cause:
+  - valkey-cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+solution:
+  commands:
+  - kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/kv-clients-paused
+  title: Valkey clients paused -> writes hang
+  generated: true
+  est_pass_rate: null
+  split: train

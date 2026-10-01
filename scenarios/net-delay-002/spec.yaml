@@ -1,0 +1,34 @@
+id: net-delay-002
+seed: 1002
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: chaos_mesh
+  manifest: chaos.yaml
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "The product recommendations panel ('You may also like') takes many seconds to appear, while the rest of the product page is fast. Find out why and mitigate it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["recommendations respond in < 1.5s on average"]
+  root_cause: [recommendation]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: journey, journey: recommendations, repeat: 3, max_error_pct: 0, max_avg_ms: 1500, timeout_s: 12}
+
+solution:
+  commands:
+    - kubectl delete networkchaos.chaos-mesh.org net-delay-002
+
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+
+budget: {max_steps: 30, wall_s: 900}
+meta: {family: chaos, mechanism: chaos/network-latency, title: "Network latency injected on one service", golden: true, est_pass_rate: null, split: train}

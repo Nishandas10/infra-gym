@@ -1,0 +1,24 @@
+20:56:49 === flag-ad-manual-gc-066 (feature_flag)
+20:56:49   0. world healthy?
+20:56:58   1. baseline must PASS
+20:56:59       [PASS   ] journey:ads - 4/4 ok, avg 29ms
+20:56:59   2. inject
+20:57:01   3. verifier must FAIL (<= 300s)
+20:57:34       [FAIL   ] journey:ads - 0/4 ok, avg 8036ms; e.g. GET /api/data -> no response b'TimeoutError: timed out'
+20:57:34   4. do-nothing agent: still FAIL after 30s?
+20:58:53       [FAIL   ] journey:ads - 0/4 ok, avg 8089ms; e.g. GET /api/data -> no response b'TimeoutError: timed out'
+20:58:53       failing in 1/1 checks during the hold
+20:58:53   5. reference solution
+20:58:53     $ python injectors/toggle_flag.py adManualGc --off
+20:58:55       'adManualGc' -> off (flagd is serving it now)
+20:58:55     $ kubectl rollout restart deployment/ad
+20:58:56       deployment.apps/ad restarted
+20:58:56     $ kubectl rollout status deployment/ad --timeout=300s
+20:58:59       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+20:58:59       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
+20:58:59       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
+20:58:59       deployment "ad" successfully rolled out
+20:58:59   6. verifier must PASS (<= 300s)
+20:59:16       [PASS   ] journey:ads - 4/4 ok, avg 73ms
+20:59:16   7. restore exactly
+20:59:45   => VALIDATED  {'world_ready_s': 9, 'detect_s': 33, 'recover_s': 16, 'restore_s': 28}

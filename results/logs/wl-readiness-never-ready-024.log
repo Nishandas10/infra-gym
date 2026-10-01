@@ -1,0 +1,26 @@
+23:21:12 === wl-readiness-never-ready-024 (workload_patch)
+23:21:12   0. world healthy?
+23:21:21   1. baseline must PASS
+23:21:23       [PASS   ] journey:cart - 3/3 ok, avg 76ms
+23:21:23       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
+23:21:23   2. inject
+23:21:23   3. verifier must FAIL (<= 240s)
+23:21:24       [FAIL   ] journey:cart - 0/3 ok, avg 33ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:21:24       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
+23:21:24   4. do-nothing agent: still FAIL after 30s?
+23:21:55       [FAIL   ] journey:cart - 0/3 ok, avg 28ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:21:55       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
+23:21:55       failing in 2/2 checks during the hold
+23:21:55   5. reference solution
+23:21:55     $ kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
+23:21:56       deployment.apps/cart patched
+23:21:56     $ kubectl rollout status deployment/cart --timeout=300s
+23:22:01       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+23:22:01       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+23:22:01       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+23:22:01       deployment "cart" successfully rolled out
+23:22:01   6. verifier must PASS (<= 300s)
+23:23:45       [PASS   ] journey:cart - 3/3 ok, avg 92ms
+23:23:45       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
+23:23:45   7. restore exactly
+23:23:55   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 104, 'restore_s': 10}

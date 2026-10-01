@@ -1,0 +1,26 @@
+19:33:36 === coredns-down-043 (workload_patch)
+19:33:36   0. world healthy?
+19:33:45   1. baseline must PASS
+19:33:47       [PASS   ] journey:home - 3/3 ok, avg 14ms
+19:33:47       [PASS   ] journey:browse - 3/3 ok, avg 17ms
+19:33:47   2. inject
+19:33:47   3. verifier must FAIL (<= 240s)
+19:34:29       [FAIL   ] journey:home - 0/3 ok, avg 5009ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+19:34:29       [FAIL   ] journey:browse - 0/3 ok, avg 5006ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+19:34:29   4. do-nothing agent: still FAIL after 30s?
+19:35:42       [FAIL   ] journey:home - 0/3 ok, avg 5007ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+19:35:42       [FAIL   ] journey:browse - 0/3 ok, avg 5008ms; e.g. GET /api/products/OLJCESPC7Z -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+19:35:42       failing in 1/1 checks during the hold
+19:35:42   5. reference solution
+19:35:42     $ kubectl -n kube-system scale deployment coredns --replicas=2
+19:35:42       deployment.apps/coredns scaled
+19:35:42     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+19:35:55       Waiting for deployment "coredns" rollout to finish: 0 out of 2 new replicas have been updated...
+19:35:55       Waiting for deployment "coredns" rollout to finish: 0 of 2 updated replicas are available...
+19:35:55       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+19:35:55       deployment "coredns" successfully rolled out
+19:35:55   6. verifier must PASS (<= 300s)
+19:35:57       [PASS   ] journey:home - 3/3 ok, avg 13ms
+19:35:57       [PASS   ] journey:browse - 3/3 ok, avg 14ms
+19:35:57   7. restore exactly
+19:36:31   => VALIDATED  {'world_ready_s': 10, 'detect_s': 42, 'recover_s': 1, 'restore_s': 34}

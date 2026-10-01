@@ -1,0 +1,28 @@
+19:31:33 === compound-two-faults-091 (composite)
+19:31:33   0. world healthy?
+19:31:42   1. baseline must PASS
+19:31:45       [PASS   ] journey:recommendations - 30/30 ok, avg 26ms
+19:31:45       [PASS   ] journey:ads - 30/30 ok, avg 17ms
+19:31:45   2. inject
+19:31:47   3. verifier must FAIL (<= 240s)
+19:31:50       [PASS   ] journey:recommendations - 30/30 ok, avg 31ms
+19:31:50       [FAIL   ] journey:ads - 26/30 ok, avg 20ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+19:31:50   4. do-nothing agent: still FAIL after 30s?
+19:32:39       [FAIL   ] journey:recommendations - 0/30 ok, avg 557ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+19:32:39       [PASS   ] journey:ads - 30/30 ok, avg 13ms
+19:32:39       failing in 2/2 checks during the hold
+19:32:39   5. reference solution
+19:32:39     $ kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
+19:32:39       deployment.apps/recommendation env updated
+19:32:39     $ kubectl rollout status deployment/recommendation --timeout=300s
+19:32:42       Waiting for deployment "recommendation" rollout to finish: 0 out of 1 new replicas have been updated...
+19:32:42       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+19:32:42       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+19:32:42       deployment "recommendation" successfully rolled out
+19:32:42     $ python injectors/toggle_flag.py adFailure --off
+19:32:45       'adFailure' -> off (flagd is serving it now)
+19:32:45   6. verifier must PASS (<= 300s)
+19:33:26       [PASS   ] journey:recommendations - 30/30 ok, avg 33ms
+19:33:26       [PASS   ] journey:ads - 30/30 ok, avg 14ms
+19:33:26   7. restore exactly
+19:33:36   => VALIDATED  {'world_ready_s': 8, 'detect_s': 3, 'recover_s': 41, 'restore_s': 9}

@@ -1,0 +1,36 @@
+id: pod-kill-003
+seed: 1003
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: chaos_mesh
+  manifest: chaos.yaml
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "Checkout fails intermittently: some orders go through, others error out, and a retry usually works. Find out why and fix it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["checkout pod survives for > 90s", "checkout journey succeeds"]
+  root_cause: [checkout]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: pods_stable, selector: opentelemetry.io/name=checkout, min_age_s: 90}
+    - {type: journey, journey: checkout, repeat: 3, max_error_pct: 0, max_avg_ms: 5000}
+
+solution:
+  commands:
+    - kubectl delete schedule.chaos-mesh.org pod-kill-003
+
+validation:
+  detect_timeout_s: 150
+  recover_timeout_s: 240
+  hold_s: 45
+
+budget: {max_steps: 30, wall_s: 900}
+meta: {family: chaos, mechanism: chaos/pod-kill-periodic, title: "A service's pod is killed every 45 seconds", golden: true, est_pass_rate: null, split: train}

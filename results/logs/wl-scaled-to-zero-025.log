@@ -1,0 +1,25 @@
+23:26:28 === wl-scaled-to-zero-025 (workload_patch)
+23:26:28   0. world healthy?
+23:26:37   1. baseline must PASS
+23:26:38       [PASS   ] journey:checkout - 3/3 ok, avg 173ms
+23:26:38       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+23:26:38   2. inject
+23:26:39   3. verifier must FAIL (<= 240s)
+23:26:41       [FAIL   ] journey:checkout - 0/3 ok, avg 35ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+23:26:41       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+23:26:41   4. do-nothing agent: still FAIL after 30s?
+23:27:12       [FAIL   ] journey:checkout - 0/3 ok, avg 41ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+23:27:12       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+23:27:12       failing in 2/2 checks during the hold
+23:27:12   5. reference solution
+23:27:12     $ kubectl scale deployment checkout --replicas=1
+23:27:12       deployment.apps/checkout scaled
+23:27:12     $ kubectl rollout status deployment/checkout --timeout=300s
+23:27:17       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+23:27:17       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+23:27:17       deployment "checkout" successfully rolled out
+23:27:17   6. verifier must PASS (<= 300s)
+23:27:30       [PASS   ] journey:checkout - 3/3 ok, avg 359ms
+23:27:30       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+23:27:30   7. restore exactly
+23:27:41   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 14, 'restore_s': 10}

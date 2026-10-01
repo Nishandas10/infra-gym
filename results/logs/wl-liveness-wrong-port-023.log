@@ -1,0 +1,30 @@
+23:10:33 === wl-liveness-wrong-port-023 (workload_patch)
+23:10:33   0. world healthy?
+23:10:41   1. baseline must PASS
+23:10:43       [PASS   ] journey:browse - 4/4 ok, avg 32ms
+23:10:43       [PASS   ] journey:catalog - 4/4 ok, avg 8ms
+23:10:43       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+23:10:43   2. inject
+23:10:43   3. verifier must FAIL (<= 240s)
+23:10:44       [PASS   ] journey:browse - 4/4 ok, avg 12ms
+23:10:44       [PASS   ] journey:catalog - 4/4 ok, avg 8ms
+23:10:44       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-txdzj is only 1s old
+23:10:44   4. do-nothing agent: still FAIL after 150s?
+23:13:15       [FAIL   ] journey:browse - 0/4 ok, avg 7ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+23:13:15       [FAIL   ] journey:catalog - 0/4 ok, avg 6ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+23:13:15       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-txdzj/product-catalog restarted 66s ago (Completed)
+23:13:15       failing in 13/13 checks during the hold
+23:13:15   5. reference solution
+23:13:15     $ kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
+23:13:15       deployment.apps/product-catalog patched
+23:13:15     $ kubectl rollout status deployment/product-catalog --timeout=300s
+23:13:19       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+23:13:19       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+23:13:19       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+23:13:19       deployment "product-catalog" successfully rolled out
+23:13:19   6. verifier must PASS (<= 360s)
+23:15:16       [PASS   ] journey:browse - 4/4 ok, avg 20ms
+23:15:16       [PASS   ] journey:catalog - 4/4 ok, avg 12ms
+23:15:16       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+23:15:16   7. restore exactly
+23:15:25   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 117, 'restore_s': 9}

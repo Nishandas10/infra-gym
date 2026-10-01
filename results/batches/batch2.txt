@@ -1,0 +1,16 @@
+svc-selector-mismatch-035
+svc-targetport-mismatch-036
+netpol-ingress-deny-038
+netpol-egress-lockdown-039
+netpol-dns-blocked-040
+proxy-upstream-misroute-042
+netpol-default-deny-041
+svc-deleted-037
+net-packet-loss-052
+net-bandwidth-053
+net-partition-054
+pod-failure-055
+dns-random-057
+http-abort-058
+http-replace-059
+jvm-exception-062

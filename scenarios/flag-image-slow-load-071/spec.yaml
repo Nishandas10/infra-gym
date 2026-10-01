@@ -1,0 +1,57 @@
+id: flag-image-slow-load-071
+seed: 1071
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: feature_flag
+  flag: imageSlowLoad
+  variant: 10sec
+task:
+  mode: diagnose_and_mitigate
+  prompt: Product images take about 10 seconds to appear. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:images_browser
+  root_cause:
+  - image-provider
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: images_browser
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 3000
+    timeout_s: 15
+solution:
+  commands:
+  - python injectors/toggle_flag.py imageSlowLoad --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: application
+  mechanism: app-flag/image-slow-load
+  title: Images served with an artificial delay (imageSlowLoad)
+  generated: true
+  est_pass_rate: null
+  split: train

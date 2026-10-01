@@ -1,0 +1,18 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: net-delay-002
+  namespace: default
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: [default]
+    labelSelectors:
+      opentelemetry.io/name: recommendation
+  delay:
+    latency: "3000ms"
+    jitter: "200ms"
+    correlation: "0"
+  direction: to
+  # No duration: the fault stays until someone removes it (a do-nothing agent must fail).

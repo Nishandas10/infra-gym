@@ -1,0 +1,71 @@
+id: netpol-default-deny-041
+seed: 1041
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: create_objects
+  manifests:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: default-deny-ingress
+      namespace: default
+    spec:
+      podSelector: {}
+      policyTypes:
+      - Ingress
+task:
+  mode: diagnose_and_mitigate
+  prompt: The entire shop is unreachable and internal calls time out, right after the security team applied 'baseline'
+    policies. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:home
+  - journey:browse
+  root_cause:
+  - network-policy
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl delete networkpolicy default-deny-ingress
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: service-network
+  mechanism: network-policy/namespace-default-deny
+  title: Namespace-wide default-deny ingress policy
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -1,0 +1,17 @@
+20:13:42 === flag-flood-homepage-073 (feature_flag)
+20:13:42   0. world healthy?
+20:13:53   1. baseline must PASS
+20:14:25       [PASS   ] traffic:^/$ - 0/2 failed (0%), avg 35ms, 0.1 req/s over 30s for '^/$'
+20:14:25   2. inject
+20:14:27   3. verifier must FAIL (<= 180s)
+20:15:01       [FAIL   ] traffic:^/$ - 13.3 req/s for '^/$' over 30s (max 2.0)
+20:15:01   4. do-nothing agent: still FAIL after 30s?
+20:16:16       [FAIL   ] traffic:^/$ - 20.1 req/s for '^/$' over 30s (max 2.0)
+20:16:16       failing in 1/1 checks during the hold
+20:16:16   5. reference solution
+20:16:16     $ python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
+20:16:19       'loadGeneratorFloodHomepage' -> off (flagd is serving it now)
+20:16:20   6. verifier must PASS (<= 300s)
+20:16:53       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
+20:16:53   7. restore exactly
+20:17:06   => VALIDATED  {'world_ready_s': 11, 'detect_s': 34, 'recover_s': 33, 'restore_s': 12}

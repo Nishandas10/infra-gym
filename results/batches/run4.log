@@ -1,0 +1,137 @@
+18:35:48 === otel-exporter-broken-085 (configmap_edit)
+18:35:48   0. world healthy?
+18:35:56   1. baseline must PASS
+18:35:57       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+18:35:57       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+18:35:57   2. inject
+18:36:13   3. verifier must FAIL (<= 300s)
+18:37:12       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+18:37:12       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+18:37:12   4. do-nothing agent: still FAIL after 30s?
+18:37:43       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+18:37:43       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+18:37:43       failing in 2/2 checks during the hold
+18:37:43   5. reference solution
+18:37:43     $ kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
+18:37:44       configmap/otel-collector-agent configured
+18:37:44     $ kubectl rollout restart daemonset/otel-collector-agent
+18:37:44       daemonset.apps/otel-collector-agent restarted
+18:37:44     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+18:38:10       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+18:38:10       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+18:38:10       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+18:38:10       daemon set "otel-collector-agent" successfully rolled out
+18:38:10   6. verifier must PASS (<= 300s)
+18:38:46       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+18:38:46       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+18:38:46   7. restore exactly
+18:39:15   => VALIDATED  {'world_ready_s': 8, 'detect_s': 59, 'recover_s': 36, 'restore_s': 28}
+18:39:15 === otel-service-endpoint-087 (workload_patch)
+18:39:15   0. world healthy?
+18:39:22   1. baseline must PASS
+18:39:23       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+18:39:23   2. inject
+18:39:23   3. verifier must FAIL (<= 300s)
+18:40:19       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+18:40:19   4. do-nothing agent: still FAIL after 30s?
+18:40:49       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+18:40:49       failing in 2/2 checks during the hold
+18:40:49   5. reference solution
+18:40:49     $ kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
+18:40:50       deployment.apps/checkout env updated
+18:40:50     $ kubectl rollout status deployment/checkout --timeout=300s
+18:40:53       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+18:40:53       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+18:40:53       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+18:40:53       deployment "checkout" successfully rolled out
+18:40:53   6. verifier must PASS (<= 300s)
+18:41:17       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+18:41:17   7. restore exactly
+18:41:46   => VALIDATED  {'world_ready_s': 7, 'detect_s': 55, 'recover_s': 23, 'restore_s': 29}
+18:41:46 === grafana-datasource-089 (configmap_edit)
+18:41:46   0. world healthy?
+18:41:54   1. baseline must PASS
+18:41:55       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 399ms
+18:41:55   2. inject
+18:42:11   3. verifier must FAIL (<= 300s)
+18:42:16       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 64ms (expected 200) 'URLError: <urlopen error [Errno 111] Connection refused>'
+18:42:16   4. do-nothing agent: still FAIL after 30s?
+18:42:59       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12025ms (expected 200) 'TimeoutError: timed out'
+18:42:59       failing in 2/2 checks during the hold
+18:42:59   5. reference solution
+18:42:59     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl apply -f -
+18:43:00       configmap/grafana-datasources configured
+18:43:00     $ kubectl rollout restart deployment/grafana
+18:43:00       deployment.apps/grafana restarted
+18:43:00     $ kubectl rollout status deployment/grafana --timeout=480s
+18:44:36       Waiting for deployment "grafana" rollout to finish: 0 out of 1 new replicas have been updated...
+18:44:36       Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+18:44:36       Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+18:44:36       deployment "grafana" successfully rolled out
+18:44:36   6. verifier must PASS (<= 360s)
+18:45:07       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 1526ms
+18:45:07   7. restore exactly
+18:46:06   => VALIDATED  {'world_ready_s': 8, 'detect_s': 5, 'recover_s': 31, 'restore_s': 58}
+18:46:06 === obs-pii-redaction-removed-069 (composite)
+18:46:06   0. world healthy?
+18:46:15   1. baseline must PASS
+18:46:18       [PASS   ] journey:checkout - 2/2 ok, avg 314ms
+18:46:18       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
+18:46:18       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
+18:46:18   2. inject
+18:46:36   3. verifier must FAIL (<= 300s)
+18:47:06       [PASS   ] journey:checkout - 2/2 ok, avg 144ms
+18:47:06       [FAIL   ] jaeger_attr_absent:checkout - 6 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s), e.g. '4929-6495-8333-3657'
+18:47:06       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
+18:47:06   4. do-nothing agent: still FAIL after 30s?
+18:47:39       [PASS   ] journey:checkout - 2/2 ok, avg 206ms
+18:47:39       [FAIL   ] jaeger_attr_absent:checkout - 10 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s), e.g. '4432-8015-6152-0454'
+18:47:39       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
+18:47:39       failing in 2/2 checks during the hold
+18:47:39   5. reference solution
+18:47:39     $ kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml')); c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None) for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))" && kubectl apply -f /tmp/relay.yaml
+18:47:39       configmap/otel-collector-agent configured
+18:47:39     $ kubectl rollout restart daemonset/otel-collector-agent
+18:47:39       daemonset.apps/otel-collector-agent restarted
+18:47:39     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+18:48:08       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+18:48:08       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+18:48:08       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+18:48:08       daemon set "otel-collector-agent" successfully rolled out
+18:48:08   6. verifier must PASS (<= 360s)
+18:49:04       [PASS   ] journey:checkout - 2/2 ok, avg 222ms
+18:49:04       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
+18:49:04       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 2 payment trace(s)
+18:49:04   7. restore exactly
+18:49:36   => VALIDATED  {'world_ready_s': 9, 'detect_s': 30, 'recover_s': 56, 'restore_s': 30}
+18:49:36 === compound-quota-blocks-fix-090 (composite)
+18:49:36   0. world healthy?
+18:49:44   1. baseline must PASS
+18:49:46       [PASS   ] journey:checkout - 3/3 ok, avg 214ms
+18:49:46   2. inject
+18:50:12   3. verifier must FAIL (<= 240s)
+18:50:20       [FAIL   ] journey:checkout - 0/3 ok, avg 2141ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+18:50:20   4. do-nothing agent: still FAIL after 30s?
+18:51:02       [FAIL   ] journey:checkout - 0/3 ok, avg 2070ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+18:51:02       failing in 2/2 checks during the hold
+18:51:02   5. reference solution
+18:51:02     $ kubectl delete resourcequota namespace-pod-quota
+18:51:02       resourcequota "namespace-pod-quota" deleted from default namespace
+18:51:02     $ kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
+18:51:03       deployment.apps/shipping env updated
+18:51:03     $ kubectl rollout status deployment/shipping --timeout=300s
+18:51:07       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+18:51:07       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+18:51:07       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+18:51:07       deployment "shipping" successfully rolled out
+18:51:07   6. verifier must PASS (<= 300s)
+18:51:09       [PASS   ] journey:checkout - 3/3 ok, avg 183ms
+18:51:09   7. restore exactly
+18:51:40   => VALIDATED  {'world_ready_s': 9, 'detect_s': 7, 'recover_s': 2, 'restore_s': 30}
+
+SUMMARY
+  VALIDATED            otel-exporter-broken-085
+  VALIDATED            otel-service-endpoint-087
+  VALIDATED            grafana-datasource-089
+  VALIDATED            obs-pii-redaction-removed-069
+  VALIDATED            compound-quota-blocks-fix-090

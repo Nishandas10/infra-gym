@@ -1,0 +1,73 @@
+id: jvm-exception-062
+seed: 1062
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: chaos_mesh
+  manifest:
+  - apiVersion: chaos-mesh.org/v1alpha1
+    kind: JVMChaos
+    metadata:
+      name: ad-getads-exception
+      namespace: default
+    spec:
+      action: exception
+      mode: all
+      class: oteldemo.AdService$AdServiceImpl
+      method: getAds
+      exception: java.lang.RuntimeException("ad inventory unavailable")
+      port: 9277
+      selector:
+        namespaces:
+        - default
+        labelSelectors:
+          opentelemetry.io/name: ad
+task:
+  mode: diagnose_and_mitigate
+  prompt: The ad banner is gone and the ad service logs mention an inventory error, although no one deployed anything.
+    Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:ads
+  root_cause:
+  - ad
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: ads
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: chaos
+  mechanism: chaos/jvm-method-exception
+  title: Exception injected into a JVM method at runtime
+  generated: true
+  est_pass_rate: null
+  split: train

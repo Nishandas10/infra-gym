@@ -1,0 +1,28 @@
+20:02:33 === flag-email-memory-leak-068 (feature_flag)
+20:02:33   0. world healthy?
+20:02:44   1. baseline must PASS
+20:02:46       [PASS   ] journey:email - 3/3 ok, avg 37ms
+20:02:46       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+20:02:46   2. inject
+20:02:47   3. verifier must FAIL (<= 900s)
+20:02:49       [FAIL   ] journey:email - 0/3 ok, avg 242ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+20:02:49       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+20:02:49   4. do-nothing agent: still FAIL after 330s?
+20:08:21       [FAIL   ] journey:email - 0/3 ok, avg 4ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+20:08:21       [FAIL   ] pods_stable:opentelemetry.io/name=email - email-7c49f54c64-d7zrn/email restarted 103s ago (OOMKilled)
+20:08:21       failing in 16/16 checks during the hold
+20:08:21   5. reference solution
+20:08:21     $ python injectors/toggle_flag.py emailMemoryLeak --off
+20:08:23       'emailMemoryLeak' -> off (flagd is serving it now)
+20:08:23     $ kubectl rollout restart deployment/email
+20:08:23       deployment.apps/email restarted
+20:08:23     $ kubectl rollout status deployment/email --timeout=300s
+20:08:25       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+20:08:25       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+20:08:25       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+20:08:25       deployment "email" successfully rolled out
+20:08:25   6. verifier must PASS (<= 600s)
+20:13:31       [PASS   ] journey:email - 3/3 ok, avg 42ms
+20:13:31       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+20:13:31   7. restore exactly
+20:13:42   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 306, 'restore_s': 11}

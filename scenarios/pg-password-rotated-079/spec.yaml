@@ -1,0 +1,79 @@
+id: pg-password-rotated-079
+seed: 1079
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: exec_commands
+  target: deploy/astronomy-db
+  commands:
+  - - psql
+    - -U
+    - postgres
+    - -c
+    - ALTER ROLE astronomy_user PASSWORD 'rotated-2026'
+  - - psql
+    - -U
+    - postgres
+    - -c
+    - SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='astronomy_user'
+  undo_commands:
+  - - psql
+    - -U
+    - postgres
+    - -c
+    - ALTER ROLE astronomy_user PASSWORD 'astronomy_password'
+task:
+  mode: diagnose_and_mitigate
+  prompt: After a database maintenance window, product pages fail and new orders are not being recorded. Find the
+    cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:browse
+  - journey:catalog
+  root_cause:
+  - astronomy-db
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl exec deploy/astronomy-db -- psql -U postgres -c "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/db-credential-rotation
+  title: Database password rotated without updating the clients
+  generated: true
+  est_pass_rate: null
+  split: train

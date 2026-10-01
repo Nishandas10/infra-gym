@@ -1,0 +1,75 @@
+id: compound-two-faults-091
+seed: 1091
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: workload_patch
+    target: recommendation
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:PRODUCT_CATALOG_ADDR/value
+      value: product-catalog:8081
+  - type: feature_flag
+    flag: adFailure
+    variant: 'on'
+task:
+  mode: diagnose_and_mitigate
+  prompt: 'Two complaints came in within minutes: recommendations are missing, and the ad banner keeps disappearing.
+    Find the cause(s) and fix everything.'
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:recommendations
+  - journey:ads
+  root_cause:
+  - recommendation
+  - ad
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: ads
+    repeat: 30
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
+  - kubectl rollout status deployment/recommendation --timeout=300s
+  - python injectors/toggle_flag.py adFailure --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: compound
+  mechanism: compound/independent-simultaneous-faults
+  title: Two unrelated faults at the same time
+  generated: true
+  est_pass_rate: null
+  split: train

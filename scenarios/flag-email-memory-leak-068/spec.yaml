@@ -1,0 +1,62 @@
+id: flag-email-memory-leak-068
+seed: 1068
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: feature_flag
+  flag: emailMemoryLeak
+  variant: 10000x
+task:
+  mode: diagnose_and_mitigate
+  prompt: The email service restarts every few minutes and some confirmations are lost. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - pods_stable:opentelemetry.io/name=email
+  - journey:email
+  root_cause:
+  - email
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: pods_stable
+    selector: opentelemetry.io/name=email
+    min_age_s: 300
+  - type: journey
+    journey: email
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - python injectors/toggle_flag.py emailMemoryLeak --off
+  - kubectl rollout restart deployment/email
+  - kubectl rollout status deployment/email --timeout=300s
+validation:
+  detect_timeout_s: 900
+  recover_timeout_s: 600
+  hold_s: 45
+  poll_s: 15
+  baseline_timeout_s: 400
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: application
+  mechanism: app-flag/email-memory-leak
+  title: Email service leaks memory until it is OOMKilled (emailMemoryLeak)
+  generated: true
+  est_pass_rate: null
+  split: train

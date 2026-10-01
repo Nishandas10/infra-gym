@@ -1,0 +1,87 @@
+id: obs-pii-redaction-removed-069
+seed: 1069
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: feature_flag
+    flag: emitRawPii
+    variant: 'on'
+  - type: configmap_edit
+    name: otel-collector-agent
+    key: relay
+    replace:
+    - - |2
+              - transform/redact_sensitive_data
+      - ''
+    - - |2
+              - redaction
+      - ''
+    restart_after:
+    - daemonset/otel-collector-agent
+task:
+  mode: diagnose_and_mitigate
+  prompt: 'Compliance alert: plain-text customer email addresses and full card numbers were found in trace data
+    in Jaeger. Find how they got there and stop the leak.'
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - jaeger_attr_absent:checkout
+  - jaeger_attr_absent:payment
+  root_cause:
+  - otel-collector
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  - type: jaeger_attr_absent
+    service: checkout
+    lookback: 2m
+    pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
+  - type: jaeger_attr_absent
+    service: payment
+    lookback: 2m
+    pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
+solution:
+  commands:
+  - kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml'));
+    c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for
+    x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None)
+    for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))"
+    && kubectl apply -f /tmp/relay.yaml
+  - kubectl rollout restart daemonset/otel-collector-agent
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 360
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: observability
+  mechanism: observability/telemetry-redaction-removed
+  title: PII reaches the tracing backend after the redaction step was removed from the pipeline
+  generated: true
+  est_pass_rate: null
+  split: train

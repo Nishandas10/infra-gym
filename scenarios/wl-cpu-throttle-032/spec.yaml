@@ -1,0 +1,68 @@
+id: wl-cpu-throttle-032
+seed: 1032
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: frontend
+  recreate_pods: false
+  ops:
+  - op: set
+    path: /spec/template/spec/containers/$c/resources/limits/cpu
+    value: 20m
+task:
+  mode: diagnose_and_mitigate
+  prompt: The whole shop has become very slow since yesterday's resource tuning, but nothing is failing and no pod
+    is restarting. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:home
+  - journey:browse
+  root_cause:
+  - frontend
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+solution:
+  commands:
+  - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"}]'
+  - kubectl rollout status deployment/frontend --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/cpu-limit-throttling
+  title: CPU limit so low the service is throttled into slowness
+  generated: true
+  est_pass_rate: null
+  split: train

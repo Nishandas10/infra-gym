@@ -1,0 +1,65 @@
+id: wl-nodeselector-018
+seed: 1018
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: ad
+  strategy: Recreate
+  ops:
+  - op: set
+    path: /spec/template/spec/nodeSelector
+    value:
+      disktype: ssd
+task:
+  mode: diagnose_and_mitigate
+  prompt: The advertisement banner has disappeared from the shop. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:ads
+  - pods_ready:opentelemetry.io/name=ad
+  root_cause:
+  - ad
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: ads
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=ad
+solution:
+  commands:
+  - kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+  - kubectl rollout status deployment/ad --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/unschedulable-node-selector
+  title: nodeSelector matches no node -> Pending
+  generated: true
+  est_pass_rate: null
+  split: train

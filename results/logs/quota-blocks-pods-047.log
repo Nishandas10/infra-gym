@@ -1,0 +1,27 @@
+22:14:54 === quota-blocks-pods-047 (create_objects)
+22:14:54   0. world healthy?
+22:15:04   1. baseline must PASS
+22:15:05       [PASS   ] journey:checkout - 3/3 ok, avg 165ms
+22:15:05       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+22:15:06   2. inject
+22:15:09   3. verifier must FAIL (<= 240s)
+22:15:11       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:15:11       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+22:15:11   4. do-nothing agent: still FAIL after 30s?
+22:15:42       [FAIL   ] journey:checkout - 0/3 ok, avg 51ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:15:42       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+22:15:42       failing in 2/2 checks during the hold
+22:15:42   5. reference solution
+22:15:42     $ kubectl delete resourcequota namespace-pod-quota
+22:15:43       resourcequota "namespace-pod-quota" deleted from default namespace
+22:15:43     $ kubectl rollout restart deployment/shipping
+22:15:43       deployment.apps/shipping restarted
+22:15:43     $ kubectl rollout status deployment/shipping --timeout=300s
+22:15:46       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+22:15:46       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
+22:15:46       deployment "shipping" successfully rolled out
+22:15:46   6. verifier must PASS (<= 300s)
+22:15:48       [PASS   ] journey:checkout - 3/3 ok, avg 203ms
+22:15:48       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+22:15:48   7. restore exactly
+22:15:57   => VALIDATED  {'world_ready_s': 10, 'detect_s': 2, 'recover_s': 2, 'restore_s': 8}

@@ -1,0 +1,17 @@
+21:42:08 === netpol-ingress-deny-038 (create_objects)
+21:42:08   0. world healthy?
+21:42:16   1. baseline must PASS
+21:42:17       [PASS   ] journey:checkout - 3/3 ok, avg 174ms
+21:42:17   2. inject
+21:42:21   3. verifier must FAIL (<= 240s)
+21:42:43       [FAIL   ] journey:checkout - 0/3 ok, avg 6890ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+21:42:43   4. do-nothing agent: still FAIL after 30s?
+21:43:14       [FAIL   ] journey:checkout - 0/3 ok, avg 92ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+21:43:14       failing in 2/2 checks during the hold
+21:43:14   5. reference solution
+21:43:14     $ kubectl delete networkpolicy payment-ingress-lockdown
+21:43:14       networkpolicy.networking.k8s.io "payment-ingress-lockdown" deleted from default namespace
+21:43:14   6. verifier must PASS (<= 300s)
+21:43:26       [PASS   ] journey:checkout - 3/3 ok, avg 228ms
+21:43:26   7. restore exactly
+21:43:34   => VALIDATED  {'world_ready_s': 8, 'detect_s': 22, 'recover_s': 12, 'restore_s': 8}

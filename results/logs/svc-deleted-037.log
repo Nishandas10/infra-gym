@@ -1,0 +1,20 @@
+22:15:57 === svc-deleted-037 (delete_object)
+22:15:57   0. world healthy?
+22:16:06   1. baseline must PASS
+22:16:07       [PASS   ] journey:email - 3/3 ok, avg 47ms
+22:16:07   2. inject
+22:16:07   3. verifier must FAIL (<= 240s)
+22:16:08       [FAIL   ] journey:email - 0/3 ok, avg 6ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+22:16:08   4. do-nothing agent: still FAIL after 30s?
+22:16:39       [FAIL   ] journey:email - 0/3 ok, avg 3ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+22:16:39       failing in 2/2 checks during the hold
+22:16:39   5. reference solution
+22:16:39     $ bash scripts/reset_world.sh
+22:16:44         Firepit (Profiles)         http://localhost:8080/profiles/
+22:16:44         Grafana                    http://localhost:8080/grafana/
+22:16:44         Feature Flags UI           http://localhost:8080/feature/
+22:16:44       Reset complete.
+22:16:44   6. verifier must PASS (<= 480s)
+22:16:45       [PASS   ] journey:email - 3/3 ok, avg 29ms
+22:16:45   7. restore exactly
+22:16:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'restore_s': 9}

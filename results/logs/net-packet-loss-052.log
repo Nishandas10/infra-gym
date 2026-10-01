@@ -1,0 +1,21 @@
+21:27:22 === net-packet-loss-052 (chaos_mesh)
+21:27:22   0. world healthy?
+21:27:31   1. baseline must PASS
+21:27:31       [PASS   ] journey:browse - 4/4 ok, avg 16ms
+21:27:31       [PASS   ] journey:catalog - 4/4 ok, avg 15ms
+21:27:31   2. inject
+21:27:37   3. verifier must FAIL (<= 240s)
+21:28:09       [FAIL   ] journey:browse - 1/4 ok, avg 5466ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+21:28:09       [FAIL   ] journey:catalog - 4/4 ok, avg 2336ms (> 1500ms)
+21:28:09   4. do-nothing agent: still FAIL after 30s?
+21:29:36       [FAIL   ] journey:browse - 2/4 ok, avg 5976ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'TimeoutError: timed out'
+21:29:36       [FAIL   ] journey:catalog - 2/4 ok, avg 6091ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+21:29:36       failing in 1/1 checks during the hold
+21:29:36   5. reference solution
+21:29:36     $ kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
+21:29:37       networkchaos.chaos-mesh.org "catalog-packet-loss" deleted from default namespace
+21:29:37   6. verifier must PASS (<= 300s)
+21:29:37       [PASS   ] journey:browse - 4/4 ok, avg 21ms
+21:29:37       [PASS   ] journey:catalog - 4/4 ok, avg 8ms
+21:29:37   7. restore exactly
+21:29:45   => VALIDATED  {'world_ready_s': 8, 'detect_s': 32, 'recover_s': 1, 'restore_s': 8}

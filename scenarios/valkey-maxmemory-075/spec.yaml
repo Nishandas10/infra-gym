@@ -1,0 +1,67 @@
+id: valkey-maxmemory-075
+seed: 1075
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: exec_commands
+  target: deploy/valkey-cart
+  commands:
+  - - valkey-cli
+    - CONFIG
+    - SET
+    - maxmemory
+    - 256kb
+  undo_commands:
+  - - valkey-cli
+    - CONFIG
+    - SET
+    - maxmemory
+    - '0'
+task:
+  mode: diagnose_and_mitigate
+  prompt: Customers can view their carts but adding an item fails. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  root_cause:
+  - valkey-cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/kv-memory-cap-noeviction
+  title: Valkey memory cap reached with 'noeviction' -> writes rejected
+  generated: true
+  est_pass_rate: null
+  split: train

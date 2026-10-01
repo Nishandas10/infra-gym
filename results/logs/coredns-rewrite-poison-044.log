@@ -1,0 +1,30 @@
+19:36:31 === coredns-rewrite-poison-044 (configmap_edit)
+19:36:31   0. world healthy?
+19:36:40   1. baseline must PASS
+19:36:42       [PASS   ] journey:checkout - 3/3 ok, avg 230ms
+19:36:42   2. inject
+19:37:24   3. verifier must FAIL (<= 300s)
+19:38:12       [FAIL   ] journey:checkout - 0/3 ok, avg 15061ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+19:38:12   4. do-nothing agent: still FAIL after 30s?
+19:39:40       [FAIL   ] journey:checkout - 0/3 ok, avg 10123ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+19:39:40       failing in 1/1 checks during the hold
+19:39:40   5. reference solution
+19:39:40     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
+19:39:41       configmap/coredns configured
+19:39:41     $ kubectl -n kube-system rollout restart deployment/coredns
+19:39:41       deployment.apps/coredns restarted
+19:39:41     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+19:39:55       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+19:39:55       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+19:39:55       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+19:39:55       deployment "coredns" successfully rolled out
+19:39:55     $ kubectl rollout restart deployment/checkout
+19:39:55       deployment.apps/checkout restarted
+19:39:56     $ kubectl rollout status deployment/checkout --timeout=300s
+19:40:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+19:40:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+19:40:00       deployment "checkout" successfully rolled out
+19:40:01   6. verifier must PASS (<= 300s)
+19:40:03       [PASS   ] journey:checkout - 3/3 ok, avg 392ms
+19:40:03   7. restore exactly
+19:42:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 49, 'recover_s': 3, 'restore_s': 161}

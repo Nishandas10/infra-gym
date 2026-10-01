@@ -1,0 +1,71 @@
+id: quota-blocks-pods-047
+seed: 1047
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: create_objects
+  recreate_pods_after:
+  - opentelemetry.io/name=shipping
+  manifests:
+  - apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: namespace-pod-quota
+      namespace: default
+    spec:
+      hard:
+        pods: '10'
+task:
+  mode: diagnose_and_mitigate
+  prompt: Shipping disappeared after a routine pod restart and has not come back; orders fail. Find the cause and
+    fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - pods_ready:opentelemetry.io/name=shipping
+  root_cause:
+  - resource-quota
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=shipping
+solution:
+  commands:
+  - kubectl delete resourcequota namespace-pod-quota
+  - kubectl rollout restart deployment/shipping
+  - kubectl rollout status deployment/shipping --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: platform
+  mechanism: platform/resource-quota-exhausted
+  title: ResourceQuota lower than the namespace's pod count
+  generated: true
+  est_pass_rate: null
+  split: train

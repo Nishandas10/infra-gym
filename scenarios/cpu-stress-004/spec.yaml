@@ -1,0 +1,36 @@
+id: cpu-stress-004
+seed: 1004
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: chaos_mesh
+  manifest: chaos.yaml
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "A CPU alert fired: the frontend container is burning about two full cores while traffic is normal, and the cloud bill is climbing. Find what is using the CPU and stop it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["frontend container uses < 0.8 cores", "home page and product browsing still work"]
+  root_cause: [frontend]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: cpu_usage, selector: opentelemetry.io/name=frontend, max_cores: 0.8}
+    - {type: journey, journey: home, repeat: 3, max_error_pct: 0, max_avg_ms: 3000}
+
+solution:
+  commands:
+    - kubectl delete stresschaos.chaos-mesh.org cpu-stress-004
+
+validation:
+  detect_timeout_s: 150
+  recover_timeout_s: 180
+
+budget: {max_steps: 30, wall_s: 900}
+meta: {family: chaos, mechanism: chaos/cpu-stress, title: "CPU stressor running inside a container", golden: true, est_pass_rate: null, split: train,
+       note: "The frontend has no CPU limit and the VM has idle cores, so pages barely slow down; the observable symptom is CPU saturation, not latency."}

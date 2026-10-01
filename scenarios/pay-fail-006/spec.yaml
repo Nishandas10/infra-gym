@@ -1,0 +1,46 @@
+id: pay-fail-006
+seed: 1006
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: feature_flag
+  flag: paymentFailure
+  variant: "100%"
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "Customers can browse and fill their carts, but every order fails at the 'Place Order' step with a payment error. Find the cause and fix it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["checkout journey succeeds 3/3"]
+  root_cause: [payment]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: journey, journey: checkout, repeat: 3, max_error_pct: 0, max_avg_ms: 5000}
+    - {type: pods_ready, selector: opentelemetry.io/name=payment}
+
+solution:
+  commands:
+    - python injectors/toggle_flag.py paymentFailure --off
+
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+  hold_s: 30
+
+budget:
+  max_steps: 30
+  wall_s: 900
+
+meta:
+  family: application
+  mechanism: app-flag/payment-failure
+  title: "Payment service rejects every charge (paymentFailure)"
+  golden: true
+  est_pass_rate: null
+  split: train

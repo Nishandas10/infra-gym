@@ -1,0 +1,45 @@
+id: cache-leak-009
+seed: 1009
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: feature_flag
+  flag: recommendationCacheFailure
+  variant: "on"
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "The 'You may also like' recommendations get slower and slower over a few minutes, and the recommendation service restarts now and then. Find the cause and fix it for good."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["recommendations respond fast", "recommendation pod has not restarted for 10 minutes"]
+  root_cause: [recommendation]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    # Baseline: ~50Mi and ~90ms. Leaked memory never shrinks without a restart, which makes
+    # it a steadier signal than latency (which depends on how much traffic arrives).
+    - {type: memory_usage, selector: opentelemetry.io/name=recommendation, max_mib: 150}
+    - {type: journey, journey: recommendations, repeat: 3, max_error_pct: 0, max_avg_ms: 300}
+    - {type: pods_stable, selector: opentelemetry.io/name=recommendation, min_age_s: 600}
+
+solution:
+  commands:
+    - python injectors/toggle_flag.py recommendationCacheFailure --off
+    # the leaked memory stays in the running process until it restarts
+    - kubectl rollout restart deployment/recommendation
+    - kubectl rollout status deployment/recommendation --timeout=180s
+
+validation:
+  baseline_timeout_s: 700
+  detect_timeout_s: 1200
+  recover_timeout_s: 900
+  hold_s: 60
+  poll_s: 15
+
+budget: {max_steps: 40, wall_s: 1800}
+meta: {family: application, mechanism: app-flag/recommendation-cache-leak, title: "Recommendation cache leaks memory until OOM (recommendationCacheFailure)", golden: true, est_pass_rate: null, split: train}

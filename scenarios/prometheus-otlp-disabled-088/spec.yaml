@@ -1,0 +1,66 @@
+id: prometheus-otlp-disabled-088
+seed: 1088
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: prometheus
+  recreate_pods: false
+  ops:
+  - op: replace
+    path: /spec/template/spec/containers/$c/args
+    value:
+    - --storage.tsdb.retention.time=7d
+    - --config.file=/etc/config/prometheus.yml
+    - --storage.tsdb.path=/data
+    - --web.console.libraries=/etc/prometheus/console_libraries
+    - --web.console.templates=/etc/prometheus/consoles
+    - --enable-feature=exemplar-storage
+task:
+  mode: diagnose_and_mitigate
+  prompt: Every metrics dashboard went flat after Prometheus was restarted with 'cleaned up' flags. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - prometheus:sum(rate(http_server_request_duration_seconds_count[1m]))
+  root_cause:
+  - prometheus
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: prometheus
+    query: sum(rate(http_server_request_duration_seconds_count[1m]))
+    min_value: 0.01
+solution:
+  commands:
+  - kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
+  - kubectl rollout status deployment/prometheus --timeout=240s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 360
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: observability
+  mechanism: observability/metrics-ingest-disabled
+  title: Prometheus restarted without its OTLP receiver
+  generated: true
+  est_pass_rate: null
+  split: train

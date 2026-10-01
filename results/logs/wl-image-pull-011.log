@@ -1,0 +1,30 @@
+22:48:51 === wl-image-pull-011 (workload_patch)
+22:48:51   0. world healthy?
+22:49:01   1. baseline must PASS
+22:49:03       [PASS   ] journey:currency - 3/3 ok, avg 35ms
+22:49:03       [PASS   ] journey:checkout - 3/3 ok, avg 80ms
+22:49:03       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+22:49:03   2. inject
+22:49:03   3. verifier must FAIL (<= 240s)
+22:49:05       [FAIL   ] journey:currency - 0/3 ok, avg 42ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+22:49:05       [FAIL   ] journey:checkout - 0/3 ok, avg 59ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:49:05       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/0 pods ready for opentelemetry.io/name=currency; no pods exist
+22:49:05   4. do-nothing agent: still FAIL after 30s?
+22:49:37       [FAIL   ] journey:currency - 0/3 ok, avg 23ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+22:49:37       [FAIL   ] journey:checkout - 0/3 ok, avg 84ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:49:37       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-jx56c (currency: ErrImagePull)
+22:49:37       failing in 2/2 checks during the hold
+22:49:37   5. reference solution
+22:49:37     $ kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
+22:49:37       deployment.apps/currency image updated
+22:49:37     $ kubectl rollout status deployment/currency --timeout=300s
+22:49:41       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+22:49:41       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+22:49:41       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+22:49:41       deployment "currency" successfully rolled out
+22:49:41   6. verifier must PASS (<= 300s)
+22:51:20       [PASS   ] journey:currency - 3/3 ok, avg 22ms
+22:51:20       [PASS   ] journey:checkout - 3/3 ok, avg 107ms
+22:51:20       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+22:51:20   7. restore exactly
+22:51:30   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 99, 'restore_s': 9}

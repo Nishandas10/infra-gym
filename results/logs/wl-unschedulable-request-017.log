@@ -1,0 +1,24 @@
+23:27:41 === wl-unschedulable-request-017 (workload_patch)
+23:27:41   0. world healthy?
+23:27:49   1. baseline must PASS
+23:27:51       [PASS   ] journey:recommendations - 3/3 ok, avg 60ms
+23:27:51       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+23:27:51   2. inject
+23:27:51   3. verifier must FAIL (<= 240s)
+23:27:53       [PASS   ] journey:recommendations - 3/3 ok, avg 103ms
+23:27:53       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/0 pods ready for opentelemetry.io/name=recommendation; no pods exist
+23:27:53   4. do-nothing agent: still FAIL after 30s?
+23:28:25       [FAIL   ] journey:recommendations - 0/3 ok, avg 36ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+23:28:25       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-667ddfdd4d-vkvr4 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
+23:28:25       failing in 2/2 checks during the hold
+23:28:25   5. reference solution
+23:28:25     $ kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi
+23:28:25       deployment.apps/recommendation resource requirements updated
+23:28:25     $ kubectl rollout status deployment/recommendation --timeout=300s
+23:28:26       Waiting for deployment "recommendation" rollout to finish: 0 of 1 updated replicas are available...
+23:28:26       deployment "recommendation" successfully rolled out
+23:28:26   6. verifier must PASS (<= 300s)
+23:28:39       [PASS   ] journey:recommendations - 3/3 ok, avg 70ms
+23:28:39       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+23:28:39   7. restore exactly
+23:29:10   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 13, 'restore_s': 30}

@@ -1,0 +1,21 @@
+19:50:18 === flag-ad-high-cpu-065 (feature_flag)
+19:50:18   0. world healthy?
+19:50:29   1. baseline must PASS
+19:50:32       [PASS   ] journey:ads - 3/3 ok, avg 67ms
+19:50:32       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-55b496d6b9-866hz/ad=0.00 (max 0.5)
+19:50:32   2. inject
+19:50:33   3. verifier must FAIL (<= 300s)
+19:50:47       [PASS   ] journey:ads - 3/3 ok, avg 27ms
+19:50:47       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-55b496d6b9-866hz/ad=2.68 (max 0.5)
+19:50:47   4. do-nothing agent: still FAIL after 30s?
+19:51:19       [PASS   ] journey:ads - 3/3 ok, avg 29ms
+19:51:19       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-55b496d6b9-866hz/ad=4.00 (max 0.5)
+19:51:19       failing in 2/2 checks during the hold
+19:51:19   5. reference solution
+19:51:19     $ python injectors/toggle_flag.py adHighCpu --off
+19:51:23       'adHighCpu' -> off (flagd is serving it now)
+19:51:23   6. verifier must PASS (<= 300s)
+19:51:49       [PASS   ] journey:ads - 3/3 ok, avg 31ms
+19:51:49       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-55b496d6b9-866hz/ad=0.00 (max 0.5)
+19:51:49   7. restore exactly
+19:52:00   => VALIDATED  {'world_ready_s': 11, 'detect_s': 13, 'recover_s': 26, 'restore_s': 10}

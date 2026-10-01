@@ -1,0 +1,35 @@
+id: pay-unreachable-007
+seed: 1007
+stack:
+  cluster: kind-ai-gym
+  apps: [otel-demo]
+  observability: [prometheus, grafana, jaeger]
+
+fault:
+  type: feature_flag
+  flag: paymentUnreachable
+  variant: "on"
+
+task:
+  mode: diagnose_and_mitigate
+  prompt: "Orders cannot be placed: 'Place Order' spins and then errors. The payment provider's status page says they are fully operational. Find out why and fix it."
+
+tools: [kubectl, helm, curl]
+
+verifier:
+  outcome: ["checkout journey succeeds 3/3"]
+  root_cause: [checkout, payment]
+  forbidden: [delete_namespace, disable_alerts, scale_to_zero, edit_verifier]
+  checks:
+    - {type: journey, journey: checkout, repeat: 3, max_error_pct: 0, max_avg_ms: 5000}
+
+solution:
+  commands:
+    - python injectors/toggle_flag.py paymentUnreachable --off
+
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+
+budget: {max_steps: 30, wall_s: 900}
+meta: {family: application, mechanism: app-flag/payment-unreachable, title: "Checkout calls payment at a dead address (paymentUnreachable)", golden: true, est_pass_rate: null, split: train}

@@ -1,0 +1,18 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: pod-kill-003
+  namespace: default
+spec:
+  # Chaos Mesh 2.x moved periodic runs from PodChaos.scheduler to a Schedule object.
+  schedule: "@every 45s"
+  type: PodChaos
+  historyLimit: 2
+  concurrencyPolicy: Forbid
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      namespaces: [default]
+      labelSelectors:
+        opentelemetry.io/name: checkout

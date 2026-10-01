@@ -1,0 +1,69 @@
+id: wl-dns-policy-none-029
+seed: 1029
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: checkout
+  strategy: Recreate
+  ops:
+  - op: set
+    path: /spec/template/spec/dnsPolicy
+    value: None
+  - op: set
+    path: /spec/template/spec/dnsConfig
+    value:
+      nameservers:
+      - 192.0.2.53
+      searches:
+      - default.svc.cluster.local
+task:
+  mode: diagnose_and_mitigate
+  prompt: Placing an order fails with errors about every dependency at once. Other services work. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  root_cause:
+  - checkout
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+  - kubectl rollout status deployment/checkout --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/pod-dns-config
+  title: Pod DNS set to an unreachable nameserver
+  generated: true
+  est_pass_rate: null
+  split: train

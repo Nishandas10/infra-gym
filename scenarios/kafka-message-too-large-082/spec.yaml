@@ -1,0 +1,86 @@
+id: kafka-message-too-large-082
+seed: 1082
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: exec_commands
+  target: deploy/gym-kafka-tools
+  namespace: gym-system
+  restart_on_revert:
+  - deployment/checkout
+  - deployment/accounting
+  - deployment/fraud-detection
+  commands:
+  - - /opt/kafka/bin/kafka-configs.sh
+    - --bootstrap-server
+    - kafka.default.svc.cluster.local:9092
+    - --alter
+    - --entity-type
+    - topics
+    - --entity-name
+    - orders
+    - --add-config
+    - max.message.bytes=128
+  undo_commands:
+  - - /opt/kafka/bin/kafka-configs.sh
+    - --bootstrap-server
+    - kafka.default.svc.cluster.local:9092
+    - --alter
+    - --entity-type
+    - topics
+    - --entity-name
+    - orders
+    - --delete-config
+    - max.message.bytes
+task:
+  mode: diagnose_and_mitigate
+  prompt: Checkout works, but no new orders reach accounting or fraud detection. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - orders_recorded
+  - journey:checkout
+  root_cause:
+  - kafka
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: orders_recorded
+    timeout_s: 60
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+solution:
+  commands:
+  - kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092
+    --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/queue-message-size-limit
+  title: Topic max message size below the size of real messages
+  generated: true
+  est_pass_rate: null
+  split: train

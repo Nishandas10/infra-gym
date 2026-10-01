@@ -1,0 +1,17 @@
+22:23:57 === valkey-maxmemory-075 (exec_commands)
+22:23:57   0. world healthy?
+22:24:07   1. baseline must PASS
+22:24:08       [PASS   ] journey:cart - 3/3 ok, avg 60ms
+22:24:08   2. inject
+22:24:08   3. verifier must FAIL (<= 240s)
+22:24:09       [FAIL   ] journey:cart - 0/3 ok, avg 33ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:24:09   4. do-nothing agent: still FAIL after 30s?
+22:24:40       [FAIL   ] journey:cart - 0/3 ok, avg 18ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:24:40       failing in 2/2 checks during the hold
+22:24:40   5. reference solution
+22:24:40     $ kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
+22:24:40       OK
+22:24:40   6. verifier must PASS (<= 300s)
+22:24:41       [PASS   ] journey:cart - 3/3 ok, avg 39ms
+22:24:41   7. restore exactly
+22:24:50   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 1, 'restore_s': 9}

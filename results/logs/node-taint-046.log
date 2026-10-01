@@ -1,0 +1,25 @@
+21:44:48 === node-taint-046 (composite)
+21:44:48   0. world healthy?
+21:44:56   1. baseline must PASS
+21:44:58       [PASS   ] journey:currency - 3/3 ok, avg 40ms
+21:44:58       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+21:44:58   2. inject
+21:45:02   3. verifier must FAIL (<= 240s)
+21:45:04       [FAIL   ] journey:currency - 0/3 ok, avg 35ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+21:45:04       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-nnv68 (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+21:45:04   4. do-nothing agent: still FAIL after 30s?
+21:45:35       [FAIL   ] journey:currency - 0/3 ok, avg 40ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+21:45:35       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-nnv68 (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+21:45:35       failing in 2/2 checks during the hold
+21:45:35   5. reference solution
+21:45:35     $ kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+21:45:35       node/ai-gym-worker untainted
+21:45:35       node/ai-gym-worker2 untainted
+21:45:35     $ kubectl rollout status deployment/currency --timeout=300s
+21:45:37       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+21:45:37       deployment "currency" successfully rolled out
+21:45:37   6. verifier must PASS (<= 300s)
+21:45:50       [PASS   ] journey:currency - 3/3 ok, avg 73ms
+21:45:50       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+21:45:50   7. restore exactly
+21:45:59   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 13, 'restore_s': 9}

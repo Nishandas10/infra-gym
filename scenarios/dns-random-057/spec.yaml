@@ -1,0 +1,76 @@
+id: dns-random-057
+seed: 1057
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: chaos_mesh
+  kill_pods_after:
+  - opentelemetry.io/name=product-catalog
+  manifest:
+  - apiVersion: chaos-mesh.org/v1alpha1
+    kind: DNSChaos
+    metadata:
+      name: catalog-dns-random
+      namespace: default
+    spec:
+      action: random
+      mode: all
+      patterns:
+      - product-catalog
+      - product-catalog.*
+      selector:
+        namespaces:
+        - default
+        labelSelectors:
+          opentelemetry.io/name: recommendation
+task:
+  mode: diagnose_and_mitigate
+  prompt: Recommendations have failed since the product-catalog pod was rescheduled; the catalog itself serves product
+    pages fine. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:recommendations
+  root_cause:
+  - recommendation
+  - dns
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+solution:
+  commands:
+  - kubectl delete dnschaos.chaos-mesh.org catalog-dns-random
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: chaos
+  mechanism: chaos/dns-wrong-answers
+  title: DNS returns random addresses for one name
+  generated: true
+  est_pass_rate: null
+  split: train

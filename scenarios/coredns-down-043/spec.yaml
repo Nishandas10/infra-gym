@@ -1,0 +1,69 @@
+id: coredns-down-043
+seed: 1043
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  namespace: kube-system
+  target: coredns
+  recreate_pods: false
+  ops:
+  - op: replace
+    path: /spec/replicas
+    value: 0
+task:
+  mode: diagnose_and_mitigate
+  prompt: New connections across the cluster fail with name-resolution errors; some existing traffic still works.
+    Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:home
+  - journey:browse
+  root_cause:
+  - coredns
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl -n kube-system scale deployment coredns --replicas=2
+  - kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: platform
+  mechanism: platform/cluster-dns-down
+  title: Cluster DNS scaled to zero
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -1,0 +1,9 @@
+15:16:41 === flag-catalog-lock-contention-074 (feature_flag)
+15:16:41   0. world healthy?
+15:16:53   1. baseline must PASS
+15:16:55       [PASS   ] journey:browse_burst - 2/2 ok, avg 318ms
+15:16:55   2. inject
+15:16:57   3. verifier must FAIL (<= 300s)
+15:22:06       [PASS   ] journey:browse_burst - 2/2 ok, avg 299ms
+15:22:06   7. restore exactly
+15:22:17   => NOT_DETECTED  {'world_ready_s': 12, 'detect_s': 309, 'restore_s': 11}

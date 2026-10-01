@@ -1,0 +1,17 @@
+21:29:45 === net-partition-054 (chaos_mesh)
+21:29:45   0. world healthy?
+21:29:54   1. baseline must PASS
+21:29:55       [PASS   ] journey:checkout - 3/3 ok, avg 139ms
+21:29:55   2. inject
+21:30:00   3. verifier must FAIL (<= 240s)
+21:30:47       [FAIL   ] journey:checkout - 0/3 ok, avg 15046ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+21:30:47   4. do-nothing agent: still FAIL after 30s?
+21:32:29       [FAIL   ] journey:checkout - 0/3 ok, avg 15052ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+21:32:29       failing in 1/1 checks during the hold
+21:32:29   5. reference solution
+21:32:29     $ kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition
+21:32:30       networkchaos.chaos-mesh.org "checkout-payment-partition" deleted from default namespace
+21:32:30   6. verifier must PASS (<= 300s)
+21:34:19       [PASS   ] journey:checkout - 3/3 ok, avg 126ms
+21:34:19   7. restore exactly
+21:34:27   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 108, 'restore_s': 8}

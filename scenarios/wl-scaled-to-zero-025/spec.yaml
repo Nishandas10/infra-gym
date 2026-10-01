@@ -1,0 +1,64 @@
+id: wl-scaled-to-zero-025
+seed: 1025
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: checkout
+  recreate_pods: false
+  ops:
+  - op: replace
+    path: /spec/replicas
+    value: 0
+task:
+  mode: diagnose_and_mitigate
+  prompt: Browsing and the cart work, but 'Place Order' always fails. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - endpoints:checkout
+  root_cause:
+  - checkout
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: endpoints
+    service: checkout
+solution:
+  commands:
+  - kubectl scale deployment checkout --replicas=1
+  - kubectl rollout status deployment/checkout --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/scaled-to-zero
+  title: Deployment scaled to zero replicas
+  generated: true
+  est_pass_rate: null
+  split: train

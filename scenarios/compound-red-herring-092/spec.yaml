@@ -1,0 +1,93 @@
+id: compound-red-herring-092
+seed: 1092
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: create_objects
+    manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: legacy-report-generator
+        namespace: default
+        labels:
+          app: legacy-report-generator
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: legacy-report-generator
+        template:
+          metadata:
+            labels:
+              app: legacy-report-generator
+          spec:
+            containers:
+            - name: report
+              image: busybox:latest
+              command:
+              - sh
+              - -c
+              - 'echo ''FATAL: cannot connect to reporting-db:5432 (connection refused)''; exit 1'
+              resources:
+                limits:
+                  memory: 16Mi
+  - type: workload_patch
+    target: quote
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 0
+task:
+  mode: diagnose_and_mitigate
+  prompt: Orders are failing. The on-call channel is full of alerts about a crash-looping pod that keeps logging
+    database connection errors. Find the real cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  root_cause:
+  - quote
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl scale deployment quote --replicas=1
+  - kubectl rollout status deployment/quote --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: compound
+  mechanism: compound/red-herring
+  title: A loud but irrelevant failing pod next to the real, quieter fault
+  generated: true
+  est_pass_rate: null
+  split: train

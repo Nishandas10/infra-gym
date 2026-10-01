@@ -1,0 +1,75 @@
+id: kafka-broker-down-083
+seed: 1083
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: kafka
+  recreate_pods: false
+  restart_on_revert:
+  - deployment/checkout
+  - deployment/accounting
+  - deployment/fraud-detection
+  revert_hooks:
+  - kafka_topic: orders
+  ops:
+  - op: replace
+    path: /spec/replicas
+    value: 0
+task:
+  mode: diagnose_and_mitigate
+  prompt: Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the
+    cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - orders_recorded
+  - pods_ready:opentelemetry.io/name=kafka
+  root_cause:
+  - kafka
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: orders_recorded
+    timeout_s: 60
+  - type: pods_ready
+    selector: opentelemetry.io/name=kafka
+solution:
+  commands:
+  - kubectl scale deployment kafka --replicas=1
+  - kubectl rollout status deployment/kafka --timeout=300s
+  - for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh
+    --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions
+    1 --replication-factor 1 && break; sleep 5; done
+  - kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+  - kubectl rollout status deployment/checkout --timeout=300s
+  - kubectl rollout status deployment/accounting --timeout=300s
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 480
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/message-broker-down
+  title: Message broker scaled to zero (async pipeline stops silently)
+  generated: true
+  est_pass_rate: null
+  split: train

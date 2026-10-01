@@ -1,0 +1,17 @@
+22:04:28 === pod-failure-055 (chaos_mesh)
+22:04:28   0. world healthy?
+22:04:37   1. baseline must PASS
+22:04:38       [PASS   ] journey:checkout - 3/3 ok, avg 174ms
+22:04:38   2. inject
+22:04:44   3. verifier must FAIL (<= 240s)
+22:04:45       [FAIL   ] journey:checkout - 0/3 ok, avg 93ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:04:45   4. do-nothing agent: still FAIL after 30s?
+22:05:17       [FAIL   ] journey:checkout - 0/3 ok, avg 88ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:05:17       failing in 2/2 checks during the hold
+22:05:17   5. reference solution
+22:05:17     $ kubectl delete podchaos.chaos-mesh.org shipping-pod-failure
+22:05:17       podchaos.chaos-mesh.org "shipping-pod-failure" deleted from default namespace
+22:05:17   6. verifier must PASS (<= 300s)
+22:05:30       [PASS   ] journey:checkout - 3/3 ok, avg 179ms
+22:05:30   7. restore exactly
+22:05:39   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 13, 'restore_s': 9}

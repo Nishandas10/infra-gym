@@ -1,0 +1,68 @@
+id: otel-exporter-broken-085
+seed: 1085
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: configmap_edit
+  name: otel-collector-agent
+  key: relay
+  replace:
+  - - 'endpoint: jaeger:4317'
+    - 'endpoint: jaeger:4999'
+  restart_after:
+  - daemonset/otel-collector-agent
+task:
+  mode: diagnose_and_mitigate
+  prompt: No new traces have appeared in Jaeger for any service since a telemetry config change. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - jaeger_traces:checkout
+  - jaeger_traces:frontend
+  root_cause:
+  - otel-collector
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: jaeger_traces
+    service: checkout
+    lookback: 1m
+    min_traces: 1
+  - type: jaeger_traces
+    service: frontend
+    lookback: 1m
+    min_traces: 1
+solution:
+  commands:
+  - kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
+  - kubectl rollout restart daemonset/otel-collector-agent
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: observability
+  mechanism: observability/collector-exporter-misconfigured
+  title: Collector exports traces to the wrong port
+  generated: true
+  est_pass_rate: null
+  split: train

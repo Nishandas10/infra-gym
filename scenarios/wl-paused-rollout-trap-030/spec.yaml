@@ -1,0 +1,73 @@
+id: wl-paused-rollout-trap-030
+seed: 1030
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: workload_patch
+    target: cart
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:VALKEY_ADDR/value
+      value: valkey-cart-v2:6379
+    pause_s: 25
+  - type: workload_patch
+    target: cart
+    recreate_pods: false
+    ops:
+    - op: set
+      path: /spec/paused
+      value: true
+task:
+  mode: diagnose_and_mitigate
+  prompt: 'The cart is broken: adding items fails. A colleague says they already fixed the config, but nothing changed.
+    Find the cause and fix it for real.'
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  root_cause:
+  - cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+  - kubectl rollout resume deployment/cart
+  - kubectl rollout status deployment/cart --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/paused-rollout-blocks-fix
+  title: 'Bad config plus a paused Deployment: the fix does not roll out'
+  generated: true
+  est_pass_rate: null
+  split: train

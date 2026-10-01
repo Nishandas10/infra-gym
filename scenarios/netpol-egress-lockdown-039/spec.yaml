@@ -1,0 +1,84 @@
+id: netpol-egress-lockdown-039
+seed: 1039
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: create_objects
+  recreate_pods_after:
+  - opentelemetry.io/name=checkout
+  manifests:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: checkout-egress-lockdown
+      namespace: default
+    spec:
+      podSelector:
+        matchLabels:
+          opentelemetry.io/name: checkout
+      policyTypes:
+      - Egress
+      egress:
+      - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+task:
+  mode: diagnose_and_mitigate
+  prompt: Checkout has been down since a security policy rollout; its new pod never becomes Ready. Find the cause
+    and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - pods_ready:opentelemetry.io/name=checkout
+  root_cause:
+  - checkout
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=checkout
+solution:
+  commands:
+  - kubectl delete networkpolicy checkout-egress-lockdown
+  - kubectl rollout restart deployment/checkout
+  - kubectl rollout status deployment/checkout --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: service-network
+  mechanism: network-policy/egress-deny
+  title: Egress policy lets a service reach nothing but DNS
+  generated: true
+  est_pass_rate: null
+  split: train

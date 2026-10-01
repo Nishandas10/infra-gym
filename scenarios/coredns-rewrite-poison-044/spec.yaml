@@ -1,0 +1,76 @@
+id: coredns-rewrite-poison-044
+seed: 1044
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: configmap_edit
+  namespace: kube-system
+  name: coredns
+  key: Corefile
+  replace:
+  - - |2
+          ready
+    - |2
+          ready
+          rewrite name payment.default.svc.cluster.local shipping.default.svc.cluster.local
+  restart_after:
+  - deployment/coredns
+  recreate_pods_after:
+  - opentelemetry.io/name=checkout
+  settle_s: 25
+  restart_on_revert:
+  - deployment/checkout
+task:
+  mode: diagnose_and_mitigate
+  prompt: Payments fail with protocol errors, as if checkout were talking to the wrong service. The payment pod
+    is healthy. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  root_cause:
+  - coredns
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply
+    -f -
+  - kubectl -n kube-system rollout restart deployment/coredns
+  - kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+  - kubectl rollout restart deployment/checkout
+  - kubectl rollout status deployment/checkout --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: platform
+  mechanism: platform/cluster-dns-rewrite
+  title: CoreDNS rewrite rule sends one service's name to another
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -3,9 +3,14 @@ __pycache__/
 .venv/
 .env
 *.log
+# ...except the scenario validation logs, which are the evidence behind results/validation.jsonl
+!results/**/*.log
 .DS_Store
 kubeconfig*
 node_modules/
 
 # Local knowledge base (personal notes, not committed)
 knowledge_base/
+
+# Undo logs of currently injected faults (machine-local state)
+.gym_state/

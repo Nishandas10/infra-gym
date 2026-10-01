@@ -1,0 +1,26 @@
+22:12:23 === proxy-upstream-misroute-042 (workload_patch)
+22:12:23   0. world healthy?
+22:12:32   1. baseline must PASS
+22:12:33       [PASS   ] journey:home - 3/3 ok, avg 17ms
+22:12:33       [PASS   ] journey:browse - 3/3 ok, avg 17ms
+22:12:33   2. inject
+22:12:33   3. verifier must FAIL (<= 240s)
+22:13:13       [FAIL   ] journey:home - 0/3 ok, avg 4133ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+22:13:13       [FAIL   ] journey:browse - 0/3 ok, avg 5034ms; e.g. GET /api/products/OLJCESPC7Z -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+22:13:13   4. do-nothing agent: still FAIL after 30s?
+22:14:25       [FAIL   ] journey:home - 0/3 ok, avg 5013ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+22:14:25       [FAIL   ] journey:browse - 0/3 ok, avg 5006ms; e.g. GET /api/products/L9ECAV7KIM -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+22:14:25       failing in 1/1 checks during the hold
+22:14:25   5. reference solution
+22:14:25     $ kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080
+22:14:26       deployment.apps/frontend-proxy env updated
+22:14:26     $ kubectl rollout status deployment/frontend-proxy --timeout=300s
+22:14:28       Waiting for deployment "frontend-proxy" rollout to finish: 0 out of 1 new replicas have been updated...
+22:14:28       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
+22:14:28       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
+22:14:28       deployment "frontend-proxy" successfully rolled out
+22:14:28   6. verifier must PASS (<= 300s)
+22:14:45       [PASS   ] journey:home - 3/3 ok, avg 8ms
+22:14:45       [PASS   ] journey:browse - 3/3 ok, avg 100ms
+22:14:45   7. restore exactly
+22:14:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 40, 'recover_s': 17, 'restore_s': 9}

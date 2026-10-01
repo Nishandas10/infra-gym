@@ -1,0 +1,99 @@
+id: pg-lock-held-081
+seed: 1081
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: create_objects
+  manifests:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: catalog-maintenance
+      namespace: default
+      labels:
+        app: catalog-maintenance
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: catalog-maintenance
+      template:
+        metadata:
+          labels:
+            app: catalog-maintenance
+        spec:
+          containers:
+          - name: reindex
+            image: postgres:18.4
+            env:
+            - name: PGPASSWORD
+              value: changeit
+            command:
+            - psql
+            - -h
+            - astronomy-db
+            - -U
+            - postgres
+            - -d
+            - astronomy_db
+            - -c
+            - BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);
+            resources:
+              limits:
+                memory: 64Mi
+task:
+  mode: diagnose_and_mitigate
+  prompt: Product pages hang until they time out; the database is up and not busy. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:browse
+  - journey:catalog
+  root_cause:
+  - astronomy-db
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+solution:
+  commands:
+  - kubectl delete deployment catalog-maintenance
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: datastore
+  mechanism: datastore/db-lock-held
+  title: A stuck maintenance job holds an exclusive table lock
+  generated: true
+  est_pass_rate: null
+  split: train

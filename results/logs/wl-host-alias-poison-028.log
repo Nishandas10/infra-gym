@@ -1,0 +1,26 @@
+22:47:11 === wl-host-alias-poison-028 (workload_patch)
+22:47:11   0. world healthy?
+22:47:21   1. baseline must PASS
+22:47:22       [PASS   ] journey:browse - 3/3 ok, avg 61ms
+22:47:22       [PASS   ] journey:catalog - 3/3 ok, avg 30ms
+22:47:22   2. inject
+22:47:22   3. verifier must FAIL (<= 240s)
+22:47:49       [FAIL   ] journey:browse - 0/3 ok, avg 4654ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+22:47:49       [FAIL   ] journey:catalog - 0/3 ok, avg 10ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+22:47:49   4. do-nothing agent: still FAIL after 30s?
+22:48:20       [FAIL   ] journey:browse - 0/3 ok, avg 29ms; e.g. GET /api/products/OLJCESPC7Z -> 500 b'Internal Server Error'
+22:48:20       [FAIL   ] journey:catalog - 0/3 ok, avg 8ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+22:48:20       failing in 2/2 checks during the hold
+22:48:20   5. reference solution
+22:48:20     $ kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
+22:48:20       deployment.apps/frontend patched
+22:48:20     $ kubectl rollout status deployment/frontend --timeout=300s
+22:48:23       Waiting for deployment "frontend" rollout to finish: 0 out of 1 new replicas have been updated...
+22:48:23       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+22:48:23       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+22:48:23       deployment "frontend" successfully rolled out
+22:48:23   6. verifier must PASS (<= 300s)
+22:48:41       [PASS   ] journey:browse - 3/3 ok, avg 14ms
+22:48:41       [PASS   ] journey:catalog - 3/3 ok, avg 11ms
+22:48:41   7. restore exactly
+22:48:51   => VALIDATED  {'world_ready_s': 9, 'detect_s': 26, 'recover_s': 18, 'restore_s': 9}

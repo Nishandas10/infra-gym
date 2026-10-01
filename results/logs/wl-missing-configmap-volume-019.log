@@ -1,0 +1,26 @@
+23:15:25 === wl-missing-configmap-volume-019 (workload_patch)
+23:15:25   0. world healthy?
+23:15:34   1. baseline must PASS
+23:15:36       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+23:15:36       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+23:15:36   2. inject
+23:15:37   3. verifier must FAIL (<= 240s)
+23:15:40       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/0 pods ready for opentelemetry.io/name=fraud-detection; no pods exist
+23:15:40       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1 (max 50)
+23:15:40   4. do-nothing agent: still FAIL after 30s?
+23:16:13       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/1 pods ready for opentelemetry.io/name=fraud-detection; fraud-detection-5f4fd4b9d9-fqb75 (wait-for-kafka: PodInitializing)
+23:16:13       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1 (max 50)
+23:16:13       failing in 2/2 checks during the hold
+23:16:13   5. reference solution
+23:16:13     $ kubectl rollout undo deployment/fraud-detection
+23:16:13       deployment.apps/fraud-detection rolled back
+23:16:13     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+23:16:18       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
+23:16:18       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
+23:16:18       Waiting for deployment "fraud-detection" rollout to finish: 0 of 1 updated replicas are available...
+23:16:18       deployment "fraud-detection" successfully rolled out
+23:16:18   6. verifier must PASS (<= 300s)
+23:16:21       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+23:16:21       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1 (max 50)
+23:16:21   7. restore exactly
+23:16:31   => VALIDATED  {'world_ready_s': 9, 'detect_s': 4, 'recover_s': 4, 'restore_s': 9}

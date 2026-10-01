@@ -1,0 +1,17 @@
+20:19:27 === flag-intl-shipping-slow-072 (feature_flag)
+20:19:27   0. world healthy?
+20:19:38   1. baseline must PASS
+20:19:41       [PASS   ] journey:checkout_intl - 2/2 ok, avg 661ms
+20:19:41   2. inject
+20:19:43   3. verifier must FAIL (<= 240s)
+20:20:06       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10880ms (> 5000ms)
+20:20:06   4. do-nothing agent: still FAIL after 30s?
+20:21:03       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10616ms (> 5000ms)
+20:21:03       failing in 1/1 checks during the hold
+20:21:03   5. reference solution
+20:21:03     $ python injectors/toggle_flag.py intlShippingSlowdown --off
+20:21:06       'intlShippingSlowdown' -> off (flagd is serving it now)
+20:21:06   6. verifier must PASS (<= 300s)
+20:21:09       [PASS   ] journey:checkout_intl - 2/2 ok, avg 750ms
+20:21:09   7. restore exactly
+20:21:24   => VALIDATED  {'world_ready_s': 11, 'detect_s': 23, 'recover_s': 3, 'restore_s': 13}

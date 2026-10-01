@@ -1,0 +1,17 @@
+22:22:33 === valkey-client-pause-077 (exec_commands)
+22:22:33   0. world healthy?
+22:22:43   1. baseline must PASS
+22:22:44       [PASS   ] journey:cart - 3/3 ok, avg 39ms
+22:22:44   2. inject
+22:22:44   3. verifier must FAIL (<= 240s)
+22:23:03       [FAIL   ] journey:cart - 0/3 ok, avg 5817ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:23:03   4. do-nothing agent: still FAIL after 30s?
+22:23:47       [FAIL   ] journey:cart - 0/3 ok, avg 4241ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+22:23:47       failing in 1/1 checks during the hold
+22:23:47   5. reference solution
+22:23:47     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+22:23:48       OK
+22:23:48   6. verifier must PASS (<= 300s)
+22:23:49       [PASS   ] journey:cart - 3/3 ok, avg 56ms
+22:23:49   7. restore exactly
+22:23:57   => VALIDATED  {'world_ready_s': 10, 'detect_s': 18, 'recover_s': 1, 'restore_s': 8}

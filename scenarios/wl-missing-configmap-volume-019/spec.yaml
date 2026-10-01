@@ -1,0 +1,71 @@
+id: wl-missing-configmap-volume-019
+seed: 1019
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: fraud-detection
+  strategy: Recreate
+  ops:
+  - op: append
+    path: /spec/template/spec/volumes
+    value:
+      name: rules
+      configMap:
+        name: fraud-rules
+  - op: append
+    path: /spec/template/spec/containers/$c/volumeMounts
+    value:
+      name: rules
+      mountPath: /etc/fraud-rules
+task:
+  mode: diagnose_and_mitigate
+  prompt: The fraud team says no new orders have reached their system for a while, although checkout works. Find
+    the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - pods_ready:opentelemetry.io/name=fraud-detection
+  - kafka_lag:fraud-detection
+  root_cause:
+  - fraud-detection
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: pods_ready
+    selector: opentelemetry.io/name=fraud-detection
+  - type: kafka_lag
+    group: fraud-detection
+    max_lag: 50
+solution:
+  commands:
+  - kubectl rollout undo deployment/fraud-detection
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/missing-configmap-volume
+  title: Pod mounts a ConfigMap that does not exist -> stuck ContainerCreating
+  generated: true
+  est_pass_rate: null
+  split: train

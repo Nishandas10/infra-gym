@@ -1,0 +1,68 @@
+id: netpol-ingress-deny-038
+seed: 1038
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: create_objects
+  recreate_pods_after:
+  - opentelemetry.io/name=payment
+  manifests:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: payment-ingress-lockdown
+      namespace: default
+    spec:
+      podSelector:
+        matchLabels:
+          opentelemetry.io/name: payment
+      policyTypes:
+      - Ingress
+task:
+  mode: diagnose_and_mitigate
+  prompt: Every order fails at payment with a timeout. The payment pod is healthy. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  root_cause:
+  - payment
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl delete networkpolicy payment-ingress-lockdown
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: service-network
+  mechanism: network-policy/ingress-deny
+  title: NetworkPolicy blocks all traffic into a service
+  generated: true
+  est_pass_rate: null
+  split: train

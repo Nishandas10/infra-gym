@@ -1,0 +1,24 @@
+23:18:42 === wl-paused-rollout-trap-030 (composite)
+23:18:42   0. world healthy?
+23:18:51   1. baseline must PASS
+23:18:52       [PASS   ] journey:cart - 3/3 ok, avg 79ms
+23:18:52   2. inject
+23:19:18   3. verifier must FAIL (<= 240s)
+23:19:19       [FAIL   ] journey:cart - 0/3 ok, avg 23ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:19:19   4. do-nothing agent: still FAIL after 30s?
+23:19:50       [FAIL   ] journey:cart - 0/3 ok, avg 16ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:19:50       failing in 2/2 checks during the hold
+23:19:50   5. reference solution
+23:19:50     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+23:19:50       deployment.apps/cart env updated
+23:19:50     $ kubectl rollout resume deployment/cart
+23:19:50       deployment.apps/cart resumed
+23:19:50     $ kubectl rollout status deployment/cart --timeout=300s
+23:19:55       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+23:19:55       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+23:19:55       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+23:19:55       deployment "cart" successfully rolled out
+23:19:55   6. verifier must PASS (<= 300s)
+23:20:40       [PASS   ] journey:cart - 3/3 ok, avg 55ms
+23:20:40   7. restore exactly
+23:21:12   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 46, 'restore_s': 31}

@@ -1,0 +1,19 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: dns-error-005
+  namespace: default
+spec:
+  # DNSChaos rewrites the target container's /etc/resolv.conf with `sh`, so the
+  # target needs a shell. checkout (the Playbook's target) is distroless, so
+  # this scenario breaks DNS for cart -> valkey-cart instead: same story, one
+  # service can no longer resolve one dependency.
+  action: error
+  mode: all
+  patterns:
+    - valkey-cart
+    - valkey-cart.*
+  selector:
+    namespaces: [default]
+    labelSelectors:
+      opentelemetry.io/name: cart

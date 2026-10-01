@@ -1,0 +1,22 @@
+21:20:42 === kube-proxy-stopped-051 (composite)
+21:20:42   0. world healthy?
+21:20:50   1. baseline must PASS
+21:20:51       [PASS   ] journey:checkout - 3/3 ok, avg 240ms
+21:20:51   2. inject
+21:21:15   3. verifier must FAIL (<= 300s)
+21:21:16       [FAIL   ] journey:checkout - 0/3 ok, avg 125ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+21:21:16   4. do-nothing agent: still FAIL after 30s?
+21:21:47       [FAIL   ] journey:checkout - 0/3 ok, avg 71ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+21:21:47       failing in 2/2 checks during the hold
+21:21:47   5. reference solution
+21:21:47     $ kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
+21:21:47       daemonset.apps/kube-proxy patched
+21:21:47     $ kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
+21:21:49       Waiting for daemon set "kube-proxy" rollout to finish: 0 of 3 updated pods are available...
+21:21:49       Waiting for daemon set "kube-proxy" rollout to finish: 1 of 3 updated pods are available...
+21:21:49       Waiting for daemon set "kube-proxy" rollout to finish: 2 of 3 updated pods are available...
+21:21:49       daemon set "kube-proxy" successfully rolled out
+21:21:49   6. verifier must PASS (<= 300s)
+21:22:02       [PASS   ] journey:checkout - 3/3 ok, avg 219ms
+21:22:02   7. restore exactly
+21:22:10   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 13, 'restore_s': 7}

@@ -1,0 +1,70 @@
+id: wl-missing-secret-020
+seed: 1020
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: email
+  strategy: Recreate
+  ops:
+  - op: append
+    path: /spec/template/spec/containers/$c/env
+    value:
+      name: SMTP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: email-smtp-credentials
+          key: password
+task:
+  mode: diagnose_and_mitigate
+  prompt: Customers report they no longer receive order confirmation emails. Orders themselves succeed. Find the
+    cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:email
+  - pods_ready:opentelemetry.io/name=email
+  root_cause:
+  - email
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: email
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=email
+solution:
+  commands:
+  - kubectl set env deployment/email SMTP_PASSWORD-
+  - kubectl rollout status deployment/email --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/missing-secret-reference
+  title: Env var references a Secret that does not exist -> CreateContainerConfigError
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -1,0 +1,22 @@
+22:32:22 === wl-client-wrong-port-016 (workload_patch)
+22:32:22   0. world healthy?
+22:32:31   1. baseline must PASS
+22:32:33       [PASS   ] journey:checkout - 3/3 ok, avg 243ms
+22:32:33   2. inject
+22:32:34   3. verifier must FAIL (<= 240s)
+22:33:07       [FAIL   ] journey:checkout - 0/3 ok, avg 6767ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+22:33:07   4. do-nothing agent: still FAIL after 30s?
+22:33:38       [FAIL   ] journey:checkout - 0/3 ok, avg 46ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+22:33:38       failing in 2/2 checks during the hold
+22:33:38   5. reference solution
+22:33:38     $ kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
+22:33:38       deployment.apps/checkout env updated
+22:33:38     $ kubectl rollout status deployment/checkout --timeout=300s
+22:33:44       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+22:33:44       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+22:33:44       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+22:33:44       deployment "checkout" successfully rolled out
+22:33:44   6. verifier must PASS (<= 300s)
+22:33:47       [PASS   ] journey:checkout - 3/3 ok, avg 351ms
+22:33:47   7. restore exactly
+22:34:18   => VALIDATED  {'world_ready_s': 9, 'detect_s': 33, 'recover_s': 3, 'restore_s': 31}

@@ -1,0 +1,78 @@
+id: net-packet-loss-052
+seed: 1052
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: chaos_mesh
+  manifest:
+  - apiVersion: chaos-mesh.org/v1alpha1
+    kind: NetworkChaos
+    metadata:
+      name: catalog-packet-loss
+      namespace: default
+    spec:
+      action: loss
+      mode: all
+      selector:
+        namespaces:
+        - default
+        labelSelectors:
+          opentelemetry.io/name: product-catalog
+      loss:
+        loss: '60'
+        correlation: '0'
+      direction: to
+task:
+  mode: diagnose_and_mitigate
+  prompt: Product pages load slowly and sometimes fail; retries sometimes help. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:browse
+  - journey:catalog
+  root_cause:
+  - product-catalog
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 4
+    max_error_pct: 0
+    max_avg_ms: 1500
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+solution:
+  commands:
+  - kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: chaos
+  mechanism: chaos/network-packet-loss
+  title: Heavy packet loss on a service's network interface
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -1,0 +1,34 @@
+21:04:11 === k8s-oom-cascade-001 (memory_limit_misconfig)
+21:04:11   0. world healthy?
+21:04:20   1. baseline must PASS
+21:04:22       [PASS   ] journey:cart - 3/3 ok, avg 31ms
+21:04:22       [PASS   ] journey:checkout - 3/3 ok, avg 104ms
+21:04:22       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+21:04:22       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+21:04:22   2. inject
+21:04:22   3. verifier must FAIL (<= 600s)
+21:04:24       [FAIL   ] journey:cart - 0/3 ok, avg 37ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:04:24       [FAIL   ] journey:checkout - 0/3 ok, avg 11ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:04:24       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/0 pods ready for opentelemetry.io/name=cart; no pods exist
+21:04:24       [FAIL   ] pods_stable:opentelemetry.io/name=cart - no running pods for opentelemetry.io/name=cart
+21:04:24   4. do-nothing agent: still FAIL after 150s?
+21:06:55       [FAIL   ] journey:cart - 0/3 ok, avg 11ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:06:55       [FAIL   ] journey:checkout - 0/3 ok, avg 6ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:06:55       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-669885cb6c-5vhzw (cart: RunContainerError)
+21:06:55       [FAIL   ] pods_stable:opentelemetry.io/name=cart - cart-669885cb6c-5vhzw/cart restarted 59s ago (StartError)
+21:06:55       failing in 13/13 checks during the hold
+21:06:55   5. reference solution
+21:06:55     $ kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
+21:06:55       deployment.apps/cart resource requirements updated
+21:06:55     $ kubectl rollout status deployment/cart --timeout=180s
+21:06:59       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+21:06:59       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+21:06:59       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+21:06:59       deployment "cart" successfully rolled out
+21:06:59   6. verifier must PASS (<= 360s)
+21:09:04       [PASS   ] journey:cart - 3/3 ok, avg 119ms
+21:09:04       [PASS   ] journey:checkout - 3/3 ok, avg 130ms
+21:09:04       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+21:09:04       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+21:09:04   7. restore exactly
+21:09:35   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 125, 'restore_s': 31}

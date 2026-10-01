@@ -1,0 +1,79 @@
+id: wl-jvm-heap-over-limit-031
+seed: 1031
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: workload_patch
+  target: kafka
+  strategy: Recreate
+  restart_on_revert:
+  - deployment/checkout
+  - deployment/accounting
+  - deployment/fraud-detection
+  revert_hooks:
+  - kafka_topic: orders
+  ops:
+  - op: replace
+    path: /spec/template/spec/containers/$c/resources/limits/memory
+    value: 128Mi
+task:
+  mode: diagnose_and_mitigate
+  prompt: Finance says no new orders are being recorded, the fraud team sees nothing new, and placing orders has
+    become unreliable. Find the cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - pods_ready:opentelemetry.io/name=kafka
+  - pods_stable:opentelemetry.io/name=kafka
+  - orders_recorded
+  root_cause:
+  - kafka
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: pods_ready
+    selector: opentelemetry.io/name=kafka
+  - type: pods_stable
+    selector: opentelemetry.io/name=kafka
+    min_age_s: 300
+  - type: orders_recorded
+    timeout_s: 60
+solution:
+  commands:
+  - kubectl set resources deployment/kafka -c kafka --limits=memory=700Mi
+  - kubectl rollout status deployment/kafka --timeout=300s
+  - for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh
+    --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions
+    1 --replication-factor 1 && break; sleep 5; done
+  - kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+  - kubectl rollout status deployment/checkout --timeout=300s
+  - kubectl rollout status deployment/accounting --timeout=300s
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 600
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: workload
+  mechanism: workload/jvm-heap-exceeds-limit
+  title: Memory limit below the JVM heap the broker is configured to use
+  generated: true
+  est_pass_rate: null
+  split: train

@@ -13,8 +13,10 @@ from pathlib import Path
 # Configuration constants
 SLEEP_AFTER_INJECT_SEC = 30
 RESET_SCRIPT = "./scripts/reset_world.sh"
-VERIFIER_SCRIPT = "verifiers/check_checkout_health.py"
-INJECTOR_SCRIPT = "injectors/oom-misconfig.py"
+# Generic injector and verifier: they read fault.type and verifier.checks from
+# the spec, so any scenario works (not just k8s-oom-cascade-001).
+VERIFIER_SCRIPT = "verifiers/verify.py"
+INJECTOR_SCRIPT = "injectors/inject.py"
 
 
 def run_command(cmd: list, check: bool = True) -> subprocess.CompletedProcess:
@@ -131,8 +133,9 @@ def main() -> None:
         + "\nWorld is now broken and waiting."
         + "\nGo fix it, then re-run the verifier:"
         + f"\n  python {VERIFIER_SCRIPT} {args.spec_path}"
-        + "\nThen reset when done:"
-        + f"\n  bash {RESET_SCRIPT}"
+        + "\nThen undo the injection exactly (a Helm reset alone does not remove"
+        + "\nthings like NetworkPolicies, node taints or datastore settings):"
+        + f"\n  python {INJECTOR_SCRIPT} {args.spec_path} --revert"
         + "\n" + "="*70
     )
 

@@ -1,0 +1,25 @@
+21:43:35 === node-cordoned-045 (composite)
+21:43:35   0. world healthy?
+21:43:43   1. baseline must PASS
+21:43:44       [PASS   ] journey:cart - 3/3 ok, avg 61ms
+21:43:44       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+21:43:44   2. inject
+21:43:49   3. verifier must FAIL (<= 240s)
+21:43:50       [FAIL   ] journey:cart - 0/3 ok, avg 51ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:43:50       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-8699cc945f-rljq2 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+21:43:50   4. do-nothing agent: still FAIL after 30s?
+21:44:21       [FAIL   ] journey:cart - 0/3 ok, avg 14ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+21:44:21       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-8699cc945f-rljq2 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+21:44:21       failing in 2/2 checks during the hold
+21:44:21   5. reference solution
+21:44:21     $ kubectl uncordon ai-gym-worker ai-gym-worker2
+21:44:22       node/ai-gym-worker uncordoned
+21:44:22       node/ai-gym-worker2 uncordoned
+21:44:22     $ kubectl rollout status deployment/cart --timeout=300s
+21:44:26       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+21:44:26       deployment "cart" successfully rolled out
+21:44:26   6. verifier must PASS (<= 300s)
+21:44:39       [PASS   ] journey:cart - 3/3 ok, avg 99ms
+21:44:39       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+21:44:39   7. restore exactly
+21:44:48   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 13, 'restore_s': 9}

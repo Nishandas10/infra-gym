@@ -1,0 +1,80 @@
+# Local overrides for the OpenTelemetry demo chart (opentelemetry-demo 0.42.0).
+#
+# Why: the kind cluster runs inside WSL, which .wslconfig caps at 6 GB RAM.
+# The full demo needs more than that and the VM thrashed (load average > 300,
+# API server timing out). These overrides switch off optional, memory-heavy
+# parts that no scenario needs, freeing roughly 1.5 GB.
+#
+# To restore any of them, delete the matching block here and run
+# scripts/reset_world.sh.
+
+# Log storage backend (a JVM process, ~1 GB). Logs are no longer stored;
+# traces (Jaeger) and metrics (Prometheus) are unaffected.
+opensearch:
+  enabled: false
+
+components:
+  # AI shopping-assistant services (~450 MB together). They need an LLM
+  # provider to do anything useful and are not part of the shop's checkout path.
+  chatbot:
+    enabled: false
+  agent:
+    enabled: false
+  mcp:
+    enabled: false
+
+  # Keep the HTTP load generator but drop the headless-browser users, which
+  # spawn Chromium and are the heaviest part of the load generator.
+  load-generator:
+    envOverrides:
+      - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+        value: "false"
+
+  # The chart's 20Mi limits leave these services no room for their own page
+  # cache. product-catalog sat at 19/20Mi, constantly re-reading its binary,
+  # which made browsing take 1-3s and checkout time out at baseline.
+  product-catalog:
+    resources:
+      limits:
+        memory: 64Mi
+  checkout:
+    resources:
+      limits:
+        memory: 64Mi
+  currency:
+    resources:
+      limits:
+        memory: 64Mi
+  shipping:
+    resources:
+      limits:
+        memory: 64Mi
+
+# Jaeger keeps traces in memory. At the chart's cap of 25,000 traces it grew to
+# ~330 MB during long validation runs, and the shrinking headroom let a single
+# rolling restart thrash the VM. 5,000 traces still cover several minutes of
+# traffic; no scenario check looks back more than 2 minutes.
+# Helm replaces lists, so this repeats the chart's whole extraEnv list.
+jaeger:
+  jaeger:
+    extraEnv:
+      - name: MEMORY_MAX_TRACES
+        value: "5000"
+      - name: PROMETHEUS_ADDR
+        value: prometheus:9090
+      - name: OTEL_COLLECTOR_HOST
+        value: otel-collector
+      - name: OTEL_COLLECTOR_PORT_HTTP
+        value: "4318"
+      - name: JAEGER_HOST
+        value: "0.0.0.0"
+      - name: JAEGER_GRPC_PORT
+        value: "4317"
+
+opentelemetry-collector:
+  config:
+    service:
+      pipelines:
+        # The default logs pipeline exports to OpenSearch, which is disabled above.
+        logs:
+          exporters: [debug]

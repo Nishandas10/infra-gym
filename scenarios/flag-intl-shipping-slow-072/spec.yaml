@@ -1,0 +1,58 @@
+id: flag-intl-shipping-slow-072
+seed: 1072
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: feature_flag
+  flag: intlShippingSlowdown
+  variant: 10sec
+task:
+  mode: diagnose_and_mitigate
+  prompt: Customers outside the US say placing an order takes forever; US customers are fine. Find the cause and
+    fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:checkout_intl
+  root_cause:
+  - shipping
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout_intl
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+    timeout_s: 20
+solution:
+  commands:
+  - python injectors/toggle_flag.py intlShippingSlowdown --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: application
+  mechanism: app-flag/intl-shipping-slowdown
+  title: International shipping quotes delayed (intlShippingSlowdown)
+  generated: true
+  est_pass_rate: null
+  split: train

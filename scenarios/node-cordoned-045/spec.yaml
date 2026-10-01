@@ -1,0 +1,78 @@
+id: node-cordoned-045
+seed: 1045
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: object_patch
+    kind: node
+    name: ai-gym-worker
+    namespace: null
+    ops:
+    - op: set
+      path: /spec/unschedulable
+      value: true
+  - type: object_patch
+    kind: node
+    name: ai-gym-worker2
+    namespace: null
+    ops:
+    - op: set
+      path: /spec/unschedulable
+      value: true
+    recreate_pods_after:
+    - opentelemetry.io/name=cart
+task:
+  mode: diagnose_and_mitigate
+  prompt: The cart went down after its pod was evicted during node maintenance, and it never came back. Find the
+    cause and fix it.
+tools:
+- kubectl
+- helm
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  - pods_ready:opentelemetry.io/name=cart
+  root_cause:
+  - nodes
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=cart
+solution:
+  commands:
+  - kubectl uncordon ai-gym-worker ai-gym-worker2
+  - kubectl rollout status deployment/cart --timeout=300s
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+budget:
+  max_steps: 30
+  wall_s: 900
+meta:
+  family: platform
+  mechanism: platform/nodes-cordoned
+  title: All worker nodes cordoned; a pod cannot be rescheduled
+  generated: true
+  est_pass_rate: null
+  split: train
