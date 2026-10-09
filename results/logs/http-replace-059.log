@@ -1,17 +1,17 @@
-21:02:11 === http-replace-059 (chaos_mesh)
-21:02:11   0. world healthy?
-21:02:20   1. baseline must PASS
-21:02:21       [PASS   ] journey:checkout - 3/3 ok, avg 149ms
-21:02:21   2. inject
-21:02:27   3. verifier must FAIL (<= 240s)
-21:02:28       [FAIL   ] journey:checkout - 0/3 ok, avg 147ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-21:02:28   4. do-nothing agent: still FAIL after 30s?
-21:03:00       [FAIL   ] journey:checkout - 0/3 ok, avg 106ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-21:03:00       failing in 2/2 checks during the hold
-21:03:00   5. reference solution
-21:03:00     $ kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
-21:03:01       httpchaos.chaos-mesh.org "quote-http-garbage" deleted from default namespace
-21:03:01   6. verifier must PASS (<= 300s)
-21:03:02       [PASS   ] journey:checkout - 3/3 ok, avg 154ms
-21:03:02   7. restore exactly
-21:03:11   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'restore_s': 9}
+13:22:15 === http-replace-059 (chaos_mesh)
+13:22:15   0. world healthy?
+13:22:20   1. baseline must PASS
+13:22:21       [PASS   ] journey:checkout - 3/3 ok, avg 63ms
+13:22:21   2. inject
+13:22:27   3. verifier must FAIL (<= 240s)
+13:22:27       [FAIL   ] journey:checkout - 0/3 ok, avg 40ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:22:27   4. do-nothing agent: still FAIL after 30s?
+13:22:57       [FAIL   ] journey:checkout - 0/3 ok, avg 41ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:22:57       failing in 2/2 checks during the hold
+13:22:57   5. reference solution
+13:22:57     $ kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
+13:22:58       httpchaos.chaos-mesh.org "quote-http-garbage" deleted from default namespace
+13:22:58   6. verifier must PASS (<= 300s)
+13:22:58       [PASS   ] journey:checkout - 3/3 ok, avg 64ms
+13:22:58   7. restore exactly
+13:23:05   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 1, 'restore_s': 7}

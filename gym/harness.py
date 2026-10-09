@@ -63,6 +63,17 @@ def run_solution(commands):
             raise RuntimeError(f"solution command failed (exit {r.returncode}): {cmd}")
 
 
+def durability_check(spec_checks, v):
+    """Restart validation.restart_after_fix targets, let them come back, then require PASS."""
+    from .undo import restart
+    log(f"  6b. the fix must survive a restart of {', '.join(v['restart_after_fix'])}")
+    for target in v["restart_after_fix"]:
+        restart(target)
+    time.sleep(v.get("restart_settle_s", 45))
+    ok, _, t = poll(spec_checks, checks.PASS, v.get("recover_timeout_s", 300), v.get("poll_s", 10))
+    return ok, t
+
+
 def validate(spec_path, world_timeout=300):
     global _logfile
     spec, sdir = load(spec_path)
@@ -125,6 +136,14 @@ def validate(spec_path, world_timeout=300):
         log(f"  6. verifier must PASS (<= {v.get('recover_timeout_s', 300)}s)")
         ok, _, t = poll(spec_checks, checks.PASS, v.get("recover_timeout_s", 300), v.get("poll_s", 10))
         rec["timings"]["recover_s"] = t
+        if ok and v.get("restart_after_fix"):
+            # Some scenarios only count a fix that is in the source of truth: restart the
+            # listed workloads (as a node drain or a deploy would) and require PASS again.
+            ok, t = durability_check(spec_checks, v)
+            rec["timings"]["durable_s"] = t
+            if not ok:
+                rec["verdict"] = "FIX_NOT_DURABLE"
+                return rec
         rec["verdict"] = "VALIDATED" if ok else "FIX_DID_NOT_RECOVER"
         return rec
     except Exception as e:

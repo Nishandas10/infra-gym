@@ -1,17 +1,17 @@
-21:58:07 === pay-unreachable-007 (feature_flag)
-21:58:07   0. world healthy?
-21:58:17   1. baseline must PASS
-21:58:18       [PASS   ] journey:checkout - 3/3 ok, avg 149ms
-21:58:18   2. inject
-21:58:20   3. verifier must FAIL (<= 120s)
-21:58:33       [FAIL   ] journey:checkout - 0/3 ok, avg 4223ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-21:58:33   4. do-nothing agent: still FAIL after 30s?
-21:59:17       [FAIL   ] journey:checkout - 0/3 ok, avg 4167ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-21:59:17       failing in 1/1 checks during the hold
-21:59:17   5. reference solution
-21:59:17     $ python injectors/toggle_flag.py paymentUnreachable --off
-21:59:20       'paymentUnreachable' -> off (flagd is serving it now)
-21:59:20   6. verifier must PASS (<= 120s)
-21:59:21       [PASS   ] journey:checkout - 3/3 ok, avg 163ms
-21:59:21   7. restore exactly
-21:59:30   => VALIDATED  {'world_ready_s': 10, 'detect_s': 14, 'recover_s': 1, 'restore_s': 9}
+14:16:41 === pay-unreachable-007 (feature_flag)
+14:16:41   0. world healthy?
+14:16:46   1. baseline must PASS
+14:16:47       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
+14:16:47   2. inject
+14:16:47   3. verifier must FAIL (<= 120s)
+14:16:48       [FAIL   ] journey:checkout - 0/3 ok, avg 42ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:16:48   4. do-nothing agent: still FAIL after 30s?
+14:17:18       [FAIL   ] journey:checkout - 0/3 ok, avg 60ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:17:18       failing in 2/2 checks during the hold
+14:17:18   5. reference solution
+14:17:18     $ python injectors/toggle_flag.py paymentUnreachable --off
+14:17:19       'paymentUnreachable' -> off (flagd is serving it now)
+14:17:19   6. verifier must PASS (<= 120s)
+14:17:20       [PASS   ] journey:checkout - 3/3 ok, avg 50ms
+14:17:20   7. restore exactly
+14:17:25   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}

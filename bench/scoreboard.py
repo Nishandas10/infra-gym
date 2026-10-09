@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""The headline table, in the same shape as SREGym's leaderboard, plus Infra Gym's own safety and cost columns.
+
+  python bench/scoreboard.py --set bench/sets/hard.txt
+  python bench/scoreboard.py --set bench/sets/set30.txt --judge claude-opus-5-5
+  python bench/scoreboard.py --set bench/sets/hard.txt --common     only scenarios every model finished
+
+Columns
+  Diag. (%)   root cause stated correctly in the model's report (graded by bench/judge.py; partial = not correct)
+  Mit. (%)    verifier PASS: the service works again and stays working (no LLM involved)
+  E2E (%)     both in the same episode: correct root cause AND verifier PASS
+  TTD (s)     mean seconds from the agent's start to its first command that changed the cluster
+  TTM (s)     mean seconds from the agent's start to the verifier seeing the service working (PASS episodes only)
+  Tokens      mean input + output tokens per episode
+  Clean (%)   PASS with no collateral change, no damage and no forbidden action
+  Worse       episodes where the agent broke something that still worked during the incident
+  $/solved    API cost divided by PASS episodes (prices from config.yaml)
+Writes bench/results/scoreboard-<set>.md and .csv
+"""
+import argparse
+import csv
+import json
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+
+import yaml
+
+HERE = Path(__file__).resolve().parent
+RESULTS = HERE / "results"
+
+
+def read_jsonl(path):
+    rows = []
+    if path.exists():
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return rows
+
+
+def read_set(path):
+    if not path:
+        return None
+    return {ln.split("#", 1)[0].strip() for ln in Path(path).read_text(encoding="utf-8").splitlines()
+            if ln.split("#", 1)[0].strip()}
+
+
+def ep_key(r):
+    return f"{r.get('scenario')}|{r.get('model')}|{r.get('attempt')}"
+
+
+def prices():
+    for name in ("config.yaml", "config.full.yaml"):
+        p = HERE / name
+        if p.exists():
+            cfg = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            return {m["id"]: m.get("price") for m in cfg.get("models", [])}
+    return {}
+
+
+def cost(r, p):
+    if not p:
+        return None
+    cr, cw = r.get("tokens_cache_read", 0) or 0, r.get("tokens_cache_write", 0) or 0
+    tin = (r.get("tokens_in", 0) or 0) - cr - cw
+    return (tin * p["input"] + cw * p.get("cache_write", p["input"]) + cr * p.get("cache_read", p["input"])
+            + (r.get("tokens_out", 0) or 0) * p["output"]) / 1e6
+
+
+def mean(xs):
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+def fmt_tokens(n):
+    if n is None:
+        return "-"
+    return f"{n / 1e6:.2f}M" if n >= 1e6 else f"{n / 1e3:.0f}K"
+
+
+def pct(k, n):
+    return "-" if not n else f"{100 * k / n:.1f}"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--set")
+    ap.add_argument("--model", help="only models whose id contains this text")
+    ap.add_argument("--judge", help="which judge's grades to use (default: the one with the most grades)")
+    ap.add_argument("--common", action="store_true", help="only scenarios that every model finished")
+    a = ap.parse_args()
+
+    set_ids = read_set(a.set)
+    latest = {}
+    for r in read_jsonl(RESULTS / "results.jsonl"):
+        latest[(r.get("scenario"), r.get("model"), r.get("attempt"))] = r
+    rows, excluded = [], Counter()
+    for r in latest.values():
+        if set_ids is not None and r.get("scenario") not in set_ids:
+            continue
+        if a.model and a.model not in str(r.get("model")):
+            continue
+        if r.get("status") in ("error", "invalid"):
+            excluded[r.get("status")] += 1
+            continue
+        rows.append(r)
+    if not rows:
+        sys.exit("No finished episodes for this selection.")
+    if a.common:
+        per_model = defaultdict(set)
+        for r in rows:
+            per_model[r["model"]].add(r["scenario"])
+        common = set.intersection(*per_model.values())
+        rows = [r for r in rows if r["scenario"] in common]
+
+    judgments = read_jsonl(RESULTS / "judgments.jsonl")
+    keys = {ep_key(r) for r in rows}
+    if not a.judge:
+        used = Counter(j["judge"] for j in judgments if j["key"] in keys)
+        a.judge = used.most_common(1)[0][0] if used else None
+    grade = {}
+    for j in judgments:
+        if j["judge"] == a.judge:
+            grade[j["key"]] = j["root_cause"]  # later lines win
+
+    pr = prices()
+    by = defaultdict(list)
+    for r in rows:
+        by[r["model"]].append(r)
+
+    table = []
+    for m, rs in by.items():
+        n = len(rs)
+        judged = [r for r in rs if ep_key(r) in grade]
+        diag = sum(grade[ep_key(r)] == "correct" for r in judged)
+        e2e = sum(bool(r.get("passed")) and grade[ep_key(r)] == "correct" for r in judged)
+        mit = sum(bool(r.get("passed")) for r in rs)
+        costs = [cost(r, pr.get(m)) for r in rs]
+        total = sum(c for c in costs if c is not None) if any(c is not None for c in costs) else None
+        table.append({
+            "Model": m, "Episodes": n,
+            "Diag. (%)": pct(diag, len(judged)) if judged else "not judged",
+            "Mit. (%)": pct(mit, n),
+            "E2E (%)": pct(e2e, len(judged)) if judged else "not judged",
+            "TTD (s)": "-" if mean(r.get("ttd_s") for r in rs) is None else f"{mean(r.get('ttd_s') for r in rs):.0f}",
+            "TTM (s)": "-" if mean(r.get("ttm_s") for r in rs if r.get("passed")) is None
+                       else f"{mean(r.get('ttm_s') for r in rs if r.get('passed')):.0f}",
+            "Tokens": fmt_tokens(mean((r.get("tokens_in", 0) or 0) + (r.get("tokens_out", 0) or 0) for r in rs)),
+            "Clean (%)": pct(sum(bool(r.get("clean")) for r in rs), n),
+            "Worse": str(sum(bool(r.get("made_worse")) for r in rs)),
+            "$/solved": "-" if total is None or not mit else f"{total / mit:.2f}",
+            "_judged": len(judged), "_mit": mit,
+            "_timed": sum(r.get("agent_s") is not None for r in rs),  # rows from the timing-aware runner
+        })
+    table.sort(key=lambda t: (-t["_mit"] / t["Episodes"], t["Model"]))
+
+    cols = ["Model", "Episodes", "Diag. (%)", "Mit. (%)", "E2E (%)", "TTD (s)", "TTM (s)", "Tokens",
+            "Clean (%)", "Worse", "$/solved"]
+    title = Path(a.set).stem if a.set else "all"
+    L = [f"# Infra Gym scoreboard ({title})\n",
+         "| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+    for t in table:
+        L.append("| " + " | ".join(str(t[c]) for c in cols) + " |")
+    L.append("")
+    L.append(f"Diagnosis judge: {a.judge or 'none yet (run bench/judge.py)'}. Mitigation is the verifier's PASS, "
+             "with no LLM involved.")
+    for t in table:
+        notes = []
+        if isinstance(t["_judged"], int) and t["_judged"] < t["Episodes"]:
+            notes.append(f"{t['Episodes'] - t['_judged']} episode(s) not judged yet (Diag./E2E use judged ones only)")
+        if t["_timed"] < t["Episodes"]:
+            notes.append(f"{t['Episodes'] - t['_timed']} episode(s) ran before timing was recorded (no TTD/TTM)")
+        if notes:
+            L.append(f"- {t['Model']}: " + "; ".join(notes))
+    if excluded:
+        L.append(f"Excluded (API error / invalid): {dict(excluded)}")
+    L.append("TTD and TTM include the model's own thinking and API time, so faster providers score better.")
+    text = "\n".join(L)
+    print(text)
+    out = RESULTS / f"scoreboard-{title}.md"
+    out.write_text(text + "\n", encoding="utf-8")
+    with open(RESULTS / f"scoreboard-{title}.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(table)
+    print(f"\n(saved to {out} and scoreboard-{title}.csv)")
+
+
+if __name__ == "__main__":
+    main()

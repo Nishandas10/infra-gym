@@ -1,26 +1,25 @@
-23:17:37 === wl-nodeselector-018 (workload_patch)
-23:17:37   0. world healthy?
-23:17:45   1. baseline must PASS
-23:17:47       [PASS   ] journey:ads - 3/3 ok, avg 33ms
-23:17:47       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
-23:17:47   2. inject
-23:17:47   3. verifier must FAIL (<= 240s)
-23:17:49       [FAIL   ] journey:ads - 0/3 ok, avg 73ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-23:17:49       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
-23:17:49   4. do-nothing agent: still FAIL after 30s?
-23:18:19       [FAIL   ] journey:ads - 0/3 ok, avg 15ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-23:18:19       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-7f449ff8b6-cw5jf (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
-23:18:19       failing in 2/2 checks during the hold
-23:18:19   5. reference solution
-23:18:19     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
-23:18:20       deployment.apps/ad patched
-23:18:20     $ kubectl rollout status deployment/ad --timeout=300s
-23:18:21       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
-23:18:21       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
-23:18:21       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
-23:18:21       deployment "ad" successfully rolled out
-23:18:21   6. verifier must PASS (<= 300s)
-23:18:33       [PASS   ] journey:ads - 3/3 ok, avg 105ms
-23:18:33       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
-23:18:33   7. restore exactly
-23:18:42   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 12, 'restore_s': 8}
+15:34:58 === wl-nodeselector-018 (workload_patch)
+15:34:58   0. world healthy?
+15:35:04   1. baseline must PASS
+15:35:05       [PASS   ] journey:ads - 3/3 ok, avg 16ms
+15:35:05       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+15:35:05   2. inject
+15:35:05   3. verifier must FAIL (<= 240s)
+15:35:05       [FAIL   ] journey:ads - 0/3 ok, avg 64ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+15:35:05       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+15:35:05   4. do-nothing agent: still FAIL after 30s?
+15:35:36       [FAIL   ] journey:ads - 0/3 ok, avg 16ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+15:35:36       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-844dd7675d-gcv2p (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
+15:35:36       failing in 2/2 checks during the hold
+15:35:36   5. reference solution
+15:35:36     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+15:35:36       deployment.apps/ad patched
+15:35:36     $ kubectl rollout status deployment/ad --timeout=300s
+15:35:37       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+15:35:37       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+15:35:37       deployment "ad" successfully rolled out
+15:35:37   6. verifier must PASS (<= 300s)
+15:35:48       [PASS   ] journey:ads - 3/3 ok, avg 21ms
+15:35:48       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+15:35:48   7. restore exactly
+15:35:54   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 11, 'restore_s': 6}

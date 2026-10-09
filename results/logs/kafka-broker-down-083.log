@@ -1,44 +1,43 @@
-21:11:20 === kafka-broker-down-083 (workload_patch)
-21:11:20   0. world healthy?
-21:11:30   1. baseline must PASS
-21:11:33       [PASS   ] orders_recorded - accounting recorded the new order (1053 -> 1054 rows)
-21:11:33       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-21:11:33   2. inject
-21:11:33   3. verifier must FAIL (<= 240s)
-21:12:38       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 1054 rows)
-21:12:38       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
-21:12:38   4. do-nothing agent: still FAIL after 30s?
-21:13:24       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
-21:13:24       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
-21:13:24       failing in 1/1 checks during the hold
-21:13:24   5. reference solution
-21:13:24     $ kubectl scale deployment kafka --replicas=1
-21:13:24       deployment.apps/kafka scaled
-21:13:24     $ kubectl rollout status deployment/kafka --timeout=300s
-21:13:25       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
-21:13:25       deployment "kafka" successfully rolled out
-21:13:25     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
-21:13:39       [2026-09-30 21:13:34,452] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
-21:13:39       [2026-09-30 21:13:35,457] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
-21:13:39       [2026-09-30 21:13:36,463] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
-21:13:39       [2026-09-30 21:13:37,469] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.158.71:9092) could not be estab
-21:13:39     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
-21:13:39       deployment.apps/checkout restarted
-21:13:39       deployment.apps/accounting restarted
-21:13:39       deployment.apps/fraud-detection restarted
-21:13:39     $ kubectl rollout status deployment/checkout --timeout=300s
-21:13:44       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-21:13:44       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-21:13:44       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-21:13:44       deployment "checkout" successfully rolled out
-21:13:44     $ kubectl rollout status deployment/accounting --timeout=300s
-21:13:45       deployment "accounting" successfully rolled out
-21:13:45     $ kubectl rollout status deployment/fraud-detection --timeout=300s
-21:13:46       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
-21:13:46       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
-21:13:46       deployment "fraud-detection" successfully rolled out
-21:13:46   6. verifier must PASS (<= 480s)
-21:13:54       [PASS   ] orders_recorded - accounting recorded the new order (1054 -> 1055 rows)
-21:13:54       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-21:13:54   7. restore exactly
-21:14:24   => VALIDATED  {'world_ready_s': 10, 'detect_s': 65, 'recover_s': 8, 'restore_s': 26}
+13:30:48 === kafka-broker-down-083 (workload_patch)
+13:30:48   0. world healthy?
+13:30:55   1. baseline must PASS
+13:30:55       [PASS   ] orders_recorded - accounting recorded the new order (453 -> 454 rows)
+13:30:55       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+13:30:55   2. inject
+13:30:55   3. verifier must FAIL (<= 240s)
+13:31:58       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 454 rows)
+13:31:58       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+13:31:58   4. do-nothing agent: still FAIL after 30s?
+13:32:44       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
+13:32:44       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+13:32:44       failing in 1/1 checks during the hold
+13:32:44   5. reference solution
+13:32:44     $ kubectl scale deployment kafka --replicas=1
+13:32:44       deployment.apps/kafka scaled
+13:32:44     $ kubectl rollout status deployment/kafka --timeout=300s
+13:32:45       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
+13:32:45       deployment "kafka" successfully rolled out
+13:32:45     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
+13:33:06       [2026-10-07 13:33:01,787] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.203.75:9092) could not be estab
+13:33:06       [2026-10-07 13:33:02,792] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.203.75:9092) could not be estab
+13:33:06       [2026-10-07 13:33:03,797] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.203.75:9092) could not be estab
+13:33:06       [2026-10-07 13:33:04,705] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.203.75:9092) could not be estab
+13:33:06     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+13:33:06       deployment.apps/checkout restarted
+13:33:06       deployment.apps/accounting restarted
+13:33:06       deployment.apps/fraud-detection restarted
+13:33:06     $ kubectl rollout status deployment/checkout --timeout=300s
+13:33:08       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+13:33:08       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+13:33:08       deployment "checkout" successfully rolled out
+13:33:08     $ kubectl rollout status deployment/accounting --timeout=300s
+13:33:08       deployment "accounting" successfully rolled out
+13:33:08     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+13:33:09       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
+13:33:09       Waiting for deployment "fraud-detection" rollout to finish: 1 old replicas are pending termination...
+13:33:09       deployment "fraud-detection" successfully rolled out
+13:33:09   6. verifier must PASS (<= 480s)
+13:33:17       [PASS   ] orders_recorded - accounting recorded the new order (454 -> 455 rows)
+13:33:17       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+13:33:17   7. restore exactly
+13:33:44   => VALIDATED  {'world_ready_s': 6, 'detect_s': 63, 'recover_s': 8, 'restore_s': 25}

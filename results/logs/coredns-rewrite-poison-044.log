@@ -1,30 +1,31 @@
-19:36:31 === coredns-rewrite-poison-044 (configmap_edit)
-19:36:31   0. world healthy?
-19:36:40   1. baseline must PASS
-19:36:42       [PASS   ] journey:checkout - 3/3 ok, avg 230ms
-19:36:42   2. inject
-19:37:24   3. verifier must FAIL (<= 300s)
-19:38:12       [FAIL   ] journey:checkout - 0/3 ok, avg 15061ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-19:38:12   4. do-nothing agent: still FAIL after 30s?
-19:39:40       [FAIL   ] journey:checkout - 0/3 ok, avg 10123ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-19:39:40       failing in 1/1 checks during the hold
-19:39:40   5. reference solution
-19:39:40     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
-19:39:41       configmap/coredns configured
-19:39:41     $ kubectl -n kube-system rollout restart deployment/coredns
-19:39:41       deployment.apps/coredns restarted
-19:39:41     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
-19:39:55       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
-19:39:55       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
-19:39:55       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
-19:39:55       deployment "coredns" successfully rolled out
-19:39:55     $ kubectl rollout restart deployment/checkout
-19:39:55       deployment.apps/checkout restarted
-19:39:56     $ kubectl rollout status deployment/checkout --timeout=300s
-19:40:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-19:40:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-19:40:00       deployment "checkout" successfully rolled out
-19:40:01   6. verifier must PASS (<= 300s)
-19:40:03       [PASS   ] journey:checkout - 3/3 ok, avg 392ms
-19:40:03   7. restore exactly
-19:42:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 49, 'recover_s': 3, 'restore_s': 161}
+12:41:08 === coredns-rewrite-poison-044 (configmap_edit)
+12:41:08   0. world healthy?
+12:41:14   1. baseline must PASS
+12:41:14       [PASS   ] journey:checkout - 3/3 ok, avg 47ms
+12:41:14   2. inject
+12:41:54   3. verifier must FAIL (<= 300s)
+12:42:40       [FAIL   ] journey:checkout - 0/3 ok, avg 15034ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+12:42:40   4. do-nothing agent: still FAIL after 30s?
+12:44:07       [FAIL   ] journey:checkout - 0/3 ok, avg 10563ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+12:44:07       failing in 1/1 checks during the hold
+12:44:07   5. reference solution
+12:44:07     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
+12:44:08       configmap/coredns configured
+12:44:08       Warning: resource configmaps/coredns is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl appl
+12:44:08     $ kubectl -n kube-system rollout restart deployment/coredns
+12:44:08       deployment.apps/coredns restarted
+12:44:08     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+12:44:09       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+12:44:09       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+12:44:09       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+12:44:09       deployment "coredns" successfully rolled out
+12:44:09     $ kubectl rollout restart deployment/checkout
+12:44:09       deployment.apps/checkout restarted
+12:44:09     $ kubectl rollout status deployment/checkout --timeout=300s
+12:44:11       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+12:44:11       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+12:44:11       deployment "checkout" successfully rolled out
+12:44:11   6. verifier must PASS (<= 300s)
+12:46:38       [PASS   ] journey:checkout - 3/3 ok, avg 57ms
+12:46:38   7. restore exactly
+12:49:04   => VALIDATED  {'world_ready_s': 6, 'detect_s': 45, 'recover_s': 147, 'restore_s': 145}

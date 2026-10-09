@@ -1,0 +1,32 @@
+12:22:20 === hard-oom-fix-blocked-by-limitrange-110 (composite)
+12:22:20   0. world healthy?
+12:22:27   1. baseline must PASS
+12:22:27       [PASS   ] journey:ads - 3/3 ok, avg 29ms
+12:22:27       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+12:22:27       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+12:22:27   2. inject
+12:22:47   3. verifier must FAIL (<= 300s)
+12:22:48       [FAIL   ] journey:ads - 0/3 ok, avg 30ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+12:22:48       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+12:22:48       [FAIL   ] pods_stable:opentelemetry.io/name=ad - ad-6d94584bd6-6n4mb is only 19s old
+12:22:48   4. do-nothing agent: still FAIL after 150s?
+12:25:19       [FAIL   ] journey:ads - 0/3 ok, avg 16ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+12:25:19       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-6d94584bd6-6n4mb (ad: last exit OOMKilled)
+12:25:19       [FAIL   ] pods_stable:opentelemetry.io/name=ad - ad-6d94584bd6-6n4mb/ad restarted 94s ago (OOMKilled)
+12:25:19       failing in 14/14 checks during the hold
+12:25:19   5. reference solution
+12:25:19     $ kubectl delete limitrange namespace-container-limits
+12:25:19       limitrange "namespace-container-limits" deleted from default namespace
+12:25:19     $ kubectl rollout undo deployment/ad
+12:25:19       deployment.apps/ad rolled back
+12:25:19     $ kubectl rollout status deployment/ad --timeout=300s
+12:25:20       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+12:25:20       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+12:25:20       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+12:25:20       deployment "ad" successfully rolled out
+12:25:20   6. verifier must PASS (<= 420s)
+12:27:27       [PASS   ] journey:ads - 3/3 ok, avg 24ms
+12:27:27       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+12:27:27       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+12:27:27   7. restore exactly
+12:27:34   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 128, 'restore_s': 7}

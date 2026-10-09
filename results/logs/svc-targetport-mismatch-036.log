@@ -1,17 +1,17 @@
-22:20:40 === svc-targetport-mismatch-036 (object_patch)
-22:20:40   0. world healthy?
-22:20:51   1. baseline must PASS
-22:20:52       [PASS   ] journey:checkout - 3/3 ok, avg 70ms
-22:20:52   2. inject
-22:21:08   3. verifier must FAIL (<= 240s)
-22:21:26       [FAIL   ] journey:checkout - 0/3 ok, avg 5088ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:21:26   4. do-nothing agent: still FAIL after 30s?
-22:21:57       [FAIL   ] journey:checkout - 0/3 ok, avg 64ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:21:57       failing in 2/2 checks during the hold
-22:21:57   5. reference solution
-22:21:57     $ kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
-22:21:57       service/shipping patched
-22:21:57   6. verifier must PASS (<= 300s)
-22:21:59       [PASS   ] journey:checkout - 3/3 ok, avg 166ms
-22:21:59   7. restore exactly
-22:22:33   => VALIDATED  {'world_ready_s': 11, 'detect_s': 17, 'recover_s': 1, 'restore_s': 33}
+14:37:08 === svc-targetport-mismatch-036 (object_patch)
+14:37:08   0. world healthy?
+14:37:14   1. baseline must PASS
+14:37:14       [PASS   ] journey:checkout - 3/3 ok, avg 52ms
+14:37:14   2. inject
+14:37:30   3. verifier must FAIL (<= 240s)
+14:37:30       [FAIL   ] journey:checkout - 0/3 ok, avg 44ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:37:30   4. do-nothing agent: still FAIL after 30s?
+14:38:01       [FAIL   ] journey:checkout - 0/3 ok, avg 35ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:38:01       failing in 2/2 checks during the hold
+14:38:01   5. reference solution
+14:38:01     $ kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
+14:38:01       service/shipping patched
+14:38:01   6. verifier must PASS (<= 300s)
+14:38:01       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
+14:38:01   7. restore exactly
+14:38:31   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 0, 'restore_s': 30}

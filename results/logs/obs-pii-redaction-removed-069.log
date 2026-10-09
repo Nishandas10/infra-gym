@@ -1,32 +1,33 @@
-21:45:59 === obs-pii-redaction-removed-069 (composite)
-21:45:59   0. world healthy?
-21:46:09   1. baseline must PASS
-21:46:11       [PASS   ] journey:checkout - 2/2 ok, avg 232ms
-21:46:11       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
-21:46:11       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
-21:46:11   2. inject
-21:46:29   3. verifier must FAIL (<= 300s)
-21:46:55       [FAIL   ] journey:checkout - 1/2 ok, avg 4506ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-21:46:55       [FAIL   ] jaeger_attr_absent:checkout - 2 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s), e.g. '4432-8015-6152-0454'
-21:46:55       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
-21:46:55   4. do-nothing agent: still FAIL after 30s?
-21:47:28       [PASS   ] journey:checkout - 2/2 ok, avg 250ms
-21:47:28       [FAIL   ] jaeger_attr_absent:checkout - 10 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s), e.g. '4432-8015-6152-0454'
-21:47:28       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
-21:47:28       failing in 2/2 checks during the hold
-21:47:28   5. reference solution
-21:47:28     $ kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml')); c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None) for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))" && kubectl apply -f /tmp/relay.yaml
-21:47:29       configmap/otel-collector-agent configured
-21:47:29     $ kubectl rollout restart daemonset/otel-collector-agent
-21:47:29       daemonset.apps/otel-collector-agent restarted
-21:47:29     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-21:47:58       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-21:47:58       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-21:47:58       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-21:47:58       daemon set "otel-collector-agent" successfully rolled out
-21:47:58   6. verifier must PASS (<= 360s)
-21:48:55       [PASS   ] journey:checkout - 2/2 ok, avg 210ms
-21:48:55       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
-21:48:55       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 2 payment trace(s)
-21:48:55   7. restore exactly
-21:49:27   => VALIDATED  {'world_ready_s': 10, 'detect_s': 26, 'recover_s': 57, 'restore_s': 30}
+14:06:36 === obs-pii-redaction-removed-069 (composite)
+14:06:36   0. world healthy?
+14:06:42   1. baseline must PASS
+14:06:43       [PASS   ] journey:checkout - 2/2 ok, avg 54ms
+14:06:43       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
+14:06:43       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
+14:06:43   2. inject
+14:06:59   3. verifier must FAIL (<= 300s)
+14:07:11       [PASS   ] journey:checkout - 2/2 ok, avg 60ms
+14:07:11       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
+14:07:11       [FAIL   ] jaeger_attr_absent:payment - 1 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s), e.g. '4929-6495-8333-3657'
+14:07:11   4. do-nothing agent: still FAIL after 30s?
+14:07:42       [PASS   ] journey:checkout - 2/2 ok, avg 66ms
+14:07:42       [FAIL   ] jaeger_attr_absent:checkout - 15 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s), e.g. '4432-8015-6152-0454'
+14:07:42       [FAIL   ] jaeger_attr_absent:payment - 15 match(es) of '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s), e.g. '4432-8015-6152-0454'
+14:07:42       failing in 2/2 checks during the hold
+14:07:42   5. reference solution
+14:07:42     $ kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml')); c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None) for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))" && kubectl apply -f /tmp/relay.yaml
+14:07:43       configmap/otel-collector-agent configured
+14:07:43       Warning: resource configmaps/otel-collector-agent is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply.
+14:07:43     $ kubectl rollout restart daemonset/otel-collector-agent
+14:07:43       daemonset.apps/otel-collector-agent restarted
+14:07:43     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+14:07:46       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+14:07:46       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+14:07:46       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+14:07:46       daemon set "otel-collector-agent" successfully rolled out
+14:07:46   6. verifier must PASS (<= 360s)
+14:08:10       [PASS   ] journey:checkout - 2/2 ok, avg 57ms
+14:08:10       [PASS   ] jaeger_attr_absent:checkout - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 checkout trace(s)
+14:08:10       [PASS   ] jaeger_attr_absent:payment - no '@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b' in 5 payment trace(s)
+14:08:10   7. restore exactly
+14:08:33   => VALIDATED  {'world_ready_s': 6, 'detect_s': 13, 'recover_s': 23, 'restore_s': 23}

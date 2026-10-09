@@ -1,0 +1,99 @@
+id: hard-oom-fix-blocked-by-limitrange-110
+seed: 1110
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: memory_limit_misconfig
+    target_deployment: ad
+    target_label: app.kubernetes.io/name=ad
+    bad_memory_limit: 48Mi
+    bad_memory_request: 48Mi
+    strategy: Recreate
+    pause_s: 20
+  - type: create_objects
+    manifests:
+    - apiVersion: v1
+      kind: LimitRange
+      metadata:
+        name: namespace-container-limits
+        namespace: default
+        labels:
+          owner: platform-team
+        annotations:
+          platform.example.com/policy: Containers in this namespace may not exceed 128Mi (FINOPS-88)
+      spec:
+        limits:
+        - type: Container
+          max:
+            memory: 128Mi
+task:
+  mode: diagnose_and_mitigate
+  prompt: The ad banner is missing from every page and the ad service keeps restarting. Find the cause and fix it.
+tools:
+- kubectl
+- curl
+verifier:
+  outcome:
+  - journey:ads
+  - pods_ready:opentelemetry.io/name=ad
+  - pods_stable:opentelemetry.io/name=ad
+  root_cause:
+  - oom-fix-blocked-by-limitrange
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: ads
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=ad
+  - type: pods_stable
+    selector: opentelemetry.io/name=ad
+    min_age_s: 120
+solution:
+  commands:
+  - kubectl delete limitrange namespace-container-limits
+  - kubectl rollout undo deployment/ad
+  - kubectl rollout status deployment/ad --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  family: hard
+  tier: hard
+  mechanism: hard/oom-fix-blocked-by-limitrange
+  title: The ad service OOM-loops, and the obvious fix is rejected by a namespace LimitRange
+  generated: build_hard_scenarios.py
+  est_pass_rate: null
+  split: hard
+  layers: 3
+  difficulty_drivers:
+  - sequential-layers
+  - fix-is-blocked
+  - silent-rejection
+  noise: []
+  realistic_pattern: Guardrail (LimitRange/quota) blocking the remediation of an unrelated misconfiguration
+  built_from:
+  - k8s-oom-cascade-001
+  - limitrange-rejects-048
+  prompt_easier: The ad service is OOMKilled in a loop. Raising its memory limit does not seem to take effect. Find
+    the cause and fix it.

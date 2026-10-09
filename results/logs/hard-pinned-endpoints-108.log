@@ -1,0 +1,19 @@
+12:27:34 === hard-pinned-endpoints-108 (composite)
+12:27:34   0. world healthy?
+12:27:40   1. baseline must PASS
+12:27:41       [PASS   ] journey:checkout - 4/4 ok, avg 64ms
+12:27:41   2. inject
+12:27:42   3. verifier must FAIL (<= 300s)
+12:27:47       [FAIL   ] journey:checkout - 3/4 ok, avg 1299ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:27:47   4. do-nothing agent: still FAIL after 60s?
+12:29:05       [FAIL   ] journey:checkout - 2/4 ok, avg 2548ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:29:05       failing in 2/4 checks during the hold
+12:29:05   5. reference solution
+12:29:05     $ kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
+12:29:05       service/quote patched
+12:29:05     $ kubectl delete endpointslice quote-pinned
+12:29:05       endpointslice.discovery.k8s.io "quote-pinned" deleted from default namespace
+12:29:05   6. verifier must PASS (<= 420s)
+12:29:21       [PASS   ] journey:checkout - 4/4 ok, avg 68ms
+12:29:21   7. restore exactly
+12:29:28   => VALIDATED  {'world_ready_s': 6, 'detect_s': 6, 'recover_s': 16, 'restore_s': 6}

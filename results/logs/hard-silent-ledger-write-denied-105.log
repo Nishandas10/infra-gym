@@ -1,0 +1,27 @@
+12:29:28 === hard-silent-ledger-write-denied-105 (composite)
+12:29:28   0. world healthy?
+12:29:34   1. baseline must PASS
+12:29:36       [PASS   ] journey:checkout - 2/2 ok, avg 56ms
+12:29:36       [PASS   ] orders_recorded - accounting recorded the new order (351 -> 352 rows)
+12:29:36   2. inject
+12:29:36   3. verifier must FAIL (<= 300s)
+12:31:11       [PASS   ] journey:checkout - 2/2 ok, avg 58ms
+12:31:11       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 352 rows)
+12:31:11   4. do-nothing agent: still FAIL after 60s?
+12:34:29       [PASS   ] journey:checkout - 2/2 ok, avg 75ms
+12:34:29       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 352 rows)
+12:34:29       failing in 1/1 checks during the hold
+12:34:29   5. reference solution
+12:34:29     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT INSERT ON accounting."order" TO astronomy_user'
+12:34:29       GRANT
+12:34:29     $ kubectl rollout restart deployment/accounting
+12:34:29       deployment.apps/accounting restarted
+12:34:29     $ kubectl rollout status deployment/accounting --timeout=300s
+12:34:31       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+12:34:31       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+12:34:31       deployment "accounting" successfully rolled out
+12:34:31   6. verifier must PASS (<= 420s)
+12:34:38       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
+12:34:38       [PASS   ] orders_recorded - accounting recorded the new order (352 -> 355 rows)
+12:34:38   7. restore exactly
+12:34:45   => VALIDATED  {'world_ready_s': 6, 'detect_s': 94, 'recover_s': 7, 'restore_s': 6}

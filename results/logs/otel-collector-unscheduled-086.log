@@ -1,25 +1,25 @@
-21:49:27 === otel-collector-unscheduled-086 (workload_patch)
-21:49:27   0. world healthy?
-21:49:36   1. baseline must PASS
-21:49:37       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
-21:49:37       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:49:37   2. inject
-21:49:38   3. verifier must FAIL (<= 300s)
-21:49:39       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
-21:49:39       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:49:39   4. do-nothing agent: still FAIL after 30s?
-21:50:10       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
-21:50:10       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-21:50:10       failing in 2/2 checks during the hold
-21:50:10   5. reference solution
-21:50:10     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
-21:50:10       daemonset.apps/otel-collector-agent patched
-21:50:10     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-21:50:22       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
-21:50:22       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-21:50:22       daemon set "otel-collector-agent" successfully rolled out
-21:50:22   6. verifier must PASS (<= 300s)
-21:51:21       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
-21:51:21       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:51:21   7. restore exactly
-21:51:30   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 58, 'restore_s': 9}
+14:08:33 === otel-collector-unscheduled-086 (workload_patch)
+14:08:33   0. world healthy?
+14:08:39   1. baseline must PASS
+14:08:39       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+14:08:39       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:08:39   2. inject
+14:08:40   3. verifier must FAIL (<= 300s)
+14:08:40       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+14:08:40       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:08:40   4. do-nothing agent: still FAIL after 30s?
+14:09:11       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+14:09:11       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+14:09:11       failing in 2/2 checks during the hold
+14:09:11   5. reference solution
+14:09:11     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
+14:09:11       daemonset.apps/otel-collector-agent patched
+14:09:11     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+14:09:12       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
+14:09:12       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+14:09:12       daemon set "otel-collector-agent" successfully rolled out
+14:09:12   6. verifier must PASS (<= 300s)
+14:10:35       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+14:10:35       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:10:35   7. restore exactly
+14:10:41   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 84, 'restore_s': 6}

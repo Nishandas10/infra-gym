@@ -1,28 +1,27 @@
-21:37:24 === netpol-dns-blocked-040 (create_objects)
-21:37:24   0. world healthy?
-21:37:32   1. baseline must PASS
-21:37:33       [PASS   ] journey:browse - 3/3 ok, avg 30ms
-21:37:33       [PASS   ] journey:cart - 3/3 ok, avg 21ms
-21:37:33   2. inject
-21:37:36   3. verifier must FAIL (<= 240s)
-21:37:37       [FAIL   ] journey:browse - 0/3 ok, avg 11ms; e.g. GET /api/products/2ZYFJ3GM2N -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-21:37:37       [FAIL   ] journey:cart - 0/3 ok, avg 4ms; e.g. POST /api/cart -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-21:37:37   4. do-nothing agent: still FAIL after 30s?
-21:38:59       [FAIL   ] journey:browse - 0/3 ok, avg 21ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
-21:38:59       [FAIL   ] journey:cart - 0/3 ok, avg 8020ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-21:38:59       failing in 1/1 checks during the hold
-21:38:59   5. reference solution
-21:38:59     $ kubectl delete networkpolicy frontend-egress-app-ports
-21:38:59       networkpolicy.networking.k8s.io "frontend-egress-app-ports" deleted from default namespace
-21:38:59     $ kubectl rollout restart deployment/frontend
-21:38:59       deployment.apps/frontend restarted
-21:38:59     $ kubectl rollout status deployment/frontend --timeout=300s
-21:39:01       Waiting for deployment "frontend" rollout to finish: 0 out of 1 new replicas have been updated...
-21:39:01       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-21:39:01       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-21:39:01       deployment "frontend" successfully rolled out
-21:39:01   6. verifier must PASS (<= 300s)
-21:39:14       [PASS   ] journey:browse - 3/3 ok, avg 37ms
-21:39:14       [PASS   ] journey:cart - 3/3 ok, avg 41ms
-21:39:14   7. restore exactly
-21:39:23   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 12, 'restore_s': 9}
+13:55:19 === netpol-dns-blocked-040 (create_objects)
+13:55:19   0. world healthy?
+13:55:25   1. baseline must PASS
+13:55:25       [PASS   ] journey:browse - 3/3 ok, avg 14ms
+13:55:25       [PASS   ] journey:cart - 3/3 ok, avg 26ms
+13:55:25   2. inject
+13:55:29   3. verifier must FAIL (<= 240s)
+13:56:14       [FAIL   ] journey:browse - 0/3 ok, avg 7015ms; e.g. GET /api/products/HQTGWGPNH4 -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+13:56:14       [FAIL   ] journey:cart - 0/3 ok, avg 8016ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+13:56:14   4. do-nothing agent: still FAIL after 30s?
+13:56:45       [FAIL   ] journey:browse - 0/3 ok, avg 13ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
+13:56:45       [FAIL   ] journey:cart - 0/3 ok, avg 11ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:56:45       failing in 2/2 checks during the hold
+13:56:45   5. reference solution
+13:56:45     $ kubectl delete networkpolicy frontend-egress-app-ports
+13:56:45       networkpolicy.networking.k8s.io "frontend-egress-app-ports" deleted from default namespace
+13:56:45     $ kubectl rollout restart deployment/frontend
+13:56:45       deployment.apps/frontend restarted
+13:56:45     $ kubectl rollout status deployment/frontend --timeout=300s
+13:56:45       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+13:56:45       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+13:56:45       deployment "frontend" successfully rolled out
+13:56:45   6. verifier must PASS (<= 300s)
+13:57:02       [PASS   ] journey:browse - 3/3 ok, avg 22ms
+13:57:02       [PASS   ] journey:cart - 3/3 ok, avg 29ms
+13:57:02   7. restore exactly
+13:57:08   => VALIDATED  {'world_ready_s': 6, 'detect_s': 46, 'recover_s': 16, 'restore_s': 6}

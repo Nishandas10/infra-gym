@@ -1,28 +1,27 @@
-22:39:53 === wl-ephemeral-storage-evicted-027 (workload_patch)
-22:39:53   0. world healthy?
-22:40:04   1. baseline must PASS
-22:40:05       [PASS   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - 2 pod(s) stable for >= 180s (app.kubernetes.io/name=opentelemetry-collector)
-22:40:05       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-22:40:05   2. inject
-22:40:06   3. verifier must FAIL (<= 300s)
-22:40:19       [FAIL   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - otel-collector-agent-gwxgf is only 10s old
-22:40:19       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-22:40:19   4. do-nothing agent: still FAIL after 210s?
-22:43:50       [FAIL   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - otel-collector-agent-6vz9m is only 0s old; otel-collector-agent-vt9wm is only 0s old
-22:43:50       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-22:43:50       failing in 18/18 checks during the hold
-22:43:50   5. reference solution
-22:43:50     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/ephemeral-storage"}]'
-22:43:51       daemonset.apps/otel-collector-agent patched
-22:43:51     $ kubectl rollout status daemonset/otel-collector-agent --timeout=240s
-22:44:06       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-22:44:06       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
-22:44:06       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-22:44:06       daemon set "otel-collector-agent" successfully rolled out
-22:44:06     $ kubectl delete pods --field-selector=status.phase=Failed
-22:44:06       No resources found
-22:44:06   6. verifier must PASS (<= 420s)
-22:47:01       [PASS   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - 2 pod(s) stable for >= 180s (app.kubernetes.io/name=opentelemetry-collector)
-22:47:01       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-22:47:01   7. restore exactly
-22:47:11   => VALIDATED  {'world_ready_s': 11, 'detect_s': 14, 'recover_s': 175, 'restore_s': 9}
+14:58:25 === wl-ephemeral-storage-evicted-027 (workload_patch)
+14:58:25   0. world healthy?
+14:58:31   1. baseline must PASS
+14:58:32       [PASS   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - 2 pod(s) stable for >= 180s (app.kubernetes.io/name=opentelemetry-collector)
+14:58:32       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:58:32   2. inject
+14:58:32   3. verifier must FAIL (<= 300s)
+14:58:43       [FAIL   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - otel-collector-agent-dfzlq is only 11s old; otel-collector-agent-k57t9 is only 2s old
+14:58:43       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:58:43   4. do-nothing agent: still FAIL after 210s?
+15:02:13       [FAIL   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - no running pods for app.kubernetes.io/name=opentelemetry-collector
+15:02:13       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+15:02:13       failing in 20/20 checks during the hold
+15:02:13   5. reference solution
+15:02:13     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/ephemeral-storage"}]'
+15:02:13       daemonset.apps/otel-collector-agent patched
+15:02:13     $ kubectl rollout status daemonset/otel-collector-agent --timeout=240s
+15:02:24       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
+15:02:24       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+15:02:24       daemon set "otel-collector-agent" successfully rolled out
+15:02:24     $ kubectl delete pods --field-selector=status.phase=Failed
+15:02:24       No resources found
+15:02:24   6. verifier must PASS (<= 420s)
+15:05:21       [PASS   ] pods_stable:app.kubernetes.io/name=opentelemetry-collector - 2 pod(s) stable for >= 180s (app.kubernetes.io/name=opentelemetry-collector)
+15:05:21       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+15:05:21   7. restore exactly
+15:05:28   => VALIDATED  {'world_ready_s': 6, 'detect_s': 11, 'recover_s': 177, 'restore_s': 6}

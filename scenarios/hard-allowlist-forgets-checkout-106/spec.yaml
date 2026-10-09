@@ -1,0 +1,123 @@
+id: hard-allowlist-forgets-checkout-106
+seed: 1106
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: object_patch
+    noise: true
+    kind: deployment
+    name: payment
+    ops:
+    - op: set
+      path: /metadata/annotations/kubernetes.io~1change-cause
+      value: 'payment: bump payment-sdk 4.1.7 -> 4.2.0 (CHG-3317)'
+  - type: workload_patch
+    noise: true
+    target: payment
+    recreate_pods: false
+    pause_s: 20
+    ops:
+    - op: set
+      path: /spec/template/metadata/annotations/deploy.example.com~1release
+      value: 2026.10.08-1
+  - type: create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=product-catalog
+    manifests:
+    - apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: product-catalog-allow-clients
+        namespace: default
+        labels:
+          security.example.com/ticket: ZT-104
+        annotations:
+          security.example.com/summary: 'Zero-trust: only known clients may call product-catalog'
+      spec:
+        podSelector:
+          matchLabels:
+            opentelemetry.io/name: product-catalog
+        policyTypes:
+        - Ingress
+        ingress:
+        - from:
+          - podSelector:
+              matchExpressions:
+              - key: opentelemetry.io/name
+                operator: In
+                values:
+                - frontend
+                - recommendation
+          ports:
+          - protocol: TCP
+            port: 8080
+task:
+  mode: diagnose_and_mitigate
+  prompt: Checkout started failing right after this morning's deploys. Browsing the shop still works. Find the cause
+    and fix it.
+tools:
+- kubectl
+- curl
+verifier:
+  outcome:
+  - journey:checkout
+  - journey:browse
+  root_cause:
+  - ingress-allowlist-omits-client-with-decoy-deploy
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  family: hard
+  tier: hard
+  mechanism: hard/ingress-allowlist-omits-client-with-decoy-deploy
+  title: A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame
+  generated: build_hard_scenarios.py
+  est_pass_rate: null
+  split: hard
+  layers: 1
+  difficulty_drivers:
+  - red-herring
+  - recent-change-bias
+  - partial-reachability
+  noise:
+  - payment rolled out minutes earlier with a risky-sounding change-cause
+  realistic_pattern: Zero-trust NetworkPolicy rollout that missed one legitimate caller
+  built_from:
+  - netpol-ingress-deny-038
+  - wl-client-wrong-port-016 (symptom path)
+  prompt_easier: Checkout fails while browsing works. Checkout's calls to product-catalog time out, while the frontend's
+    calls to product-catalog work. Find the cause and fix it.

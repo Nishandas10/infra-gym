@@ -1,17 +1,17 @@
-19:49:16 === flag-ad-failure-064 (feature_flag)
-19:49:16   0. world healthy?
-19:49:26   1. baseline must PASS
-19:49:28       [PASS   ] journey:ads - 30/30 ok, avg 14ms
-19:49:28   2. inject
-19:49:29   3. verifier must FAIL (<= 240s)
-19:49:30       [FAIL   ] journey:ads - 27/30 ok, avg 19ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-19:49:30   4. do-nothing agent: still FAIL after 30s?
-19:50:03       [FAIL   ] journey:ads - 27/30 ok, avg 21ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-19:50:03       failing in 2/2 checks during the hold
-19:50:03   5. reference solution
-19:50:03     $ python injectors/toggle_flag.py adFailure --off
-19:50:06       'adFailure' -> off (flagd is serving it now)
-19:50:06   6. verifier must PASS (<= 300s)
-19:50:07       [PASS   ] journey:ads - 30/30 ok, avg 17ms
-19:50:07   7. restore exactly
-19:50:18   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 1, 'restore_s': 10}
+12:54:41 === flag-ad-failure-064 (feature_flag)
+12:54:41   0. world healthy?
+12:54:47   1. baseline must PASS
+12:54:48       [PASS   ] journey:ads - 30/30 ok, avg 18ms
+12:54:48   2. inject
+12:54:48   3. verifier must FAIL (<= 240s)
+12:55:01       [FAIL   ] journey:ads - 27/30 ok, avg 18ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+12:55:01   4. do-nothing agent: still FAIL after 30s?
+12:55:32       [FAIL   ] journey:ads - 29/30 ok, avg 18ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+12:55:32       failing in 2/2 checks during the hold
+12:55:32   5. reference solution
+12:55:32     $ python injectors/toggle_flag.py adFailure --off
+12:55:33       'adFailure' -> off (flagd is serving it now)
+12:55:33   6. verifier must PASS (<= 300s)
+12:55:34       [PASS   ] journey:ads - 30/30 ok, avg 17ms
+12:55:34   7. restore exactly
+12:55:40   => VALIDATED  {'world_ready_s': 6, 'detect_s': 12, 'recover_s': 1, 'restore_s': 6}

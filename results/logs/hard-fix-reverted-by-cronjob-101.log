@@ -1,0 +1,28 @@
+12:08:39 === hard-fix-reverted-by-cronjob-101 (composite)
+12:08:39   0. world healthy?
+12:08:46   1. baseline must PASS
+12:08:46       [PASS   ] journey:checkout - 3/3 ok, avg 63ms
+12:08:46       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+12:08:46   2. inject
+12:09:07   3. verifier must FAIL (<= 300s)
+12:09:08       [FAIL   ] journey:checkout - 0/3 ok, avg 46ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:09:08       [FAIL   ] pods_stable:opentelemetry.io/name=payment - payment-7b56ff468-x4rlx is only 21s old
+12:09:08   4. do-nothing agent: still FAIL after 180s?
+12:12:08       [FAIL   ] journey:checkout - 0/3 ok, avg 33ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:12:08       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+12:12:08       failing in 17/17 checks during the hold
+12:12:08   5. reference solution
+12:12:08     $ kubectl delete cronjob payment-config-sync
+12:12:09       cronjob.batch "payment-config-sync" deleted from default namespace
+12:12:09     $ kubectl set env deployment/payment PAYMENT_PORT=8080
+12:12:09       deployment.apps/payment env updated
+12:12:09     $ kubectl rollout status deployment/payment --timeout=300s
+12:12:09       Waiting for deployment "payment" rollout to finish: 0 out of 1 new replicas have been updated...
+12:12:09       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+12:12:09       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+12:12:09       deployment "payment" successfully rolled out
+12:12:09   6. verifier must PASS (<= 420s)
+12:14:49       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
+12:14:49       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+12:14:49   7. restore exactly
+12:14:56   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 159, 'restore_s': 6}

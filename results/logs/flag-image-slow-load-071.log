@@ -1,17 +1,17 @@
-20:17:06 === flag-image-slow-load-071 (feature_flag)
-20:17:06   0. world healthy?
-20:17:19   1. baseline must PASS
-20:17:20       [PASS   ] journey:images_browser - 3/3 ok, avg 38ms
-20:17:20   2. inject
-20:17:23   3. verifier must FAIL (<= 240s)
-20:17:53       [FAIL   ] journey:images_browser - 3/3 ok, avg 10079ms (> 3000ms)
-20:17:54   4. do-nothing agent: still FAIL after 30s?
-20:19:08       [FAIL   ] journey:images_browser - 3/3 ok, avg 10158ms (> 3000ms)
-20:19:08       failing in 1/1 checks during the hold
-20:19:08   5. reference solution
-20:19:08     $ python injectors/toggle_flag.py imageSlowLoad --off
-20:19:14       'imageSlowLoad' -> off (flagd is serving it now)
-20:19:14   6. verifier must PASS (<= 300s)
-20:19:15       [PASS   ] journey:images_browser - 3/3 ok, avg 27ms
-20:19:15   7. restore exactly
-20:19:26   => VALIDATED  {'world_ready_s': 13, 'detect_s': 31, 'recover_s': 1, 'restore_s': 11}
+13:16:43 === flag-image-slow-load-071 (feature_flag)
+13:16:43   0. world healthy?
+13:16:50   1. baseline must PASS
+13:16:51       [PASS   ] journey:images_browser - 3/3 ok, avg 29ms
+13:16:51   2. inject
+13:16:51   3. verifier must FAIL (<= 240s)
+13:17:22       [FAIL   ] journey:images_browser - 3/3 ok, avg 10019ms (> 3000ms)
+13:17:22   4. do-nothing agent: still FAIL after 30s?
+13:18:33       [FAIL   ] journey:images_browser - 3/3 ok, avg 10041ms (> 3000ms)
+13:18:33       failing in 1/1 checks during the hold
+13:18:33   5. reference solution
+13:18:33     $ python injectors/toggle_flag.py imageSlowLoad --off
+13:18:34       'imageSlowLoad' -> off (flagd is serving it now)
+13:18:34   6. verifier must PASS (<= 300s)
+13:18:34       [PASS   ] journey:images_browser - 3/3 ok, avg 25ms
+13:18:34   7. restore exactly
+13:18:41   => VALIDATED  {'world_ready_s': 7, 'detect_s': 30, 'recover_s': 0, 'restore_s': 7}

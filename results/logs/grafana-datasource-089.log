@@ -1,17 +1,17 @@
-20:59:45 === grafana-datasource-089 (configmap_edit)
-20:59:45   0. world healthy?
-20:59:54   1. baseline must PASS
-20:59:55       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 402ms
-20:59:55   2. inject
-20:59:55   3. verifier must FAIL (<= 300s)
-21:00:20       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12046ms (expected 200) 'TimeoutError: timed out'
-21:00:20   4. do-nothing agent: still FAIL after 30s?
-21:01:03       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12022ms (expected 200) 'TimeoutError: timed out'
-21:01:03       failing in 1/1 checks during the hold
-21:01:03   5. reference solution
-21:01:03     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -
-21:01:03       configmap/grafana-datasources replaced
-21:01:03   6. verifier must PASS (<= 300s)
-21:01:04       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 226ms
-21:01:04   7. restore exactly
-21:01:14   => VALIDATED  {'world_ready_s': 8, 'detect_s': 25, 'recover_s': 1, 'restore_s': 9}
+13:20:08 === grafana-datasource-089 (configmap_edit)
+13:20:08   0. world healthy?
+13:20:14   1. baseline must PASS
+13:20:14       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 260ms
+13:20:14   2. inject
+13:20:14   3. verifier must FAIL (<= 300s)
+13:20:37       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12040ms (expected 200) 'TimeoutError: timed out'
+13:20:37   4. do-nothing agent: still FAIL after 30s?
+13:21:19       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12040ms (expected 200) 'TimeoutError: timed out'
+13:21:19       failing in 1/1 checks during the hold
+13:21:19   5. reference solution
+13:21:19     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -
+13:21:19       configmap/grafana-datasources replaced
+13:21:19   6. verifier must PASS (<= 300s)
+13:21:20       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 44ms
+13:21:20   7. restore exactly
+13:21:26   => VALIDATED  {'world_ready_s': 6, 'detect_s': 23, 'recover_s': 0, 'restore_s': 6}

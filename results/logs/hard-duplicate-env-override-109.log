@@ -1,0 +1,21 @@
+12:00:43 === hard-duplicate-env-override-109 (composite)
+12:00:43   0. world healthy?
+12:00:50   1. baseline must PASS
+12:00:51       [PASS   ] journey:recommendations - 3/3 ok, avg 49ms
+12:00:51   2. inject
+12:00:51   3. verifier must FAIL (<= 300s)
+12:01:44       [FAIL   ] journey:recommendations - 0/3 ok, avg 6712ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+12:01:44   4. do-nothing agent: still FAIL after 60s?
+12:02:44       [FAIL   ] journey:recommendations - 0/3 ok, avg 31ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+12:02:44       failing in 5/5 checks during the hold
+12:02:44   5. reference solution
+12:02:44     $ kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env; print(json.dumps(d))' | kubectl replace -f -
+12:02:44       deployment.apps/recommendation replaced
+12:02:44     $ kubectl rollout status deployment/recommendation --timeout=300s
+12:02:45       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+12:02:45       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+12:02:45       deployment "recommendation" successfully rolled out
+12:02:45   6. verifier must PASS (<= 420s)
+12:03:17       [PASS   ] journey:recommendations - 3/3 ok, avg 42ms
+12:03:17   7. restore exactly
+12:03:24   => VALIDATED  {'world_ready_s': 7, 'detect_s': 52, 'recover_s': 32, 'restore_s': 7}

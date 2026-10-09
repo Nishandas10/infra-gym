@@ -1,28 +1,27 @@
-21:39:23 === netpol-egress-lockdown-039 (create_objects)
-21:39:23   0. world healthy?
-21:39:32   1. baseline must PASS
-21:39:34       [PASS   ] journey:checkout - 3/3 ok, avg 184ms
-21:39:34       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-21:39:34   2. inject
-21:39:38   3. verifier must FAIL (<= 240s)
-21:40:25       [FAIL   ] journey:checkout - 0/3 ok, avg 15071ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-21:40:25       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-21:40:25   4. do-nothing agent: still FAIL after 30s?
-21:41:53       [FAIL   ] journey:checkout - 0/3 ok, avg 10128ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-21:41:53       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-21:41:53       failing in 1/1 checks during the hold
-21:41:53   5. reference solution
-21:41:53     $ kubectl delete networkpolicy checkout-egress-lockdown
-21:41:53       networkpolicy.networking.k8s.io "checkout-egress-lockdown" deleted from default namespace
-21:41:53     $ kubectl rollout restart deployment/checkout
-21:41:53       deployment.apps/checkout restarted
-21:41:53     $ kubectl rollout status deployment/checkout --timeout=300s
-21:41:58       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-21:41:58       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-21:41:58       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-21:41:58       deployment "checkout" successfully rolled out
-21:41:58   6. verifier must PASS (<= 300s)
-21:41:59       [PASS   ] journey:checkout - 3/3 ok, avg 201ms
-21:41:59       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-21:41:59   7. restore exactly
-21:42:08   => VALIDATED  {'world_ready_s': 10, 'detect_s': 47, 'recover_s': 2, 'restore_s': 8}
+13:57:08 === netpol-egress-lockdown-039 (create_objects)
+13:57:08   0. world healthy?
+13:57:14   1. baseline must PASS
+13:57:14       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
+13:57:14       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+13:57:14   2. inject
+13:57:17   3. verifier must FAIL (<= 240s)
+13:58:03       [FAIL   ] journey:checkout - 0/3 ok, avg 15033ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:58:03       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+13:58:03   4. do-nothing agent: still FAIL after 30s?
+13:59:34       [FAIL   ] journey:checkout - 0/3 ok, avg 11550ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:59:34       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+13:59:34       failing in 1/1 checks during the hold
+13:59:34   5. reference solution
+13:59:34     $ kubectl delete networkpolicy checkout-egress-lockdown
+13:59:34       networkpolicy.networking.k8s.io "checkout-egress-lockdown" deleted from default namespace
+13:59:34     $ kubectl rollout restart deployment/checkout
+13:59:34       deployment.apps/checkout restarted
+13:59:34     $ kubectl rollout status deployment/checkout --timeout=300s
+13:59:35       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+13:59:35       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+13:59:35       deployment "checkout" successfully rolled out
+13:59:35   6. verifier must PASS (<= 300s)
+13:59:47       [PASS   ] journey:checkout - 3/3 ok, avg 333ms
+13:59:47       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+13:59:47   7. restore exactly
+13:59:53   => VALIDATED  {'world_ready_s': 6, 'detect_s': 46, 'recover_s': 12, 'restore_s': 6}

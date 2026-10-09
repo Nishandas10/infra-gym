@@ -1,17 +1,17 @@
-21:25:47 === net-delay-002 (chaos_mesh)
-21:25:47   0. world healthy?
-21:25:56   1. baseline must PASS
-21:25:57       [PASS   ] journey:recommendations - 3/3 ok, avg 91ms
-21:25:57   2. inject
-21:26:03   3. verifier must FAIL (<= 120s)
-21:26:23       [FAIL   ] journey:recommendations - 3/3 ok, avg 6360ms (> 1500ms)
-21:26:23   4. do-nothing agent: still FAIL after 30s?
-21:27:12       [FAIL   ] journey:recommendations - 3/3 ok, avg 5989ms (> 1500ms)
-21:27:12       failing in 1/1 checks during the hold
-21:27:12   5. reference solution
-21:27:12     $ kubectl delete networkchaos.chaos-mesh.org net-delay-002
-21:27:13       networkchaos.chaos-mesh.org "net-delay-002" deleted from default namespace
-21:27:13   6. verifier must PASS (<= 120s)
-21:27:14       [PASS   ] journey:recommendations - 3/3 ok, avg 45ms
-21:27:14   7. restore exactly
-21:27:22   => VALIDATED  {'world_ready_s': 9, 'detect_s': 20, 'recover_s': 1, 'restore_s': 8}
+13:44:30 === net-delay-002 (chaos_mesh)
+13:44:30   0. world healthy?
+13:44:36   1. baseline must PASS
+13:44:36       [PASS   ] journey:recommendations - 3/3 ok, avg 28ms
+13:44:36   2. inject
+13:44:42   3. verifier must FAIL (<= 120s)
+13:45:00       [FAIL   ] journey:recommendations - 3/3 ok, avg 6120ms (> 1500ms)
+13:45:00   4. do-nothing agent: still FAIL after 30s?
+13:45:49       [FAIL   ] journey:recommendations - 3/3 ok, avg 6163ms (> 1500ms)
+13:45:49       failing in 1/1 checks during the hold
+13:45:49   5. reference solution
+13:45:49     $ kubectl delete networkchaos.chaos-mesh.org net-delay-002
+13:45:49       networkchaos.chaos-mesh.org "net-delay-002" deleted from default namespace
+13:45:49   6. verifier must PASS (<= 120s)
+13:45:50       [PASS   ] journey:recommendations - 3/3 ok, avg 32ms
+13:45:50   7. restore exactly
+13:45:56   => VALIDATED  {'world_ready_s': 6, 'detect_s': 19, 'recover_s': 0, 'restore_s': 6}

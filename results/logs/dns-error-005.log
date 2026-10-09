@@ -1,21 +1,21 @@
-19:44:27 === dns-error-005 (chaos_mesh)
-19:44:27   0. world healthy?
-19:44:37   1. baseline must PASS
-19:44:39       [PASS   ] journey:cart - 3/3 ok, avg 49ms
-19:44:39       [PASS   ] journey:checkout - 3/3 ok, avg 94ms
-19:44:39   2. inject
-19:44:49   3. verifier must FAIL (<= 180s)
-19:45:39       [FAIL   ] journey:cart - 0/3 ok, avg 8032ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-19:45:39       [FAIL   ] journey:checkout - 0/3 ok, avg 8035ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-19:45:39   4. do-nothing agent: still FAIL after 30s?
-19:47:29       [FAIL   ] journey:cart - 0/3 ok, avg 8033ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-19:47:29       [FAIL   ] journey:checkout - 0/3 ok, avg 8018ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-19:47:29       failing in 1/1 checks during the hold
-19:47:29   5. reference solution
-19:47:29     $ kubectl delete dnschaos.chaos-mesh.org dns-error-005
-19:47:29       dnschaos.chaos-mesh.org "dns-error-005" deleted from default namespace
-19:47:29   6. verifier must PASS (<= 240s)
-19:47:32       [PASS   ] journey:cart - 3/3 ok, avg 75ms
-19:47:32       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
-19:47:32   7. restore exactly
-19:47:41   => VALIDATED  {'world_ready_s': 11, 'detect_s': 50, 'recover_s': 3, 'restore_s': 8}
+12:50:26 === dns-error-005 (chaos_mesh)
+12:50:26   0. world healthy?
+12:50:32   1. baseline must PASS
+12:50:32       [PASS   ] journey:cart - 3/3 ok, avg 26ms
+12:50:32       [PASS   ] journey:checkout - 3/3 ok, avg 50ms
+12:50:32   2. inject
+12:50:41   3. verifier must FAIL (<= 180s)
+12:51:29       [FAIL   ] journey:cart - 0/3 ok, avg 8019ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+12:51:29       [FAIL   ] journey:checkout - 0/3 ok, avg 8014ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+12:51:29   4. do-nothing agent: still FAIL after 30s?
+12:53:16       [FAIL   ] journey:cart - 0/3 ok, avg 8019ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+12:53:16       [FAIL   ] journey:checkout - 0/3 ok, avg 8020ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+12:53:16       failing in 1/1 checks during the hold
+12:53:16   5. reference solution
+12:53:16     $ kubectl delete dnschaos.chaos-mesh.org dns-error-005
+12:53:16       dnschaos.chaos-mesh.org "dns-error-005" deleted from default namespace
+12:53:16   6. verifier must PASS (<= 240s)
+12:53:17       [PASS   ] journey:cart - 3/3 ok, avg 32ms
+12:53:17       [PASS   ] journey:checkout - 3/3 ok, avg 48ms
+12:53:17   7. restore exactly
+12:53:23   => VALIDATED  {'world_ready_s': 6, 'detect_s': 49, 'recover_s': 1, 'restore_s': 6}

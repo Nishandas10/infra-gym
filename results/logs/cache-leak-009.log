@@ -1,32 +1,31 @@
-18:59:29 === cache-leak-009 (feature_flag)
-18:59:29   0. world healthy?
-18:59:38   1. baseline must PASS
-18:59:39       [PASS   ] journey:recommendations - 3/3 ok, avg 64ms
-18:59:39       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=52Mi (max 150Mi)
-18:59:39       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-18:59:39   2. inject
-18:59:41   3. verifier must FAIL (<= 1200s)
-19:06:48       [FAIL   ] journey:recommendations - 0/3 ok, avg 456ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
-19:06:48       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: no stats (max 150Mi)
-19:06:48       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-19:06:48   4. do-nothing agent: still FAIL after 630s?
-19:17:20       [PASS   ] journey:recommendations - 3/3 ok, avg 57ms
-19:17:20       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=52Mi (max 150Mi)
-19:17:20       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-6ff54c889-vqk7h/recommendation restarted 201s ago (OOMKilled)
-19:17:20       failing in 36/36 checks during the hold
-19:17:20   5. reference solution
-19:17:20     $ python injectors/toggle_flag.py recommendationCacheFailure --off
-19:17:22       'recommendationCacheFailure' -> off (flagd is serving it now)
-19:17:22     $ kubectl rollout restart deployment/recommendation
-19:17:22       deployment.apps/recommendation restarted
-19:17:22     $ kubectl rollout status deployment/recommendation --timeout=180s
-19:17:24       Waiting for deployment "recommendation" rollout to finish: 0 out of 1 new replicas have been updated...
-19:17:24       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-19:17:24       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-19:17:24       deployment "recommendation" successfully rolled out
-19:17:24   6. verifier must PASS (<= 900s)
-19:27:22       [PASS   ] journey:recommendations - 3/3 ok, avg 107ms
-19:27:22       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=51Mi (max 150Mi)
-19:27:22       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-19:27:22   7. restore exactly
-19:27:31   => VALIDATED  {'world_ready_s': 8, 'detect_s': 427, 'recover_s': 598, 'restore_s': 9}
+12:06:53 === cache-leak-009 (feature_flag)
+12:06:53   0. world healthy?
+12:06:59   1. baseline must PASS
+12:07:00       [PASS   ] journey:recommendations - 3/3 ok, avg 30ms
+12:07:00       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=76Mi (max 150Mi)
+12:07:00       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+12:07:00   2. inject
+12:07:00   3. verifier must FAIL (<= 1200s)
+12:12:48       [PASS   ] journey:recommendations - 3/3 ok, avg 200ms
+12:12:48       [FAIL   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=156Mi (max 150Mi)
+12:12:48       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+12:12:48   4. do-nothing agent: still FAIL after 630s?
+12:23:18       [PASS   ] journey:recommendations - 3/3 ok, avg 29ms
+12:23:18       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=73Mi (max 150Mi)
+12:23:18       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-556fd56449-knn6p/recommendation restarted 90s ago (OOMKilled)
+12:23:18       failing in 39/39 checks during the hold
+12:23:18   5. reference solution
+12:23:18     $ python injectors/toggle_flag.py recommendationCacheFailure --off
+12:23:19       'recommendationCacheFailure' -> off (flagd is serving it now)
+12:23:19     $ kubectl rollout restart deployment/recommendation
+12:23:19       deployment.apps/recommendation restarted
+12:23:19     $ kubectl rollout status deployment/recommendation --timeout=180s
+12:23:22       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+12:23:22       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+12:23:22       deployment "recommendation" successfully rolled out
+12:23:22   6. verifier must PASS (<= 900s)
+12:33:34       [PASS   ] journey:recommendations - 3/3 ok, avg 37ms
+12:33:34       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=46Mi (max 150Mi)
+12:33:34       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+12:33:34   7. restore exactly
+12:33:40   => VALIDATED  {'world_ready_s': 6, 'detect_s': 347, 'recover_s': 612, 'restore_s': 6}

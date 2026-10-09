@@ -1,28 +1,28 @@
-21:51:30 === otel-exporter-broken-085 (configmap_edit)
-21:51:30   0. world healthy?
-21:51:39   1. baseline must PASS
-21:51:40       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-21:51:40       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:51:40   2. inject
-21:51:57   3. verifier must FAIL (<= 300s)
-21:52:47       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-21:52:47       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:52:47   4. do-nothing agent: still FAIL after 30s?
-21:53:19       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-21:53:19       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-21:53:19       failing in 2/2 checks during the hold
-21:53:19   5. reference solution
-21:53:19     $ kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
-21:53:19       configmap/otel-collector-agent configured
-21:53:19     $ kubectl rollout restart daemonset/otel-collector-agent
-21:53:19       daemonset.apps/otel-collector-agent restarted
-21:53:19     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-21:53:47       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-21:53:47       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-21:53:47       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-21:53:47       daemon set "otel-collector-agent" successfully rolled out
-21:53:47   6. verifier must PASS (<= 300s)
-21:54:02       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-21:54:02       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-21:54:02   7. restore exactly
-21:54:33   => VALIDATED  {'world_ready_s': 9, 'detect_s': 50, 'recover_s': 14, 'restore_s': 31}
+14:10:41 === otel-exporter-broken-085 (configmap_edit)
+14:10:41   0. world healthy?
+14:10:47   1. baseline must PASS
+14:10:48       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+14:10:48       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:10:48   2. inject
+14:11:03   3. verifier must FAIL (<= 300s)
+14:12:08       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+14:12:08       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+14:12:08   4. do-nothing agent: still FAIL after 30s?
+14:12:38       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+14:12:38       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+14:12:38       failing in 2/2 checks during the hold
+14:12:38   5. reference solution
+14:12:38     $ kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
+14:12:39       configmap/otel-collector-agent configured
+14:12:39     $ kubectl rollout restart daemonset/otel-collector-agent
+14:12:39       daemonset.apps/otel-collector-agent restarted
+14:12:39     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+14:12:43       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+14:12:43       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+14:12:43       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+14:12:43       daemon set "otel-collector-agent" successfully rolled out
+14:12:43   6. verifier must PASS (<= 300s)
+14:12:54       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+14:12:54       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+14:12:54   7. restore exactly
+14:13:21   => VALIDATED  {'world_ready_s': 6, 'detect_s': 65, 'recover_s': 11, 'restore_s': 27}

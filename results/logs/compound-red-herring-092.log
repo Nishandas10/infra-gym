@@ -1,21 +1,20 @@
-19:30:32 === compound-red-herring-092 (composite)
-19:30:32   0. world healthy?
-19:30:41   1. baseline must PASS
-19:30:42       [PASS   ] journey:checkout - 3/3 ok, avg 86ms
-19:30:42   2. inject
-19:30:43   3. verifier must FAIL (<= 240s)
-19:30:49       [FAIL   ] journey:checkout - 0/3 ok, avg 1802ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-19:30:49   4. do-nothing agent: still FAIL after 30s?
-19:31:21       [FAIL   ] journey:checkout - 0/3 ok, avg 94ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-19:31:21       failing in 2/2 checks during the hold
-19:31:21   5. reference solution
-19:31:21     $ kubectl scale deployment quote --replicas=1
-19:31:21       deployment.apps/quote scaled
-19:31:21     $ kubectl rollout status deployment/quote --timeout=300s
-19:31:23       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
-19:31:23       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
-19:31:23       deployment "quote" successfully rolled out
-19:31:23   6. verifier must PASS (<= 300s)
-19:31:25       [PASS   ] journey:checkout - 3/3 ok, avg 242ms
-19:31:25   7. restore exactly
-19:31:33   => VALIDATED  {'world_ready_s': 9, 'detect_s': 7, 'recover_s': 1, 'restore_s': 8}
+12:36:03 === compound-red-herring-092 (composite)
+12:36:03   0. world healthy?
+12:36:09   1. baseline must PASS
+12:36:10       [PASS   ] journey:checkout - 3/3 ok, avg 47ms
+12:36:10   2. inject
+12:36:10   3. verifier must FAIL (<= 240s)
+12:36:15       [FAIL   ] journey:checkout - 0/3 ok, avg 1699ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:36:15   4. do-nothing agent: still FAIL after 30s?
+12:36:46       [FAIL   ] journey:checkout - 0/3 ok, avg 37ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:36:46       failing in 2/2 checks during the hold
+12:36:46   5. reference solution
+12:36:46     $ kubectl scale deployment quote --replicas=1
+12:36:46       deployment.apps/quote scaled
+12:36:46     $ kubectl rollout status deployment/quote --timeout=300s
+12:36:47       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+12:36:47       deployment "quote" successfully rolled out
+12:36:47   6. verifier must PASS (<= 300s)
+12:36:47       [PASS   ] journey:checkout - 3/3 ok, avg 78ms
+12:36:47   7. restore exactly
+12:36:53   => VALIDATED  {'world_ready_s': 6, 'detect_s': 6, 'recover_s': 1, 'restore_s': 6}

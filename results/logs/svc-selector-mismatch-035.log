@@ -1,21 +1,21 @@
-22:16:54 === svc-selector-mismatch-035 (object_patch)
-22:16:54   0. world healthy?
-22:17:04   1. baseline must PASS
-22:17:05       [PASS   ] journey:browse - 3/3 ok, avg 13ms
-22:17:05       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
-22:17:05   2. inject
-22:17:21   3. verifier must FAIL (<= 240s)
-22:17:23       [FAIL   ] journey:browse - 0/3 ok, avg 72ms; e.g. GET /api/products/1YMWWN1N4O -> 500 b'Internal Server Error'
-22:17:23       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
-22:17:23   4. do-nothing agent: still FAIL after 30s?
-22:17:54       [FAIL   ] journey:browse - 0/3 ok, avg 16ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
-22:17:54       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
-22:17:54       failing in 2/2 checks during the hold
-22:17:54   5. reference solution
-22:17:54     $ kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
-22:17:54       service/product-catalog patched
-22:17:54   6. verifier must PASS (<= 300s)
-22:18:07       [PASS   ] journey:browse - 3/3 ok, avg 66ms
-22:18:07       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
-22:18:07   7. restore exactly
-22:20:40   => VALIDATED  {'world_ready_s': 10, 'detect_s': 2, 'recover_s': 12, 'restore_s': 153}
+14:33:15 === svc-selector-mismatch-035 (object_patch)
+14:33:15   0. world healthy?
+14:33:22   1. baseline must PASS
+14:33:22       [PASS   ] journey:browse - 3/3 ok, avg 16ms
+14:33:22       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+14:33:22   2. inject
+14:33:38   3. verifier must FAIL (<= 240s)
+14:33:38       [FAIL   ] journey:browse - 0/3 ok, avg 16ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
+14:33:38       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+14:33:38   4. do-nothing agent: still FAIL after 30s?
+14:34:09       [FAIL   ] journey:browse - 0/3 ok, avg 11ms; e.g. GET /api/products/2ZYFJ3GM2N -> 500 b'Internal Server Error'
+14:34:09       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+14:34:09       failing in 2/2 checks during the hold
+14:34:09   5. reference solution
+14:34:09     $ kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
+14:34:09       service/product-catalog patched
+14:34:09   6. verifier must PASS (<= 300s)
+14:34:30       [PASS   ] journey:browse - 3/3 ok, avg 17ms
+14:34:30       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+14:34:30   7. restore exactly
+14:37:08   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 21, 'restore_s': 157}

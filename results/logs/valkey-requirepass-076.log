@@ -1,24 +1,24 @@
-22:24:50 === valkey-requirepass-076 (exec_commands)
-22:24:50   0. world healthy?
-22:24:59   1. baseline must PASS
-22:25:00       [PASS   ] journey:cart - 3/3 ok, avg 51ms
-22:25:00   2. inject
-22:25:03   3. verifier must FAIL (<= 240s)
-22:25:05       [FAIL   ] journey:cart - 0/3 ok, avg 63ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-22:25:05   4. do-nothing agent: still FAIL after 30s?
-22:25:37       [FAIL   ] journey:cart - 0/3 ok, avg 24ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-22:25:37       failing in 2/2 checks during the hold
-22:25:37   5. reference solution
-22:25:37     $ kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''
-22:25:37       OK
-22:25:37     $ kubectl rollout restart deployment/cart
-22:25:37       deployment.apps/cart restarted
-22:25:37     $ kubectl rollout status deployment/cart --timeout=300s
-22:25:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-22:25:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-22:25:42       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-22:25:42       deployment "cart" successfully rolled out
-22:25:42   6. verifier must PASS (<= 300s)
-22:26:06       [PASS   ] journey:cart - 3/3 ok, avg 31ms
-22:26:06   7. restore exactly
-22:28:35   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 24, 'restore_s': 149}
+14:40:29 === valkey-requirepass-076 (exec_commands)
+14:40:29   0. world healthy?
+14:40:35   1. baseline must PASS
+14:40:36       [PASS   ] journey:cart - 3/3 ok, avg 31ms
+14:40:36   2. inject
+14:40:38   3. verifier must FAIL (<= 240s)
+14:41:02       [FAIL   ] journey:cart - 0/3 ok, avg 8021ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+14:41:02   4. do-nothing agent: still FAIL after 30s?
+14:42:01       [FAIL   ] journey:cart - 0/3 ok, avg 8020ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+14:42:01       failing in 1/1 checks during the hold
+14:42:01   5. reference solution
+14:42:01     $ kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''
+14:42:01       OK
+14:42:01     $ kubectl rollout restart deployment/cart
+14:42:01       deployment.apps/cart restarted
+14:42:01     $ kubectl rollout status deployment/cart --timeout=300s
+14:42:03       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:42:03       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:42:03       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:42:03       deployment "cart" successfully rolled out
+14:42:03   6. verifier must PASS (<= 300s)
+14:43:05       [PASS   ] journey:cart - 3/3 ok, avg 31ms
+14:43:05   7. restore exactly
+14:45:35   => VALIDATED  {'world_ready_s': 6, 'detect_s': 24, 'recover_s': 62, 'restore_s': 150}

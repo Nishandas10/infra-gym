@@ -1,0 +1,27 @@
+12:03:24 === hard-egress-policy-blocks-db-102 (composite)
+12:03:24   0. world healthy?
+12:03:31   1. baseline must PASS
+12:03:31       [PASS   ] journey:browse - 3/3 ok, avg 91ms
+12:03:31       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+12:03:31   2. inject
+12:03:35   3. verifier must FAIL (<= 300s)
+12:04:24       [FAIL   ] journey:browse - 0/3 ok, avg 8013ms; e.g. GET /api/products/L9ECAV7KIM -> no response b'TimeoutError: timed out'
+12:04:24       [FAIL   ] journey:catalog - 0/3 ok, avg 8020ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+12:04:24   4. do-nothing agent: still FAIL after 60s?
+12:05:49       [FAIL   ] journey:browse - 0/3 ok, avg 8022ms; e.g. GET /api/products/9SIQT8TOJO -> no response b'TimeoutError: timed out'
+12:05:49       [FAIL   ] journey:catalog - 0/3 ok, avg 94ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+12:05:49       failing in 1/1 checks during the hold
+12:05:49   5. reference solution
+12:05:49     $ kubectl patch networkpolicy product-catalog-egress-hardening --type=json -p '[{"op":"add","path":"/spec/egress/1/ports/-","value":{"protocol":"TCP","port":5432}}]'
+12:05:49       networkpolicy.networking.k8s.io/product-catalog-egress-hardening patched
+12:05:49     $ kubectl rollout restart deployment/product-catalog
+12:05:49       deployment.apps/product-catalog restarted
+12:05:49     $ kubectl rollout status deployment/product-catalog --timeout=300s
+12:05:50       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+12:05:50       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+12:05:50       deployment "product-catalog" successfully rolled out
+12:05:50   6. verifier must PASS (<= 420s)
+12:06:01       [PASS   ] journey:browse - 3/3 ok, avg 26ms
+12:06:01       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+12:06:01   7. restore exactly
+12:08:39   => VALIDATED  {'world_ready_s': 7, 'detect_s': 49, 'recover_s': 11, 'restore_s': 157}

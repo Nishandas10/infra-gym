@@ -78,3 +78,9 @@ opentelemetry-collector:
         # The default logs pipeline exports to OpenSearch, which is disabled above.
         logs:
           exporters: [debug]
+
+# Grafana's default 300Mi limit got it OOM-killed during startup on the GCP VM.
+grafana:
+  resources:
+    limits:
+      memory: 512Mi

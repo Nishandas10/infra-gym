@@ -1,17 +1,17 @@
-21:29:45 === net-partition-054 (chaos_mesh)
-21:29:45   0. world healthy?
-21:29:54   1. baseline must PASS
-21:29:55       [PASS   ] journey:checkout - 3/3 ok, avg 139ms
-21:29:55   2. inject
-21:30:00   3. verifier must FAIL (<= 240s)
-21:30:47       [FAIL   ] journey:checkout - 0/3 ok, avg 15046ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-21:30:47   4. do-nothing agent: still FAIL after 30s?
-21:32:29       [FAIL   ] journey:checkout - 0/3 ok, avg 15052ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-21:32:29       failing in 1/1 checks during the hold
-21:32:29   5. reference solution
-21:32:29     $ kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition
-21:32:30       networkchaos.chaos-mesh.org "checkout-payment-partition" deleted from default namespace
-21:32:30   6. verifier must PASS (<= 300s)
-21:34:19       [PASS   ] journey:checkout - 3/3 ok, avg 126ms
-21:34:19   7. restore exactly
-21:34:27   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 108, 'restore_s': 8}
+13:48:42 === net-partition-054 (chaos_mesh)
+13:48:42   0. world healthy?
+13:48:48   1. baseline must PASS
+13:48:49       [PASS   ] journey:checkout - 3/3 ok, avg 59ms
+13:48:49   2. inject
+13:48:54   3. verifier must FAIL (<= 240s)
+13:49:39       [FAIL   ] journey:checkout - 0/3 ok, avg 15029ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:49:39   4. do-nothing agent: still FAIL after 30s?
+13:51:20       [FAIL   ] journey:checkout - 0/3 ok, avg 15036ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:51:20       failing in 1/1 checks during the hold
+13:51:20   5. reference solution
+13:51:20     $ kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition
+13:51:21       networkchaos.chaos-mesh.org "checkout-payment-partition" deleted from default namespace
+13:51:21   6. verifier must PASS (<= 300s)
+13:52:24       [PASS   ] journey:checkout - 3/3 ok, avg 2487ms
+13:52:24   7. restore exactly
+13:52:30   => VALIDATED  {'world_ready_s': 6, 'detect_s': 45, 'recover_s': 63, 'restore_s': 6}

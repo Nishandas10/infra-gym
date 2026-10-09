@@ -1,0 +1,25 @@
+12:34:45 === hard-telemetry-noise-hides-scheduling-112 (composite)
+12:34:45   0. world healthy?
+12:34:51   1. baseline must PASS
+12:34:52       [PASS   ] journey:currency - 3/3 ok, avg 24ms
+12:34:52       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+12:34:52   2. inject
+12:35:40   3. verifier must FAIL (<= 300s)
+12:36:05       [FAIL   ] journey:currency - 0/3 ok, avg 8024ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
+12:36:05       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-g5dxf (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+12:36:05   4. do-nothing agent: still FAIL after 60s?
+12:37:39       [FAIL   ] journey:currency - 0/3 ok, avg 8029ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
+12:37:39       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-g5dxf (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+12:37:39       failing in 2/2 checks during the hold
+12:37:39   5. reference solution
+12:37:39     $ kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+12:37:39       node/ai-gym-worker untainted
+12:37:39       node/ai-gym-worker2 untainted
+12:37:39     $ kubectl rollout status deployment/currency --timeout=300s
+12:37:39       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+12:37:39       deployment "currency" successfully rolled out
+12:37:39   6. verifier must PASS (<= 420s)
+12:38:04       [PASS   ] journey:currency - 3/3 ok, avg 25ms
+12:38:04       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+12:38:04   7. restore exactly
+12:38:28   => VALIDATED  {'world_ready_s': 6, 'detect_s': 25, 'recover_s': 25, 'restore_s': 24}

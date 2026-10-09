@@ -1,26 +1,26 @@
-22:35:40 === wl-crash-invalid-env-013 (workload_patch)
-22:35:40   0. world healthy?
-22:35:51   1. baseline must PASS
-22:35:53       [PASS   ] journey:checkout - 3/3 ok, avg 200ms
-22:35:53       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-22:35:53   2. inject
-22:35:53   3. verifier must FAIL (<= 240s)
-22:35:55       [FAIL   ] journey:checkout - 0/3 ok, avg 105ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:35:55       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
-22:35:55   4. do-nothing agent: still FAIL after 30s?
-22:36:27       [FAIL   ] journey:checkout - 0/3 ok, avg 73ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:36:27       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-797fff994c-9hsdh (shipping: last exit Error)
-22:36:27       failing in 2/2 checks during the hold
-22:36:27   5. reference solution
-22:36:27     $ kubectl set env deployment/shipping SHIPPING_PORT=8080
-22:36:27       deployment.apps/shipping env updated
-22:36:27     $ kubectl rollout status deployment/shipping --timeout=300s
-22:36:33       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
-22:36:33       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
-22:36:33       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
-22:36:33       deployment "shipping" successfully rolled out
-22:36:33   6. verifier must PASS (<= 300s)
-22:36:35       [PASS   ] journey:checkout - 3/3 ok, avg 236ms
-22:36:35       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-22:36:35   7. restore exactly
-22:37:08   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 2, 'restore_s': 33}
+14:53:44 === wl-crash-invalid-env-013 (workload_patch)
+14:53:44   0. world healthy?
+14:53:50   1. baseline must PASS
+14:53:51       [PASS   ] journey:checkout - 3/3 ok, avg 56ms
+14:53:51       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+14:53:51   2. inject
+14:53:51   3. verifier must FAIL (<= 240s)
+14:54:06       [FAIL   ] journey:checkout - 0/3 ok, avg 5038ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:54:06       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-54c7dd6db7-s56lx (shipping: last exit Error)
+14:54:06   4. do-nothing agent: still FAIL after 30s?
+14:54:37       [FAIL   ] journey:checkout - 0/3 ok, avg 32ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:54:37       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-54c7dd6db7-s56lx (shipping: last exit Error)
+14:54:37       failing in 2/2 checks during the hold
+14:54:37   5. reference solution
+14:54:37     $ kubectl set env deployment/shipping SHIPPING_PORT=8080
+14:54:37       deployment.apps/shipping env updated
+14:54:37     $ kubectl rollout status deployment/shipping --timeout=300s
+14:54:39       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+14:54:39       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+14:54:39       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
+14:54:39       deployment "shipping" successfully rolled out
+14:54:39   6. verifier must PASS (<= 300s)
+14:54:50       [PASS   ] journey:checkout - 3/3 ok, avg 59ms
+14:54:50       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+14:54:50   7. restore exactly
+14:55:12   => VALIDATED  {'world_ready_s': 6, 'detect_s': 16, 'recover_s': 11, 'restore_s': 22}

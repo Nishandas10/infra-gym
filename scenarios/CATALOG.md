@@ -1,6 +1,6 @@
 # Scenario catalog
 
-83 scenarios, each a distinct root-cause mechanism (83 validated end to end on the live cluster).
+95 scenarios, each a distinct root-cause mechanism (83 validated end to end on the live cluster).
 
 | family | scenarios | validated | median detect | median recover |
 |---|---|---|---|---|
@@ -8,6 +8,7 @@
 | chaos | 12 | 12 | 20s | 3s |
 | compound | 3 | 3 | 7s | 2s |
 | datastore | 9 | 9 | 2s | 1s |
+| hard | 12 | 0 | - | - |
 | observability | 6 | 6 | 26s | 14s |
 | platform | 9 | 9 | 2s | 3s |
 | service-network | 8 | 8 | 22s | 12s |
@@ -58,6 +59,18 @@ Validation = baseline healthy -> inject -> verifier FAIL -> still FAIL for a do-
 | `valkey-client-pause-077` | datastore | `datastore/kv-clients-paused` | Valkey clients paused -> writes hang | VALIDATED |
 | `valkey-maxmemory-075` | datastore | `datastore/kv-memory-cap-noeviction` | Valkey memory cap reached with 'noeviction' -> writes rejected | VALIDATED |
 | `valkey-requirepass-076` | datastore | `datastore/kv-credential-mismatch` | Valkey password set; the client does not know it | VALIDATED |
+| `hard-allowlist-forgets-checkout-106` | hard | `hard/ingress-allowlist-omits-client-with-decoy-deploy` | A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame | not run |
+| `hard-cart-chained-addr-auth-103` | hard | `hard/chained-config-then-credential` | A mistyped cart datastore port hides a half-finished credential rotation behind it | not run |
+| `hard-duplicate-env-override-109` | hard | `hard/duplicate-env-definition` | A duplicate env entry from an old overlay silently overrides the correct value | not run |
+| `hard-egress-policy-blocks-db-102` | hard | `hard/egress-allowlist-omits-dependency-port` | A security-hardening egress policy forgets the database port; everything points at the database | not run |
+| `hard-fix-reverted-by-cronjob-101` | hard | `hard/drift-reapplied-by-automation` | Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute | not run |
+| `hard-flag-in-source-of-truth-111` | hard | `hard/fault-in-source-config-live-fix-not-durable` | Half of card payments are declined; a live fix does not survive the next restart | not run |
+| `hard-ghost-legacy-email-pods-104` | hard | `hard/stale-workload-matches-service-selector` | Leftover legacy pods still match the email Service and swallow part of the traffic | not run |
+| `hard-masked-second-fault-107` | hard | `hard/sequential-masked-faults` | Two faults on the checkout path: fixing the first one reveals the second | not run |
+| `hard-oom-fix-blocked-by-limitrange-110` | hard | `hard/oom-fix-blocked-by-limitrange` | The ad service OOM-loops, and the obvious fix is rejected by a namespace LimitRange | not run |
+| `hard-pinned-endpoints-108` | hard | `hard/manual-endpoints-stale-ip` | The quote Service was pinned to a fixed IP during an old incident and never unpinned | not run |
+| `hard-silent-ledger-write-denied-105` | hard | `hard/silent-async-write-permission` | Orders disappear between checkout and the accounting ledger (write permission revoked) | not run |
+| `hard-telemetry-noise-hides-scheduling-112` | hard | `hard/loud-telemetry-outage-masks-scheduling-fault` | A loud telemetry outage hides the quiet scheduling failure that is actually hurting customers | not run |
 | `grafana-datasource-089` | observability | `observability/dashboard-datasource-misconfigured` | Grafana's Prometheus datasource points at the wrong port | VALIDATED |
 | `obs-pii-redaction-removed-069` | observability | `observability/telemetry-redaction-removed` | PII reaches the tracing backend after the redaction step was removed from the pipeline | VALIDATED |
 | `otel-collector-unscheduled-086` | observability | `observability/collector-not-running` | Collector DaemonSet has a nodeSelector that matches no node | VALIDATED |

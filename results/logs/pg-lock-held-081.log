@@ -1,21 +1,21 @@
-22:00:26 === pg-lock-held-081 (create_objects)
-22:00:26   0. world healthy?
-22:00:37   1. baseline must PASS
-22:00:38       [PASS   ] journey:browse - 3/3 ok, avg 22ms
-22:00:38       [PASS   ] journey:catalog - 3/3 ok, avg 18ms
-22:00:38   2. inject
-22:00:39   3. verifier must FAIL (<= 240s)
-22:01:28       [FAIL   ] journey:browse - 0/3 ok, avg 6027ms; e.g. GET /api/products/66VCHSJNUP -> no response b'TimeoutError: timed out'
-22:01:28       [FAIL   ] journey:catalog - 0/3 ok, avg 6020ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-22:01:28   4. do-nothing agent: still FAIL after 30s?
-22:02:18       [FAIL   ] journey:browse - 0/3 ok, avg 60ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
-22:02:18       [FAIL   ] journey:catalog - 0/3 ok, avg 21ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-22:02:18       failing in 1/1 checks during the hold
-22:02:18   5. reference solution
-22:02:18     $ kubectl delete deployment catalog-maintenance
-22:02:18       deployment.apps "catalog-maintenance" deleted from default namespace
-22:02:18   6. verifier must PASS (<= 300s)
-22:02:32       [PASS   ] journey:browse - 3/3 ok, avg 22ms
-22:02:32       [PASS   ] journey:catalog - 3/3 ok, avg 12ms
-22:02:32   7. restore exactly
-22:02:41   => VALIDATED  {'world_ready_s': 11, 'detect_s': 49, 'recover_s': 13, 'restore_s': 9}
+14:18:10 === pg-lock-held-081 (create_objects)
+14:18:10   0. world healthy?
+14:18:15   1. baseline must PASS
+14:18:16       [PASS   ] journey:browse - 3/3 ok, avg 13ms
+14:18:16       [PASS   ] journey:catalog - 3/3 ok, avg 11ms
+14:18:16   2. inject
+14:18:16   3. verifier must FAIL (<= 240s)
+14:19:03       [FAIL   ] journey:browse - 0/3 ok, avg 6022ms; e.g. GET /api/products/2ZYFJ3GM2N -> no response b'TimeoutError: timed out'
+14:19:03       [FAIL   ] journey:catalog - 0/3 ok, avg 6009ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+14:19:03   4. do-nothing agent: still FAIL after 30s?
+14:19:59       [FAIL   ] journey:browse - 0/3 ok, avg 3116ms; e.g. GET /api/products/L9ECAV7KIM -> no response b'TimeoutError: timed out'
+14:19:59       [FAIL   ] journey:catalog - 0/3 ok, avg 12ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+14:19:59       failing in 1/1 checks during the hold
+14:19:59   5. reference solution
+14:19:59     $ kubectl delete deployment catalog-maintenance
+14:19:59       deployment.apps "catalog-maintenance" deleted from default namespace
+14:19:59   6. verifier must PASS (<= 300s)
+14:20:10       [PASS   ] journey:browse - 3/3 ok, avg 14ms
+14:20:10       [PASS   ] journey:catalog - 3/3 ok, avg 11ms
+14:20:10   7. restore exactly
+14:20:16   => VALIDATED  {'world_ready_s': 6, 'detect_s': 47, 'recover_s': 11, 'restore_s': 6}

@@ -1,17 +1,17 @@
-21:03:11 === jvm-exception-062 (chaos_mesh)
-21:03:11   0. world healthy?
-21:03:21   1. baseline must PASS
-21:03:22       [PASS   ] journey:ads - 3/3 ok, avg 26ms
-21:03:22   2. inject
-21:03:28   3. verifier must FAIL (<= 240s)
-21:03:29       [FAIL   ] journey:ads - 0/3 ok, avg 61ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-21:03:29   4. do-nothing agent: still FAIL after 30s?
-21:04:00       [FAIL   ] journey:ads - 0/3 ok, avg 54ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-21:04:00       failing in 2/2 checks during the hold
-21:04:00   5. reference solution
-21:04:00     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
-21:04:01       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
-21:04:01   6. verifier must PASS (<= 300s)
-21:04:02       [PASS   ] journey:ads - 3/3 ok, avg 25ms
-21:04:02   7. restore exactly
-21:04:11   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'restore_s': 9}
+13:23:05 === jvm-exception-062 (chaos_mesh)
+13:23:05   0. world healthy?
+13:23:12   1. baseline must PASS
+13:23:13       [PASS   ] journey:ads - 3/3 ok, avg 22ms
+13:23:13   2. inject
+13:23:18   3. verifier must FAIL (<= 240s)
+13:23:19       [FAIL   ] journey:ads - 0/3 ok, avg 44ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+13:23:19   4. do-nothing agent: still FAIL after 30s?
+13:23:49       [FAIL   ] journey:ads - 0/3 ok, avg 40ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+13:23:49       failing in 2/2 checks during the hold
+13:23:49   5. reference solution
+13:23:49     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
+13:23:50       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
+13:23:50   6. verifier must PASS (<= 300s)
+13:23:50       [PASS   ] journey:ads - 3/3 ok, avg 25ms
+13:23:50   7. restore exactly
+13:23:57   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 0, 'restore_s': 7}

@@ -1,28 +1,26 @@
-22:28:35 === webhook-blocks-pods-050 (create_objects)
-22:28:35   0. world healthy?
-22:28:44   1. baseline must PASS
-22:28:46       [PASS   ] journey:email - 3/3 ok, avg 12ms
-22:28:46       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
-22:28:46   2. inject
-22:28:49   3. verifier must FAIL (<= 240s)
-22:28:51       [FAIL   ] journey:email - 0/3 ok, avg 6ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
-22:28:52       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
-22:28:52   4. do-nothing agent: still FAIL after 30s?
-22:29:23       [FAIL   ] journey:email - 0/3 ok, avg 3ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
-22:29:23       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
-22:29:23       failing in 2/2 checks during the hold
-22:29:23   5. reference solution
-22:29:23     $ kubectl delete validatingwebhookconfiguration pod-policy-guard
-22:29:23       validatingwebhookconfiguration.admissionregistration.k8s.io "pod-policy-guard" deleted
-22:29:23     $ kubectl rollout restart deployment/email
-22:29:23       deployment.apps/email restarted
-22:29:23     $ kubectl rollout status deployment/email --timeout=300s
-22:29:44       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-22:29:44       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-22:29:44       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-22:29:44       deployment "email" successfully rolled out
-22:29:44   6. verifier must PASS (<= 300s)
-22:29:47       [PASS   ] journey:email - 3/3 ok, avg 114ms
-22:29:47       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
-22:29:47   7. restore exactly
-22:29:55   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 2, 'restore_s': 9}
+14:45:35 === webhook-blocks-pods-050 (create_objects)
+14:45:35   0. world healthy?
+14:45:41   1. baseline must PASS
+14:45:42       [PASS   ] journey:email - 3/3 ok, avg 18ms
+14:45:42       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+14:45:42   2. inject
+14:45:45   3. verifier must FAIL (<= 240s)
+14:45:53       [FAIL   ] journey:email - 0/3 ok, avg 2673ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error timed out>'
+14:45:53       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+14:45:53   4. do-nothing agent: still FAIL after 30s?
+14:46:24       [FAIL   ] journey:email - 0/3 ok, avg 6ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+14:46:24       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+14:46:24       failing in 2/2 checks during the hold
+14:46:24   5. reference solution
+14:46:24     $ kubectl delete validatingwebhookconfiguration pod-policy-guard
+14:46:24       validatingwebhookconfiguration.admissionregistration.k8s.io "pod-policy-guard" deleted
+14:46:24     $ kubectl rollout restart deployment/email
+14:46:24       deployment.apps/email restarted
+14:46:24     $ kubectl rollout status deployment/email --timeout=300s
+14:46:25       Waiting for deployment "email" rollout to finish: 0 of 1 updated replicas are available...
+14:46:25       deployment "email" successfully rolled out
+14:46:25   6. verifier must PASS (<= 300s)
+14:46:36       [PASS   ] journey:email - 3/3 ok, avg 61ms
+14:46:36       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+14:46:36   7. restore exactly
+14:46:42   => VALIDATED  {'world_ready_s': 6, 'detect_s': 8, 'recover_s': 11, 'restore_s': 6}

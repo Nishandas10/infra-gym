@@ -81,3 +81,40 @@ def feature_flag(fault, undo, ctx):
     got = kube.wait_until(lambda: evaluate(flag, context).get("variant") == variant, timeout=30, interval=2)
     if not got:
         raise RuntimeError(f"flagd did not pick up {flag}={variant}: {evaluate(flag, context)}")
+
+
+# ------------------------------------------------- the flag's source of truth
+CONFIGMAP = "flagd-config"
+CONFIG_KEY = "demo.flagd.json"
+
+
+def set_source_variant(flag, variant, configmap=CONFIGMAP, key=CONFIG_KEY):
+    """Change a flag in the flagd-config ConfigMap (what flagd loads at pod start).
+    Returns the original ConfigMap text."""
+    obj = kube.get("configmap", configmap)
+    text = obj["data"][key]
+    kube.patch("configmap", configmap, {"data": {key: set_variant(text, flag, variant)}}, "merge")
+    return text
+
+
+@mechanism("flag_in_source_config", "application",
+           "Change a flag in the flagd-config ConfigMap (the source of truth) and restart flagd so it loads it; "
+           "fixing only the live file does not survive the next flagd restart")
+def flag_in_source_config(fault, undo, ctx):
+    from ..undo import restart
+    flag, variant = fault["flag"], str(fault.get("variant", "on"))
+    name, key = fault.get("configmap", CONFIGMAP), fault.get("key", CONFIG_KEY)
+    # Recorded first, so on revert it runs last: restore the ConfigMap, then restart flagd,
+    # whose init container rebuilds the live file from the restored ConfigMap.
+    undo.on_revert_restart("deployment/flagd")
+    obj = undo.snapshot("configmap", name, [f"/data/{kube.escape(key)}"])
+    text = obj["data"][key]
+    kube.patch("configmap", name, {"data": {key: set_variant(text, flag, variant)}}, "merge")
+    # The kubelet can hand a pod started right after the edit the cached old ConfigMap.
+    time.sleep(fault.get("restart_delay_s", 20))
+    restart("deployment/flagd")
+    context = targeting_context(text, flag)
+    got = kube.wait_until(lambda: evaluate(flag, context).get("variant") == variant,
+                          timeout=fault.get("load_timeout_s", 180), interval=5)
+    if not got:
+        raise RuntimeError(f"flagd did not load {flag}={variant} from the ConfigMap: {evaluate(flag, context)}")

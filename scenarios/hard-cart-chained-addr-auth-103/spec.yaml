@@ -1,0 +1,106 @@
+id: hard-cart-chained-addr-auth-103
+seed: 1103
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  restart_on_revert:
+  - deployment/cart
+  steps:
+  - type: exec_commands
+    target: deploy/valkey-cart
+    commands:
+    - - valkey-cli
+      - CONFIG
+      - SET
+      - requirepass
+      - rotated-Xk92-2026
+    undo_commands:
+    - - sh
+      - -c
+      - valkey-cli -a rotated-Xk92-2026 --no-auth-warning CONFIG SET requirepass '' || valkey-cli CONFIG SET requirepass
+        ''
+  - type: create_objects
+    manifests:
+    - apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: valkey-cart-credentials
+        namespace: default
+        annotations:
+          rotation.example.com/rotated-at: '2026-10-08T06:00:00Z'
+          rotation.example.com/consumers: cart
+      stringData:
+        password: rotated-Xk92-2026
+  - type: workload_patch
+    target: cart
+    recreate_pods: true
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:VALKEY_ADDR/value
+      value: valkey-cart:6380
+task:
+  mode: diagnose_and_mitigate
+  prompt: Adding items to the cart fails for every customer since this morning's change window. Find the cause and
+    fix it.
+tools:
+- kubectl
+- curl
+verifier:
+  outcome:
+  - journey:cart
+  root_cause:
+  - chained-config-then-credential
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+  - kubectl exec deploy/valkey-cart -- valkey-cli -a "$(kubectl get secret valkey-cart-credentials -o jsonpath='{.data.password}'
+    | base64 -d)" --no-auth-warning CONFIG SET requirepass ''
+  - kubectl rollout restart deployment/cart
+  - kubectl rollout status deployment/cart --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  family: hard
+  tier: hard
+  mechanism: hard/chained-config-then-credential
+  title: A mistyped cart datastore port hides a half-finished credential rotation behind it
+  generated: build_hard_scenarios.py
+  est_pass_rate: null
+  split: hard
+  layers: 3
+  difficulty_drivers:
+  - sequential-layers
+  - fix-reveals-next-fault
+  noise: []
+  realistic_pattern: Credential rotation applied to the server but not the client, masked by an unrelated typo
+  built_from:
+  - valkey-requirepass-076
+  - wl-paused-rollout-trap-030
+  prompt_easier: 'Adding items to the cart fails. Two changes went out this morning: a cart config change and a
+    credential rotation for its datastore. Find the cause and fix it.'

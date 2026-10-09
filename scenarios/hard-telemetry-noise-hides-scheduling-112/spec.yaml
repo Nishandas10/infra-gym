@@ -1,0 +1,107 @@
+id: hard-telemetry-noise-hides-scheduling-112
+seed: 1112
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: configmap_edit
+    name: otel-collector-agent
+    key: relay
+    replace:
+    - - 'endpoint: jaeger:4317'
+      - 'endpoint: jaeger:4999'
+    restart_after:
+    - daemonset/otel-collector-agent
+    pause_s: 30
+  - type: object_patch
+    kind: node
+    name: ai-gym-worker
+    namespace: null
+    ops:
+    - op: append
+      path: /spec/taints
+      value:
+        key: dedicated
+        value: batch
+        effect: NoSchedule
+  - type: object_patch
+    kind: node
+    name: ai-gym-worker2
+    namespace: null
+    ops:
+    - op: append
+      path: /spec/taints
+      value:
+        key: dedicated
+        value: batch
+        effect: NoSchedule
+    recreate_pods_after:
+    - opentelemetry.io/name=currency
+task:
+  mode: diagnose_and_mitigate
+  prompt: International customers report that prices fail to load in their currency. At the same time, traces stopped
+    arriving in Jaeger and the collector logs are full of export errors. Find what is breaking customers and fix
+    it.
+tools:
+- kubectl
+- curl
+verifier:
+  outcome:
+  - journey:currency
+  - pods_ready:opentelemetry.io/name=currency
+  root_cause:
+  - loud-telemetry-outage-masks-scheduling-fault
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: currency
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=currency
+solution:
+  commands:
+  - kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+  - kubectl rollout status deployment/currency --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  family: hard
+  tier: hard
+  mechanism: hard/loud-telemetry-outage-masks-scheduling-fault
+  title: A loud telemetry outage hides the quiet scheduling failure that is actually hurting customers
+  generated: build_hard_scenarios.py
+  est_pass_rate: null
+  split: hard
+  layers: 1
+  difficulty_drivers:
+  - prioritization
+  - loud-secondary-fault
+  - red-herring
+  noise:
+  - the trace pipeline is genuinely broken (wrong exporter port), with errors in collector logs
+  realistic_pattern: Simultaneous incidents where the loudest one is not the one hurting customers
+  built_from:
+  - otel-exporter-broken-085
+  - node-taint-046
+  prompt_easier: Prices in foreign currencies fail to load because the currency service has no running pod. The
+    telemetry errors are a separate issue. Find the cause and fix it.

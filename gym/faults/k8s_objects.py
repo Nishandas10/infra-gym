@@ -92,3 +92,54 @@ def delete_object(fault, undo, ctx):
     undo.deleted(obj, namespace=ns)
     kube.delete(fault["kind"], fault["name"], namespace=ns, wait=True)
     _after(fault, undo, ns)
+
+
+def _numeric_target_ports(svc, namespace):
+    """Service ports with targetPort resolved to a number (named ports via a backing pod)."""
+    selector = ",".join(f"{k}={v}" for k, v in (svc["spec"].get("selector") or {}).items())
+    pod = None
+    out = []
+    for p in svc["spec"]["ports"]:
+        target = p.get("targetPort", p["port"])
+        if isinstance(target, str) and not target.isdigit():
+            if pod is None:
+                pods = kube.items("pods", namespace=namespace, selector=selector) if selector else []
+                if not pods:
+                    raise ValueError(f"service {svc['metadata']['name']}: named targetPort {target!r} "
+                                     "and no pod to resolve it from")
+                pod = pods[0]
+            target = next(cp["containerPort"] for c in pod["spec"]["containers"]
+                          for cp in c.get("ports", []) if cp.get("name") == target)
+        entry = {"port": int(target), "protocol": p.get("protocol", "TCP")}
+        if p.get("name"):
+            entry["name"] = p["name"]
+        out.append(entry)
+    return out
+
+
+@mechanism("pin_endpoints", "k8s-object",
+           "Make a Service selector-less and point it at fixed IPs with a hand-made EndpointSlice "
+           "(the classic 'pinned during an incident, never unpinned')")
+def pin_endpoints(fault, undo, ctx):
+    ns = _ns(fault)
+    name = fault["service"]
+    svc = kube.get("service", name, namespace=ns)
+    ports = _numeric_target_ports(svc, ns)
+    slice_name = fault.get("slice_name", f"{name}-pinned")
+    manifest = {
+        "apiVersion": "discovery.k8s.io/v1", "kind": "EndpointSlice",
+        "metadata": {"name": slice_name, "namespace": ns,
+                     "labels": {"kubernetes.io/service-name": name,
+                                "endpointslice.kubernetes.io/managed-by": fault.get("managed_by", "ops-manual")},
+                     "annotations": fault.get("annotations", {})},
+        "addressType": "IPv4",
+        "ports": ports,
+        "endpoints": [{"addresses": [ip], "conditions": {"ready": True}} for ip in fault["ips"]],
+    }
+    # Undo runs newest first: put the selector back (the controller recreates its own
+    # slices), then delete the hand-made slice.
+    undo.created("endpointslices.discovery.k8s.io", slice_name, namespace=ns)
+    kube.apply(manifest, namespace=ns)
+    undo.snapshot("service", name, ["/spec/selector"], namespace=ns)
+    kube.patch("service", name, [{"op": "remove", "path": "/spec/selector"}], "json", namespace=ns)
+    _after(fault, undo, ns)

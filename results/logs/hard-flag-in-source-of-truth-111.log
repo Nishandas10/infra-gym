@@ -1,0 +1,19 @@
+12:14:56 === hard-flag-in-source-of-truth-111 (flag_in_source_config)
+12:14:56   0. world healthy?
+12:15:02   1. baseline must PASS
+12:15:03       [PASS   ] journey:checkout - 8/8 ok, avg 61ms
+12:15:03   2. inject
+12:15:29   3. verifier must FAIL (<= 300s)
+12:15:30       [FAIL   ] journey:checkout - 3/8 ok, avg 57ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+12:15:30   4. do-nothing agent: still FAIL after 60s?
+12:16:31       [FAIL   ] journey:checkout - 3/8 ok, avg 42ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+12:16:31       failing in 5/5 checks during the hold
+12:16:31   5. reference solution
+12:16:31     $ python injectors/source_flag.py paymentFailure off
+12:16:57       paymentFailure -> off: loaded by flagd
+12:16:57   6. verifier must PASS (<= 420s)
+12:16:58       [PASS   ] journey:checkout - 8/8 ok, avg 62ms
+12:16:58   6b. the fix must survive a restart of deployment/flagd
+12:17:44       [PASS   ] journey:checkout - 8/8 ok, avg 57ms
+12:17:44   7. restore exactly
+12:18:07   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 1, 'durable_s': 1, 'restore_s': 23}

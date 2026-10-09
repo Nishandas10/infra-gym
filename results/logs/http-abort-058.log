@@ -1,17 +1,17 @@
-21:01:14 === http-abort-058 (chaos_mesh)
-21:01:14   0. world healthy?
-21:01:22   1. baseline must PASS
-21:01:23       [PASS   ] journey:email - 3/3 ok, avg 28ms
-21:01:23   2. inject
-21:01:29   3. verifier must FAIL (<= 240s)
-21:01:30       [FAIL   ] journey:email - 0/3 ok, avg 7ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
-21:01:30   4. do-nothing agent: still FAIL after 30s?
-21:02:01       [FAIL   ] journey:email - 0/3 ok, avg 4ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
-21:02:01       failing in 2/2 checks during the hold
-21:02:01   5. reference solution
-21:02:01     $ kubectl delete httpchaos.chaos-mesh.org email-http-abort
-21:02:02       httpchaos.chaos-mesh.org "email-http-abort" deleted from default namespace
-21:02:02   6. verifier must PASS (<= 300s)
-21:02:02       [PASS   ] journey:email - 3/3 ok, avg 37ms
-21:02:02   7. restore exactly
-21:02:11   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 1, 'restore_s': 8}
+13:21:26 === http-abort-058 (chaos_mesh)
+13:21:26   0. world healthy?
+13:21:32   1. baseline must PASS
+13:21:32       [PASS   ] journey:email - 3/3 ok, avg 19ms
+13:21:32   2. inject
+13:21:37   3. verifier must FAIL (<= 240s)
+13:21:38       [FAIL   ] journey:email - 0/3 ok, avg 6ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+13:21:38   4. do-nothing agent: still FAIL after 30s?
+13:22:08       [FAIL   ] journey:email - 0/3 ok, avg 13ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+13:22:08       failing in 2/2 checks during the hold
+13:22:08   5. reference solution
+13:22:08     $ kubectl delete httpchaos.chaos-mesh.org email-http-abort
+13:22:08       httpchaos.chaos-mesh.org "email-http-abort" deleted from default namespace
+13:22:08   6. verifier must PASS (<= 300s)
+13:22:09       [PASS   ] journey:email - 3/3 ok, avg 11ms
+13:22:09   7. restore exactly
+13:22:15   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}

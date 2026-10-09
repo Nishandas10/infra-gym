@@ -1,0 +1,100 @@
+id: hard-duplicate-env-override-109
+seed: 1109
+stack:
+  cluster: kind-ai-gym
+  apps:
+  - otel-demo
+  observability:
+  - prometheus
+  - grafana
+  - jaeger
+fault:
+  type: composite
+  steps:
+  - type: create_objects
+    noise: true
+    manifests:
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: recommendation-settings
+        namespace: default
+        labels:
+          team: personalization
+      data:
+        PRODUCT_CATALOG_ADDR: product-catalog:8080
+        RECOMMENDATION_CACHE_TTL: '300'
+  - type: workload_patch
+    target: recommendation
+    recreate_pods: false
+    ops:
+    - op: append
+      path: /spec/template/spec/containers/$c/envFrom
+      value:
+        configMapRef:
+          name: recommendation-settings
+          optional: true
+    - op: append
+      path: /spec/template/spec/containers/$c/env
+      value:
+        name: PRODUCT_CATALOG_ADDR
+        value: product-catalog:3550
+task:
+  mode: diagnose_and_mitigate
+  prompt: Product recommendations have disappeared from the shop. A teammate checked the recommendation service's
+    configuration and says it looks correct. Find the cause and fix it.
+tools:
+- kubectl
+- curl
+verifier:
+  outcome:
+  - journey:recommendations
+  root_cause:
+  - duplicate-env-definition
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - edit_verifier
+  - delete_the_verifier_probe
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+solution:
+  commands:
+  - kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0];
+    seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env;
+    print(json.dumps(d))' | kubectl replace -f -
+  - kubectl rollout status deployment/recommendation --timeout=300s
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  family: hard
+  tier: hard
+  mechanism: hard/duplicate-env-definition
+  title: A duplicate env entry from an old overlay silently overrides the correct value
+  generated: build_hard_scenarios.py
+  est_pass_rate: null
+  split: hard
+  layers: 1
+  difficulty_drivers:
+  - looks-correct-config
+  - precedence-rules
+  - red-herring
+  noise:
+  - a correct-looking ConfigMap wired in via envFrom
+  realistic_pattern: Kustomize/Helm overlay merge leaving a duplicate env var
+  built_from:
+  - wl-missing-secret-020 (env append)
+  - compound-two-faults-091 (recommendation path)
+  prompt_easier: Product recommendations have disappeared. The recommendation service connects to the wrong product-catalog
+    address even though PRODUCT_CATALOG_ADDR looks correct. Find the cause and fix it.

@@ -1,21 +1,21 @@
-21:09:35 === kafka-backlog-010 (feature_flag)
-21:09:35   0. world healthy?
-21:09:44   1. baseline must PASS
-21:09:50       [PASS   ] journey:checkout - 2/2 ok, avg 434ms
-21:09:50       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
-21:09:50   2. inject
-21:09:51   3. verifier must FAIL (<= 600s)
-21:09:56       [PASS   ] journey:checkout - 2/2 ok, avg 184ms
-21:09:56       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 200 (max 50)
-21:09:56   4. do-nothing agent: still FAIL after 60s?
-21:11:02       [PASS   ] journey:checkout - 2/2 ok, avg 248ms
-21:11:02       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1614 (max 50)
-21:11:02       failing in 3/3 checks during the hold
-21:11:02   5. reference solution
-21:11:02     $ python injectors/toggle_flag.py kafkaQueueProblems --off
-21:11:05       'kafkaQueueProblems' -> off (flagd is serving it now)
-21:11:05   6. verifier must PASS (<= 900s)
-21:11:10       [PASS   ] journey:checkout - 2/2 ok, avg 372ms
-21:11:10       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
-21:11:10   7. restore exactly
-21:11:20   => VALIDATED  {'world_ready_s': 9, 'detect_s': 4, 'recover_s': 5, 'restore_s': 9}
+13:29:03 === kafka-backlog-010 (feature_flag)
+13:29:03   0. world healthy?
+13:29:10   1. baseline must PASS
+13:29:13       [PASS   ] journey:checkout - 2/2 ok, avg 54ms
+13:29:13       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 50)
+13:29:13   2. inject
+13:29:14   3. verifier must FAIL (<= 600s)
+13:29:17       [PASS   ] journey:checkout - 2/2 ok, avg 54ms
+13:29:17       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 201 (max 50)
+13:29:17   4. do-nothing agent: still FAIL after 60s?
+13:30:20       [PASS   ] journey:checkout - 2/2 ok, avg 57ms
+13:30:20       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1615 (max 50)
+13:30:20       failing in 3/3 checks during the hold
+13:30:20   5. reference solution
+13:30:20     $ python injectors/toggle_flag.py kafkaQueueProblems --off
+13:30:21       'kafkaQueueProblems' -> off (flagd is serving it now)
+13:30:21   6. verifier must PASS (<= 900s)
+13:30:42       [PASS   ] journey:checkout - 2/2 ok, avg 64ms
+13:30:42       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+13:30:42   7. restore exactly
+13:30:48   => VALIDATED  {'world_ready_s': 7, 'detect_s': 3, 'recover_s': 21, 'restore_s': 6}

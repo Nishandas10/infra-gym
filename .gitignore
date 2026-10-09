@@ -14,3 +14,11 @@ knowledge_base/
 
 # Undo logs of currently injected faults (machine-local state)
 .gym_state/
+
+bench/results/transcripts/
+
+# Infra Gym bench
+.env
+.env.*
+bench/config.before-*.yaml
+*.tgz
