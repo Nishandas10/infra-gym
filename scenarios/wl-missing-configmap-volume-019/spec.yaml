@@ -7,20 +7,34 @@ instance_of:
   template: wl-missing-configmap-volume-019
   version: 1
   params: {}
-content_hash: sha256:165c8dab35df8c09514f1c976ca7118e09a187f892ab66df6ff53722ab619d3f
+content_hash: sha256:74d14532f2d018655d3a875b747142299200d86ec197ca13862a18fc87203415
+validation_hash: sha256:27f44d1b098be531cc7b91bdb87ec234edf50cf3c5d3a7a9bf461e0255fd1357
 title: Pod mounts a ConfigMap that does not exist -> stuck ContainerCreating
 mechanism: workload/missing-configmap-volume
-family: workload
 split: train
 seed: 1019
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: The fraud team says no new orders have reached their system for a while, although checkout works. Find
       the cause and fix it.
 tags:
+  layer: workload
+  symptom: silent-data
+  fix_type:
+  - rollback
+  drivers:
+  - async-path
+  - silent-failure
   injector: k8s-api
 fault:
   steps:
@@ -46,36 +60,32 @@ verifier:
   - type: kafka_lag
     group: fraud-detection
     max_lag: 50
-  root_cause:
-  - fraud-detection
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl rollout undo deployment/fraud-detection
-  - kubectl rollout status deployment/fraud-detection --timeout=300s
-  cause: The last change to fraud-detection mounts a ConfigMap named `fraud-rules` that was never created. The kubelet
-    cannot set up the volume, so the pod never starts and the Kafka consumer group has no members. Orders pile up
-    unread. Checkout is unaffected, so the failure is silent.
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/fraud-detection
+    namespace: default
+    what: the pod mounts ConfigMap fraud-rules, which was never created, so it never starts
+  explanation: The last change to fraud-detection mounts a ConfigMap named `fraud-rules` that was never created.
+    The kubelet cannot set up the volume, so the pod never starts and the Kafka consumer group has no members. Orders
+    pile up unread. Checkout is unaffected, so the failure is silent.
+  evidence:
   - '`kubectl get pods`: fraud-detection is stuck in `ContainerCreating`.'
   - '`kubectl describe pod -l opentelemetry.io/name=fraud-detection`: `FailedMount ... configmap "fraud-rules" not
     found`.'
   - 'Kafka: consumer group `fraud-detection` has no active members and growing lag.'
   - '`kubectl rollout history deployment/fraud-detection`: the latest revision added the volume.'
+reference:
+  commands:
+  - kubectl rollout undo deployment/fraud-detection
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

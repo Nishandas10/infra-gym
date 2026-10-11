@@ -4,10 +4,12 @@ usage: python scripts/lint_scenarios.py
 
 Templates are validated against the v2 schema (gym/core/schema.py) by the generator; on top of
 that this checks what the schema cannot see: known journeys, unique mechanisms, mechanisms that
-were dropped, and that scenarios/ is up to date with templates/.
+were dropped, page prompts that give the cause away (templates/taxonomy.yaml prompt_leak_terms),
+and that scenarios/ is up to date with templates/.
 """
 import ast
 import pathlib
+import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -16,6 +18,7 @@ sys.path.insert(0, str(REPO))
 import yaml  # noqa: E402
 
 from gym.core import generate  # noqa: E402
+from gym.core.schema import taxonomy  # noqa: E402
 
 
 def journeys():
@@ -24,6 +27,15 @@ def journeys():
         if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "JOURNEYS":
             return {k.value for k in node.value.keys}
     return set()
+
+
+def prompt_leaks(spec):
+    """Leak terms found in the page prompt (case-insensitive, whole words or phrases)."""
+    task = spec["task"]
+    terms = set(taxonomy()["prompt_leak_terms"]) | set(task.get("leak_terms", []))
+    terms -= set(task.get("leak_allow", []))
+    page = task["prompts"]["page"].lower()
+    return sorted(t for t in terms if re.search(rf"(?<![a-z0-9]){re.escape(t.lower())}(?![a-z0-9])", page))
 
 
 def lint():
@@ -44,6 +56,10 @@ def lint():
         for c in s["verifier"]["checks"]:
             if c["type"] == "journey" and c.get("journey") not in known_journeys:
                 problems.append(f"{sid}: unknown journey {c.get('journey')}")
+        leaks = prompt_leaks(s)
+        if leaks:
+            problems.append(f"{sid}: the page prompt gives the cause away ({', '.join(leaks)}); move that detail "
+                            "to prompts.ticket, or add the term to task.leak_allow if it is a user-visible symptom")
     problems += [f"out of date: {p} (run: python scripts/generate.py)" for p in generate.stale(built)]
     return len(built), len(mechanisms), problems
 

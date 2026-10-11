@@ -3,7 +3,6 @@ id: coredns-rewrite-poison-044
 version: 1
 title: CoreDNS rewrite rule sends one service's name to another
 mechanism: platform/cluster-dns-rewrite
-family: platform
 split: train
 seed: 1044
 world: k8s-shop
@@ -11,9 +10,17 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Payments fail with protocol errors, as if checkout were talking to the wrong service. The payment pod
+    page: Every order fails at the payment step with protocol errors. Find the cause and fix it.
+    ticket: Payments fail with protocol errors, as if checkout were talking to the wrong service. The payment pod
       is healthy. Find the cause and fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - restart
+  drivers:
+  - misattributed-symptom
   injector: k8s-api
 fault:
   steps:
@@ -41,8 +48,19 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - coredns
+ground_truth:
+  root_causes:
+  - component: configmap/coredns
+    namespace: kube-system
+    what: a rewrite rule in the Corefile sends payment's name to the shipping Service
+  explanation: Someone added `rewrite name payment.default.svc.cluster.local shipping.default.svc.cluster.local`
+    to the CoreDNS Corefile. Lookups of `payment` return the shipping Service's IP, so checkout's gRPC calls reach
+    an HTTP server and fail.
+  evidence:
+  - '`kubectl logs deploy/checkout`: protocol / unavailable errors calling payment.'
+  - '`kubectl run -it --rm dnstest --image=busybox --restart=Never -- nslookup payment`: returns the IP of the `shipping`
+    Service (compare `kubectl get svc`).'
+  - '`kubectl -n kube-system get configmap coredns -o yaml`: the rewrite rule.'
 reference:
   commands:
   - kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply
@@ -51,14 +69,6 @@ reference:
   - kubectl -n kube-system rollout status deployment/coredns --timeout=300s
   - kubectl rollout restart deployment/checkout
   - kubectl rollout status deployment/checkout --timeout=300s
-  cause: Someone added `rewrite name payment.default.svc.cluster.local shipping.default.svc.cluster.local` to the
-    CoreDNS Corefile. Lookups of `payment` return the shipping Service's IP, so checkout's gRPC calls reach an HTTP
-    server and fail.
-  diagnose:
-  - '`kubectl logs deploy/checkout`: protocol / unavailable errors calling payment.'
-  - '`kubectl run -it --rm dnstest --image=busybox --restart=Never -- nslookup payment`: returns the IP of the `shipping`
-    Service (compare `kubectl get svc`).'
-  - '`kubectl -n kube-system get configmap coredns -o yaml`: the rewrite rule.'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 300

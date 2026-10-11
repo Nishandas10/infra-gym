@@ -144,7 +144,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Orders fail at shipping. The obvious config fix was applied, but the rollout never completes. Find the cause and fix it for real.",
+  "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
    "kubectl delete resourcequota namespace-pod-quota",
    "kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080",
@@ -415,7 +415,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Payments fail with protocol errors, as if checkout were talking to the wrong service. The payment pod is healthy. Find the cause and fix it.",
+  "prompt": "Every order fails at the payment step with protocol errors. Find the cause and fix it.",
   "solution": [
    "kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -",
    "kubectl -n kube-system rollout restart deployment/coredns",
@@ -503,7 +503,7 @@
    "scale_to_zero",
    "edit_verifier"
   ],
-  "prompt": "Since the cart's database pod was rescheduled a few minutes ago, adding to cart and placing orders fail. The valkey-cart pod is Running and healthy. Find the cause and fix it.",
+  "prompt": "Adding to cart and placing orders started failing a few minutes ago. Find the cause and fix it.",
   "solution": [
    "kubectl delete dnschaos.chaos-mesh.org dns-error-005"
   ],
@@ -565,7 +565,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Recommendations have failed since the product-catalog pod was rescheduled; the catalog itself serves product pages fine. Find the cause and fix it.",
+  "prompt": "Product recommendations ('You may also like') stopped working; product pages themselves load fine. Find the cause and fix it.",
   "solution": [
    "kubectl delete dnschaos.chaos-mesh.org catalog-dns-random"
   ],
@@ -602,7 +602,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The ad banner is missing on some page views, and the frontend logs occasional errors from the ad service. Find the cause and fix it.",
+  "prompt": "The ad banner is missing on some page views. Find the cause and fix it.",
   "solution": [
    "python injectors/toggle_flag.py adFailure --off"
   ],
@@ -932,7 +932,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause and fix it.",
+  "prompt": "Every Grafana dashboard shows 'No data'. Find the cause and fix it.",
   "solution": [
    "kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -"
   ],
@@ -2433,7 +2433,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Order confirmation emails are no longer being sent; the email pod is Running with no errors in its logs. Find the cause and fix it.",
+  "prompt": "Customers say order confirmation emails are no longer arriving. Find the cause and fix it.",
   "solution": [
    "kubectl delete httpchaos.chaos-mesh.org email-http-abort"
   ],
@@ -2496,7 +2496,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Orders fail at the shipping step with parse errors, yet the quote service returns HTTP 200. Find the cause and fix it.",
+  "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
    "kubectl delete httpchaos.chaos-mesh.org quote-http-garbage"
   ],
@@ -2557,7 +2557,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The ad banner is gone and the ad service logs mention an inventory error, although no one deployed anything. Find the cause and fix it.",
+  "prompt": "The ad banner has disappeared from the shop. Nothing was deployed today. Find the cause and fix it.",
   "solution": [
    "kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception"
   ],
@@ -2847,7 +2847,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "After the payment pod was restarted, every order fails. The new payment pod is Running and Ready, and its endpoints look correct. Find the cause and fix it.",
+  "prompt": "Every order has failed since the payment pod was restarted. Find the cause and fix it.",
   "solution": [
    "kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/nodeSelector/proxy-tier\"}]'",
    "kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s"
@@ -3148,7 +3148,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Orders hang and then fail at payment. Payment answers requests from everywhere else. Find the cause and fix it.",
+  "prompt": "Orders hang and then fail at the payment step. Find the cause and fix it.",
   "solution": [
    "kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition"
   ],
@@ -3206,7 +3206,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The entire shop is unreachable and internal calls time out, right after the security team applied 'baseline' policies. Find the cause and fix it.",
+  "prompt": "The entire shop is unreachable and internal calls time out. Find the cause and fix it.",
   "solution": [
    "kubectl delete networkpolicy default-deny-ingress"
   ],
@@ -3281,7 +3281,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every API call from the shop fails after a network-policy change, even though all backends are healthy and port 8080 is explicitly allowed. Find the cause and fix it.",
+  "prompt": "Every API call from the shop's web frontend fails. Find the cause and fix it.",
   "solution": [
    "kubectl delete networkpolicy frontend-egress-app-ports",
    "kubectl rollout restart deployment/frontend",
@@ -3368,7 +3368,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Checkout has been down since a security policy rollout; its new pod never becomes Ready. Find the cause and fix it.",
+  "prompt": "Checkout has been down for a while; its new pod never becomes Ready. Find the cause and fix it.",
   "solution": [
    "kubectl delete networkpolicy checkout-egress-lockdown",
    "kubectl rollout restart deployment/checkout",
@@ -3428,7 +3428,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every order fails at payment with a timeout. The payment pod is healthy. Find the cause and fix it.",
+  "prompt": "Every order fails at the payment step with a timeout. Find the cause and fix it.",
   "solution": [
    "kubectl delete networkpolicy payment-ingress-lockdown"
   ],
@@ -3498,7 +3498,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The cart went down after its pod was evicted during node maintenance, and it never came back. Find the cause and fix it.",
+  "prompt": "The cart went down a while ago and never came back; adding to cart and ordering fail. Find the cause and fix it.",
   "solution": [
    "kubectl uncordon ai-gym-worker ai-gym-worker2",
    "kubectl rollout status deployment/cart --timeout=300s"
@@ -3752,7 +3752,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "No new traces have appeared in Jaeger for any service since a telemetry config change. Find the cause and fix it.",
+  "prompt": "No new traces have appeared in Jaeger for any service. Find the cause and fix it.",
   "solution": [
    "kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -",
    "kubectl rollout restart daemonset/otel-collector-agent",
@@ -3939,7 +3939,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Product pages fail with database errors, but the database is up and the password is correct. Find the cause and fix it.",
+  "prompt": "Product pages fail with database errors. Find the cause and fix it.",
   "solution": [
    "kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'"
   ],
@@ -4041,7 +4041,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Product pages hang until they time out; the database is up and not busy. Find the cause and fix it.",
+  "prompt": "Product pages hang until they time out. Find the cause and fix it.",
   "solution": [
    "kubectl delete deployment catalog-maintenance"
   ],
@@ -4174,7 +4174,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The product catalog returns errors on every page, right after a database permissions audit. Find the cause and fix it.",
+  "prompt": "The product catalog returns errors on every page. Find the cause and fix it.",
   "solution": [
    "kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'"
   ],
@@ -4231,7 +4231,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Orders fail at shipping. `kubectl get pods` claims shipping is Running. Find the cause and fix it.",
+  "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
    "kubectl delete podchaos.chaos-mesh.org shipping-pod-failure"
   ],
@@ -4373,7 +4373,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every metrics dashboard went flat after Prometheus was restarted with 'cleaned up' flags. Find the cause and fix it.",
+  "prompt": "Every metrics dashboard went flat after Prometheus was restarted. Find the cause and fix it.",
   "solution": [
    "kubectl patch deployment prometheus --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--web.enable-otlp-receiver\"}]'",
    "kubectl rollout status deployment/prometheus --timeout=240s"
@@ -4575,7 +4575,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Product pages, recommendations and checkout all fail. The product-catalog pod is Running and Ready. Find the cause and fix it.",
+  "prompt": "Product pages, recommendations and checkout all fail. Find the cause and fix it.",
   "solution": [
    "kubectl patch service product-catalog --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/selector\",\"value\":{\"opentelemetry.io/name\":\"product-catalog\"}}]'"
   ],
@@ -4622,7 +4622,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Orders fail at the shipping step. Shipping's pod is healthy and its logs show no errors. Find the cause and fix it.",
+  "prompt": "Orders fail at the shipping step. Find the cause and fix it.",
   "solution": [
    "kubectl patch service shipping --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":8080}]'"
   ],
@@ -4789,7 +4789,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Since the cart service restarted, every cart operation fails with an authentication error. Find the cause and fix it.",
+  "prompt": "Every cart operation has failed since the cart service restarted. Find the cause and fix it.",
   "solution": [
    "kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''",
    "kubectl rollout restart deployment/cart",
@@ -4934,7 +4934,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every order fails with a shipping error. The shipping service itself is Running. Find the cause and fix it.",
+  "prompt": "Every order fails with a shipping error. Find the cause and fix it.",
   "solution": [
    "kubectl patch deployment quote --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/command\"}]'",
    "kubectl rollout status deployment/quote --timeout=300s"
@@ -5083,7 +5083,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The whole shop has become very slow since yesterday's resource tuning, but nothing is failing and no pod is restarting. Find the cause and fix it.",
+  "prompt": "The whole shop has become very slow since yesterday, but nothing is failing. Find the cause and fix it.",
   "solution": [
    "kubectl patch deployment frontend --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/resources/limits/cpu\"}]'",
    "kubectl rollout status deployment/frontend --timeout=300s"
@@ -5132,7 +5132,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Since the last configuration change every order fails at the shipping step. Find the cause and fix it.",
+  "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
    "kubectl set env deployment/shipping SHIPPING_PORT=8080",
    "kubectl rollout status deployment/shipping --timeout=300s"
@@ -5524,7 +5524,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Every order fails at the payment step. The payment pod is Running with zero restarts and its logs look normal. Find the cause and fix it.",
+  "prompt": "Every order fails at the payment step. Find the cause and fix it.",
   "solution": [
    "kubectl set env deployment/payment PAYMENT_PORT=8080",
    "kubectl rollout status deployment/payment --timeout=300s"
@@ -5819,7 +5819,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The cart is broken: adding items fails. A colleague says they already fixed the config, but nothing changed. Find the cause and fix it for real.",
+  "prompt": "The cart is broken: adding items fails. Find the cause and fix it.",
   "solution": [
    "kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379",
    "kubectl rollout resume deployment/cart",
@@ -5875,7 +5875,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The cart is broken for everyone: adding items fails and orders fail. The cart pod is Running. Find the cause and fix it.",
+  "prompt": "The cart is broken for everyone: adding items fails and orders fail. Find the cause and fix it.",
   "solution": [
    "kubectl patch deployment cart --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/readinessProbe\"}]'",
    "kubectl rollout status deployment/cart --timeout=300s"
@@ -5980,7 +5980,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "Product pages and the catalog fail to load after a security hardening change. Find the cause and fix it.",
+  "prompt": "Product pages and the catalog fail to load. Find the cause and fix it.",
   "solution": [
    "kubectl patch deployment astronomy-db --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/securityContext/runAsNonRoot\"}]'",
    "kubectl rollout status deployment/astronomy-db --timeout=300s"
@@ -6085,7 +6085,7 @@
    "edit_verifier",
    "delete_the_verifier_probe"
   ],
-  "prompt": "The 'You may also like' panel is empty on every product page since this morning's resource tuning. Find the cause and fix it.",
+  "prompt": "The 'You may also like' panel is empty on every product page since this morning. Find the cause and fix it.",
   "solution": [
    "kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi",
    "kubectl rollout status deployment/recommendation --timeout=300s"

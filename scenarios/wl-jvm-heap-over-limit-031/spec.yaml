@@ -7,20 +7,33 @@ instance_of:
   template: wl-jvm-heap-over-limit-031
   version: 1
   params: {}
-content_hash: sha256:6c01bd7b1ec7523e05a696821f6b00981f923c51c537a961c0ff5232127e4348
+content_hash: sha256:75f9f383f41926d7197376f4b2f0dbd2176cc72ee1b67b150dc642a4bbc95c67
+validation_hash: sha256:2aca3f319171f773154fe84884aa3ae81930a56b39c2f43c6024b232731d3d5a
 title: Memory limit below the JVM heap the broker is configured to use
 mechanism: workload/jvm-heap-exceeds-limit
-family: workload
 split: train
 seed: 1031
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Finance says no new orders are being recorded, the fraud team sees nothing new, and placing orders has
       become unreliable. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: silent-data
+  fix_type:
+  - config-edit
+  drivers:
+  - async-path
   injector: k8s-api
 fault:
   steps:
@@ -46,13 +59,26 @@ verifier:
     min_age_s: 300
   - type: orders_recorded
     timeout_s: 60
-  root_cause:
-  - kafka
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/kafka
+    namespace: default
+    what: the memory limit (128Mi) is far below the broker's 400M JVM heap, so it is OOMKilled on every start
+  explanation: The Kafka broker's memory limit was cut to 128Mi, but it runs with `KAFKA_HEAP_OPTS=-Xmx400M -Xms400M`.
+    The JVM needs far more than the limit, so the broker is OOMKilled on every start and crash-loops. Accounting
+    and fraud-detection receive nothing. Checkout's Kafka producer also gets stuck when the broker disappears, so
+    orders start timing out, and it has to be restarted after the broker is fixed.
+  evidence:
+  - '`kubectl get pods`: kafka `CrashLoopBackOff`; `kubectl describe pod` shows `OOMKilled`, exit code 137.'
+  - '`kubectl get deploy kafka -o yaml`: limit 128Mi vs `KAFKA_HEAP_OPTS=-Xmx400M -Xms400M`.'
+  - 'accounting/fraud-detection logs: broker unavailable; checkout requests time out.'
+  - After raising the limit, recreate the `orders` topic if the broker lost it (this demo Kafka has no persistent
+    volume) and restart checkout and the consumers.
 reference:
   commands:
   - kubectl set resources deployment/kafka -c kafka --limits=memory=700Mi
@@ -64,16 +90,6 @@ reference:
   - kubectl rollout status deployment/checkout --timeout=300s
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
-  cause: The Kafka broker's memory limit was cut to 128Mi, but it runs with `KAFKA_HEAP_OPTS=-Xmx400M -Xms400M`.
-    The JVM needs far more than the limit, so the broker is OOMKilled on every start and crash-loops. Accounting
-    and fraud-detection receive nothing. Checkout's Kafka producer also gets stuck when the broker disappears, so
-    orders start timing out, and it has to be restarted after the broker is fixed.
-  diagnose:
-  - '`kubectl get pods`: kafka `CrashLoopBackOff`; `kubectl describe pod` shows `OOMKilled`, exit code 137.'
-  - '`kubectl get deploy kafka -o yaml`: limit 128Mi vs `KAFKA_HEAP_OPTS=-Xmx400M -Xms400M`.'
-  - 'accounting/fraud-detection logs: broker unavailable; checkout requests time out.'
-  - After raising the limit, recreate the `orders` topic if the broker lost it (this demo Kafka has no persistent
-    volume) and restart checkout and the consumers.
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 600
@@ -83,10 +99,3 @@ validation:
 notes:
 - 'Measured: at 300Mi the JVM runs for minutes (heap pages are only touched as used), at 200Mi it OOMs twice then
   settles, at 150Mi it crash-loops with OOMKilled.'
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

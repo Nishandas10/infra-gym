@@ -3,7 +3,6 @@ id: wl-listen-port-drift-014
 version: 1
 title: Service listens on a different port than its Kubernetes Service targets
 mechanism: workload/listen-port-drift
-family: workload
 split: train
 seed: 1014
 world: k8s-shop
@@ -11,9 +10,16 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Every order fails at the payment step. The payment pod is Running with zero restarts and its logs look
+    page: Every order fails at the payment step. Find the cause and fix it.
+    ticket: Every order fails at the payment step. The payment pod is Running with zero restarts and its logs look
       normal. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
   injector: k8s-api
 fault:
   steps:
@@ -31,19 +37,22 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - payment
+ground_truth:
+  root_causes:
+  - component: deployment/payment
+    namespace: default
+    what: PAYMENT_PORT is 8081 while the payment Service targets 8080
+  explanation: '`PAYMENT_PORT` was changed to 8081, so the payment server now listens on 8081 while the `payment`
+    Service still sends traffic to targetPort 8080. The pod looks perfectly healthy because it has no probes, and
+    every connection to it is refused.'
+  evidence:
+  - '`kubectl logs deploy/checkout`: `connection refused` when calling payment.'
+  - '`kubectl logs deploy/payment`: the server says it is listening on port 8081.'
+  - '`kubectl get svc payment -o yaml`: targetPort is 8080, a mismatch.'
 reference:
   commands:
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
-  cause: '`PAYMENT_PORT` was changed to 8081, so the payment server now listens on 8081 while the `payment` Service
-    still sends traffic to targetPort 8080. The pod looks perfectly healthy because it has no probes, and every
-    connection to it is refused.'
-  diagnose:
-  - '`kubectl logs deploy/checkout`: `connection refused` when calling payment.'
-  - '`kubectl logs deploy/payment`: the server says it is listening on port 8081.'
-  - '`kubectl get svc payment -o yaml`: targetPort is 8080, a mismatch.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

@@ -7,20 +7,33 @@ instance_of:
   template: otel-exporter-broken-085
   version: 1
   params: {}
-content_hash: sha256:55f619d1d415aa56ca6047c70d6d5c86d76b82958e4acd09481b3bfc5ab65114
+content_hash: sha256:b647a6b50ea5d503cfe6e5dc7c4d4f52c31cc2e8f194416b6bb754d0f0211b3c
+validation_hash: sha256:d35e1f2bca705db99ea49a2724749c91be1f2ae77890379daeb34b5ca3dd3d56
 title: Collector exports traces to the wrong port
 mechanism: observability/collector-exporter-misconfigured
-family: observability
 split: train
 seed: 1085
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: No new traces have appeared in Jaeger for any service since a telemetry config change. Find the cause
+    page: No new traces have appeared in Jaeger for any service. Find the cause and fix it.
+    ticket: No new traces have appeared in Jaeger for any service since a telemetry config change. Find the cause
       and fix it.
 tags:
+  layer: observability
+  symptom: telemetry-only
+  fix_type:
+  - config-edit
+  - restart
   injector: k8s-api
 fault:
   steps:
@@ -42,34 +55,30 @@ verifier:
     service: frontend
     lookback: 1m
     min_traces: 1
-  root_cause:
-  - otel-collector
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: configmap/otel-collector-agent
+    namespace: default
+    what: the otlp_grpc/jaeger exporter endpoint is jaeger:4999, where nothing listens
+  explanation: The collector config's `otlp_grpc/jaeger` exporter endpoint was changed to `jaeger:4999`, where nothing
+    listens. Every trace batch fails to export and is dropped.
+  evidence:
+  - 'collector logs: `Exporting failed ... jaeger:4999 ... connection refused`.'
+  - Jaeger is up, but its newest traces are minutes old.
+  - '`kubectl get cm otel-collector-agent -o yaml`: the exporter endpoint.'
 reference:
   commands:
   - kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-  cause: The collector config's `otlp_grpc/jaeger` exporter endpoint was changed to `jaeger:4999`, where nothing
-    listens. Every trace batch fails to export and is dropped.
-  diagnose:
-  - 'collector logs: `Exporting failed ... jaeger:4999 ... connection refused`.'
-  - Jaeger is up, but its newest traces are minutes old.
-  - '`kubectl get cm otel-collector-agent -o yaml`: the exporter endpoint.'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

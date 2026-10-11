@@ -1,0 +1,66 @@
+spec_version: 2
+id: netpol-ingress-deny-038
+version: 1
+title: NetworkPolicy blocks all traffic into a service
+mechanism: network-policy/ingress-deny
+split: train
+seed: 1038
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Every order fails at the payment step with a timeout. Find the cause and fix it.
+    ticket: Every order fails at payment with a timeout. The payment pod is healthy. Find the cause and fix it.
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  drivers:
+  - looks-healthy
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=payment
+    manifests:
+    - apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: payment-ingress-lockdown
+        namespace: default
+      spec:
+        podSelector:
+          matchLabels:
+            opentelemetry.io/name: payment
+        policyTypes:
+        - Ingress
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: networkpolicy/payment-ingress-lockdown
+    namespace: default
+    what: the policy selects the payment pods and allows no ingress
+  explanation: A NetworkPolicy `payment-ingress-lockdown` selects the payment pods and allows no ingress, so checkout's
+    connections to payment are silently dropped (timeouts, not refusals).
+  evidence:
+  - '`kubectl logs deploy/checkout`: payment calls time out.'
+  - '`kubectl get networkpolicy`: `payment-ingress-lockdown` selects the payment pods with no ingress rules.'
+  - Deleting (or fixing) the policy restores traffic.
+reference:
+  commands:
+  - kubectl delete networkpolicy payment-ingress-lockdown
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

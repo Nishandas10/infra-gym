@@ -3,7 +3,6 @@ id: pg-connection-limit-080
 version: 1
 title: Role connection limit set to zero
 mechanism: datastore/db-connection-limit
-family: datastore
 split: train
 seed: 1080
 world: k8s-shop
@@ -11,9 +10,14 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Product pages fail with database errors, but the database is up and the password is correct. Find the
+    page: Product pages fail with database errors. Find the cause and fix it.
+    ticket: Product pages fail with database errors, but the database is up and the password is correct. Find the
       cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
   injector: exec
 fault:
   steps:
@@ -48,17 +52,20 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - astronomy-db
-reference:
-  commands:
-  - kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
-  cause: '`astronomy_user` was given `CONNECTION LIMIT 0` (an attempt to drain the role before maintenance) and
-    its sessions were terminated. Reconnects are rejected with `too many connections for role`.'
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/astronomy-db
+    namespace: default
+    what: role astronomy_user has CONNECTION LIMIT 0, so every reconnect is rejected
+  explanation: '`astronomy_user` was given `CONNECTION LIMIT 0` (an attempt to drain the role before maintenance)
+    and its sessions were terminated. Reconnects are rejected with `too many connections for role`.'
+  evidence:
   - 'product-catalog logs: `too many connections for role "astronomy_user"`.'
   - '`psql -c "select rolname, rolconnlimit from pg_roles"`: connlimit 0.'
   - Set it back to -1 (unlimited).
+reference:
+  commands:
+  - kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

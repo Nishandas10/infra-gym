@@ -1,0 +1,63 @@
+spec_version: 2
+id: cpu-stress-004
+version: 1
+title: CPU stressor running inside a container
+mechanism: chaos/cpu-stress
+split: train
+seed: 1004
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: 'A CPU alert fired: the frontend container is burning about two full cores while traffic is normal, and
+      the cloud bill is climbing. Find what is using the CPU and stop it.'
+tags:
+  layer: workload
+  symptom: resource
+  fix_type:
+  - delete-object
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest: chaos.yaml
+verifier:
+  checks:
+  - type: cpu_usage
+    selector: opentelemetry.io/name=frontend
+    max_cores: 0.8
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 3000
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+ground_truth:
+  root_causes:
+  - component: stresschaos/cpu-stress-004
+    namespace: default
+    what: a StressChaos experiment runs stress-ng CPU workers inside the frontend container
+  explanation: A Chaos Mesh StressChaos experiment runs two stress-ng CPU workers inside the frontend container,
+    which burn about two cores. The frontend has no CPU limit, so the site stays mostly responsive; the damage is
+    wasted CPU and noisy-neighbour pressure on the node.
+  evidence:
+  - the frontend container uses about 2 cores while request rates are flat
+  - stress-ng processes run inside the frontend container next to node
+  - nothing in the frontend Deployment changed (rollout history)
+  - kubectl get stresschaos -A shows the experiment
+reference:
+  commands:
+  - kubectl delete stresschaos.chaos-mesh.org cpu-stress-004
+validation:
+  detect_timeout_s: 150
+  recover_timeout_s: 180
+notes:
+- The frontend has no CPU limit and the VM has idle cores, so pages barely slow down; the observable symptom is
+  CPU saturation, not latency.
+meta:
+  golden: true

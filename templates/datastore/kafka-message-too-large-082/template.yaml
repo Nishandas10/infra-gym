@@ -3,7 +3,6 @@ id: kafka-message-too-large-082
 version: 1
 title: Topic max message size below the size of real messages
 mechanism: datastore/queue-message-size-limit
-family: datastore
 split: train
 seed: 1082
 world: k8s-shop
@@ -13,6 +12,13 @@ task:
   prompts:
     page: Checkout works, but no new orders reach accounting or fraud detection. Find the cause and fix it.
 tags:
+  layer: datastore
+  symptom: silent-data
+  fix_type:
+  - datastore-cmd
+  drivers:
+  - async-path
+  - silent-failure
   injector: exec
 fault:
   steps:
@@ -54,19 +60,22 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
-  root_cause:
-  - kafka
+ground_truth:
+  root_causes:
+  - component: deployment/kafka
+    namespace: default
+    what: the orders topic has max.message.bytes=128, so the broker rejects every order event
+  explanation: The `orders` topic got `max.message.bytes=128`. Every order event is larger, so the broker rejects
+    it (`RecordTooLargeException`). Checkout publishes asynchronously and only logs the error, so orders succeed
+    while the downstream consumers receive nothing.
+  evidence:
+  - 'checkout logs: producer errors `The request included a message larger than the max message size`.'
+  - Consumer lag is not growing (nothing is produced), which rules out slow consumers.
+  - '`kafka-configs.sh --describe --entity-type topics --entity-name orders`: max.message.bytes=128.'
 reference:
   commands:
   - kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092
     --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
-  cause: The `orders` topic got `max.message.bytes=128`. Every order event is larger, so the broker rejects it (`RecordTooLargeException`).
-    Checkout publishes asynchronously and only logs the error, so orders succeed while the downstream consumers
-    receive nothing.
-  diagnose:
-  - 'checkout logs: producer errors `The request included a message larger than the max message size`.'
-  - Consumer lag is not growing (nothing is produced), which rules out slow consumers.
-  - '`kafka-configs.sh --describe --entity-type topics --entity-name orders`: max.message.bytes=128.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

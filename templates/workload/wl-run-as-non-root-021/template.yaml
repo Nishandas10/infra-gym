@@ -3,7 +3,6 @@ id: wl-run-as-non-root-021
 version: 1
 title: runAsNonRoot on an image that runs as root -> CreateContainerConfigError
 mechanism: workload/security-context-run-as-non-root
-family: workload
 split: train
 seed: 1021
 world: k8s-shop
@@ -11,8 +10,16 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Product pages and the catalog fail to load after a security hardening change. Find the cause and fix it.
+    page: Product pages and the catalog fail to load. Find the cause and fix it.
+    ticket: Product pages and the catalog fail to load after a security hardening change. Find the cause and fix
+      it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - multi-hop
   injector: k8s-api
 fault:
   steps:
@@ -37,20 +44,23 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=astronomy-db
-  root_cause:
-  - astronomy-db
-reference:
-  commands:
-  - kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
-  - kubectl rollout status deployment/astronomy-db --timeout=300s
-  cause: 'Hardening added `runAsNonRoot: true` to the Postgres pod. The postgres image starts as root (its entrypoint
-    drops privileges itself), so the kubelet refuses to start it. With the database gone, product-catalog cannot
-    serve products.'
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/astronomy-db
+    namespace: default
+    what: runAsNonRoot is set on the postgres image, which starts as root, so the kubelet refuses to start it
+  explanation: 'Hardening added `runAsNonRoot: true` to the Postgres pod. The postgres image starts as root (its
+    entrypoint drops privileges itself), so the kubelet refuses to start it. With the database gone, product-catalog
+    cannot serve products.'
+  evidence:
   - '`kubectl logs deploy/product-catalog`: database connection errors.'
   - '`kubectl get pods`: astronomy-db is `CreateContainerConfigError`.'
   - '`kubectl describe pod -l opentelemetry.io/name=astronomy-db`: `container has runAsNonRoot and image will run
     as root`.'
+reference:
+  commands:
+  - kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
+  - kubectl rollout status deployment/astronomy-db --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

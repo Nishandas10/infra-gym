@@ -1,0 +1,57 @@
+spec_version: 2
+id: net-delay-002
+version: 1
+title: Network latency injected on one service
+mechanism: chaos/network-latency
+split: train
+seed: 1002
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: The product recommendations panel ('You may also like') takes many seconds to appear, while the rest of
+      the product page is fast. Find out why and mitigate it.
+tags:
+  layer: network
+  symptom: latency
+  fix_type:
+  - delete-object
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest: chaos.yaml
+verifier:
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+    timeout_s: 12
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+ground_truth:
+  root_causes:
+  - component: networkchaos/net-delay-002
+    namespace: default
+    what: a NetworkChaos experiment adds about 3 seconds of latency to every packet the recommendation pod sends
+  explanation: A Chaos Mesh NetworkChaos experiment adds about 3 seconds of latency to every packet the recommendation
+    pod sends.
+  evidence:
+  - /api/recommendations takes about 6 seconds while other APIs are fast
+  - 'Jaeger: the time is spent between spans (on the network), not inside the service code'
+  - nothing is crashing and recommendation's logs are clean
+  - kubectl get networkchaos -A shows the experiment
+reference:
+  commands:
+  - kubectl delete networkchaos.chaos-mesh.org net-delay-002
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+meta:
+  golden: true

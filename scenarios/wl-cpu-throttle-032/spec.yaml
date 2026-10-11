@@ -7,20 +7,32 @@ instance_of:
   template: wl-cpu-throttle-032
   version: 1
   params: {}
-content_hash: sha256:5a26bd83022964f73afa9cf30b78cf1bd195b35d0dae4caad8d1115d8f319bd9
+content_hash: sha256:16126328f9224897683017e91cc5ba4b66bba9ac4ce7e83905044c4b88437801
+validation_hash: sha256:d941b01a530e834610d71b7419cb26b6fec244ea4202bef3cfe4ac11e53197b1
 title: CPU limit so low the service is throttled into slowness
 mechanism: workload/cpu-limit-throttling
-family: workload
 split: train
 seed: 1032
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: The whole shop has become very slow since yesterday's resource tuning, but nothing is failing and no pod
-      is restarting. Find the cause and fix it.
+    page: The whole shop has become very slow since yesterday, but nothing is failing. Find the cause and fix it.
+    ticket: The whole shop has become very slow since yesterday's resource tuning, but nothing is failing and no
+      pod is restarting. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: latency
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -43,33 +55,29 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 1500
-  root_cause:
-  - frontend
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/frontend
+    namespace: default
+    what: a CPU limit of 20m throttles the frontend for most of every scheduling period
+  explanation: The frontend got a CPU limit of 20m (2% of a core). The CFS scheduler throttles it for most of every
+    100ms period, so each page takes seconds even though nothing errors.
+  evidence:
+  - Latency is high on every page, errors are low, and there are no restarts.
+  - '`kubectl get deploy frontend -o yaml`: `limits.cpu: 20m`.'
+  - Container CPU usage is pinned at the limit (Grafana, or kubelet stats); throttling metrics climb.
 reference:
   commands:
   - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"}]'
   - kubectl rollout status deployment/frontend --timeout=300s
-  cause: The frontend got a CPU limit of 20m (2% of a core). The CFS scheduler throttles it for most of every 100ms
-    period, so each page takes seconds even though nothing errors.
-  diagnose:
-  - Latency is high on every page, errors are low, and there are no restarts.
-  - '`kubectl get deploy frontend -o yaml`: `limits.cpu: 20m`.'
-  - Container CPU usage is pinned at the limit (Grafana, or kubelet stats); throttling metrics climb.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

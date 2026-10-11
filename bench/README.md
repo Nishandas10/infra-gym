@@ -33,15 +33,18 @@ restore anything else the model changed (`world.py`) -> world healthy again.
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run [--limit N] [--only ID] [--model ID] [--retry-errors]
+    python bench/agent_bench.py run [--limit N] [--only ID] [--model ID] [--retry-errors] [--hint-level page|ticket|hinted]
     python bench/leaderboard.py
+
+The agent gets the scenario's `page` prompt (symptoms only) unless `--hint-level` says otherwise;
+every result row records the hint level, the scenario's layer, tier and `content_hash`.
 
 Results: `bench/results/results.jsonl` (one line per episode), plus full transcripts in
 `bench/results/transcripts/<model>/<scenario>__a<N>.json`. Re-running `run` resumes where it stopped.
 
 ## Scenario sets, Claude, and cost
 
-- `python bench/agent_bench.py pick --n 30 --seed 1` writes `bench/sets/set30.txt`, a fixed, family-balanced set.
+- `python bench/agent_bench.py pick --n 30 --seed 1` writes `bench/sets/set30.txt`, a fixed, layer-balanced set.
   Same seed = same set, so every model can be compared on exactly the same scenarios.
 - `python bench/agent_bench.py run --set bench/sets/set30.txt --model claude --attempts 3` runs only that set,
   only matching models, with 3 attempts (overrides config).
@@ -65,13 +68,16 @@ Results: `bench/results/results.jsonl` (one line per episode), plus full transcr
 
     python bench/show.py                         # list every finished episode
     python bench/show.py <scenario> [--model m]  # what the model did, step by step (thinking, commands, outputs, timing)
-    python bench/judge.py run --set S [--dry-run] [--model m] [--judge id]   # grade root-cause reports vs reference_solution.md
+    python bench/judge.py run --set S [--dry-run] [--model m] [--judge id]   # grade root-cause reports vs the ground truth
     python bench/judge.py audit --set S --n 12   # grade a sample yourself, blind, to measure judge agreement
     python bench/judge.py report --set S         # diagnosis table + judge-vs-human agreement (Cohen's kappa)
     python bench/scoreboard.py --set S [--common]   # Diag. / Mit. / E2E / TTD / TTM / Tokens / Clean / Worse / $ per solve
 
 - The judge never changes PASS/FAIL; the verifier decides that. It sees the answer key, the incident prompt and the
   model's report only (no model name, no PASS/FAIL), votes 2-3 times, and grades correct / partial / wrong / missing.
+  Rubric v2 also grades **location** (named the faulty object(s)) and **mechanism** (said what is wrong with them)
+  separately; grades from rubric v1 are kept but not mixed with v2 (`--regrade` re-grades old episodes).
 - TTD = seconds from the agent's start to its first command that changes the cluster. TTM = seconds from the agent's start
   until the verifier sees the service working (checked once the agent stops). Both include model/API latency.
-- Answer keys: `scenarios/<id>/judge_key.md` if present, else `reference_solution.md` (minus its Confirm section).
+- Answer keys: `scenarios/<id>/judge_key.md` if present, else the scenario's `ground_truth` (root causes, explanation,
+  evidence, noise) plus the reference fix, rendered by `gym.core.generate.answer_key`.

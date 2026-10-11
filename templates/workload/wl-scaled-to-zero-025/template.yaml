@@ -3,7 +3,6 @@ id: wl-scaled-to-zero-025
 version: 1
 title: Deployment scaled to zero replicas
 mechanism: workload/scaled-to-zero
-family: workload
 split: train
 seed: 1025
 world: k8s-shop
@@ -13,6 +12,10 @@ task:
   prompts:
     page: Browsing and the cart work, but 'Place Order' always fails. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - scale
   injector: k8s-api
 fault:
   steps:
@@ -32,18 +35,21 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: checkout
-  root_cause:
-  - checkout
+ground_truth:
+  root_causes:
+  - component: deployment/checkout
+    namespace: default
+    what: checkout was scaled to 0 replicas
+  explanation: The checkout Deployment was scaled to 0 replicas (a leftover of a maintenance action), so there is
+    no checkout pod at all.
+  evidence:
+  - '`kubectl get pods`: no checkout pod.'
+  - '`kubectl get deploy checkout`: `0/0` replicas.'
+  - '`kubectl logs deploy/frontend`: checkout calls fail (unavailable / no endpoints).'
 reference:
   commands:
   - kubectl scale deployment checkout --replicas=1
   - kubectl rollout status deployment/checkout --timeout=300s
-  cause: The checkout Deployment was scaled to 0 replicas (a leftover of a maintenance action), so there is no checkout
-    pod at all.
-  diagnose:
-  - '`kubectl get pods`: no checkout pod.'
-  - '`kubectl get deploy checkout`: `0/0` replicas.'
-  - '`kubectl logs deploy/frontend`: checkout calls fail (unavailable / no endpoints).'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

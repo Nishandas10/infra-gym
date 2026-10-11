@@ -7,20 +7,33 @@ instance_of:
   template: wl-missing-secret-020
   version: 1
   params: {}
-content_hash: sha256:a71071928654a6b97126431603d44cb51cacd9455f5b1c52e4870840f680a89e
+content_hash: sha256:2009c88df2ead34b47a580f73b113ac10123d12b6dce72d9c953db9ecd547a90
+validation_hash: sha256:0a9fd410ff3c6a1ada9899ce5b18a1555946300e11facdbcd916424ae02f42b6
 title: Env var references a Secret that does not exist -> CreateContainerConfigError
 mechanism: workload/missing-secret-reference
-family: workload
 split: train
 seed: 1020
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Customers report they no longer receive order confirmation emails. Orders themselves succeed. Find the
       cause and fix it.
 tags:
+  layer: workload
+  symptom: silent-data
+  fix_type:
+  - config-edit
+  drivers:
+  - silent-failure
   injector: k8s-api
 fault:
   steps:
@@ -45,33 +58,30 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=email
-  root_cause:
-  - email
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/email
+    namespace: default
+    what: SMTP_PASSWORD references Secret email-smtp-credentials, which does not exist
+  explanation: The email Deployment now reads `SMTP_PASSWORD` from Secret `email-smtp-credentials`, which does not
+    exist, so the container cannot be created. Checkout only logs email failures, so orders still succeed and nobody
+    notices.
+  evidence:
+  - '`kubectl get pods`: email is `CreateContainerConfigError`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=email`: `secret "email-smtp-credentials" not found`.'
+  - '`kubectl logs deploy/checkout`: warnings that the order confirmation could not be sent.'
 reference:
   commands:
   - kubectl set env deployment/email SMTP_PASSWORD-
   - kubectl rollout status deployment/email --timeout=300s
-  cause: The email Deployment now reads `SMTP_PASSWORD` from Secret `email-smtp-credentials`, which does not exist,
-    so the container cannot be created. Checkout only logs email failures, so orders still succeed and nobody notices.
-  diagnose:
-  - '`kubectl get pods`: email is `CreateContainerConfigError`.'
-  - '`kubectl describe pod -l opentelemetry.io/name=email`: `secret "email-smtp-credentials" not found`.'
-  - '`kubectl logs deploy/checkout`: warnings that the order confirmation could not be sent.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

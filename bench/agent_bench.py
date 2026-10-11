@@ -34,7 +34,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
 from gym import checks, faults, harness, kube, toolbox  # noqa: E402
-from gym.spec import all_specs, checks_of, fault_label, load, prompt_of  # noqa: E402
+from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog, restart as restart_target  # noqa: E402
 import world  # noqa: E402
 
@@ -131,8 +131,8 @@ def select_scenarios(cfg):
             continue
         if sid in cfg.get("exclude", []):
             continue
-        chosen.append({"id": sid, "spec": spec, "dir": sdir,
-                       "family": spec["family"], "fault_type": fault_label(spec)})
+        chosen.append({"id": sid, "spec": spec, "dir": sdir, "layer": layer_of(spec), "tier": tier_of(spec),
+                       "fault_type": fault_label(spec)})
     return chosen
 
 
@@ -721,7 +721,7 @@ def _play(sc, ms, client, cfg, row, state):
     world_during_fault = {checks.describe(c): st for c, st, _ in checks.run_checks(checks.WORLD_HEALTHY)}
     refresh_sandbox()
     budget = spec.get("budget") or {}
-    agent = run_agent(client, ms, prompt_of(spec, "page"),
+    agent = run_agent(client, ms, prompt_of(spec, row["hint_level"]),
                       budget.get("max_steps", cfg.get("default_max_steps", 30)),
                       budget.get("wall_s", cfg.get("default_wall_s", 900)),
                       cfg.get("temperature", 0.2))
@@ -790,8 +790,9 @@ def _cleanup(spec, snap, state):
 
 def episode(sc, ms, attempt, client, cfg):
     sid, model = sc["id"], ms["id"]
-    row = {"key": sid, "scenario": sid, "family": sc["family"], "fault_type": sc["fault_type"],
-           "content_hash": sc["spec"]["content_hash"], "model": model, "attempt": attempt, "at": now()}
+    row = {"key": sid, "scenario": sid, "layer": sc["layer"], "tier": sc["tier"], "fault_type": sc["fault_type"],
+           "content_hash": sc["spec"]["content_hash"], "hint_level": cfg.get("hint_level", "page"),
+           "model": model, "attempt": attempt, "at": now()}
     start = time.time()
     recovery = ensure_world() or []
     if UndoLog(sid).active:  # left over from a crash
@@ -897,14 +898,13 @@ def read_set(path):
 
 
 def cmd_pick(cfg, args):
-    """A fixed scenario set (proportional to family sizes by default), so every model is compared on
+    """A fixed scenario set (proportional to layer sizes by default), so every model is compared on
     exactly the same scenarios."""
-    pool = [s for s in select_scenarios({**cfg, "include": []})
-            if args.tier == "all" or (s["family"] == "hard") == (args.tier == "hard")]
+    pool = [s for s in select_scenarios({**cfg, "include": []}) if args.tier in ("all", s["tier"])]
     rng = random.Random(args.seed)
     fams = {}
     for s in pool:
-        fams.setdefault(s["family"], []).append(s)
+        fams.setdefault(s["layer"], []).append(s)
     for v in fams.values():
         rng.shuffle(v)
     picked, order = [], sorted(fams)
@@ -935,11 +935,11 @@ def cmd_pick(cfg, args):
     out = HERE / "sets" / f"{args.name}.txt"
     out.parent.mkdir(exist_ok=True)
     out.write_text(f"# {len(picked)} scenarios, seed {args.seed}, from {len(pool)} eligible\n" +
-                   "".join(f"{s['id']}  # {s['family']} / {s['fault_type']}\n" for s in picked))
+                   "".join(f"{s['id']}  # {s['layer']} / {s['fault_type']}\n" for s in picked))
     counts = {}
     for s in picked:
-        counts[s["family"]] = counts.get(s["family"], 0) + 1
-    log(f"Wrote {out} ({len(picked)} of {len(pool)} eligible scenarios). By family: {counts}")
+        counts[s["layer"]] = counts.get(s["layer"], 0) + 1
+    log(f"Wrote {out} ({len(picked)} of {len(pool)} eligible scenarios). By layer: {counts}")
 
 
 def cmd_run(cfg, args):
@@ -1012,11 +1012,15 @@ def main():
     p.add_argument("--seed", type=int, default=1, help="pick: random seed (same seed = same set)")
     p.add_argument("--name", default="set30", help="pick: name of the set file")
     p.add_argument("--mode", default="proportional", choices=["proportional", "balanced"],
-                   help="pick: proportional to family sizes (default; represents the whole set) or equal per family")
+                   help="pick: proportional to layer sizes (default; represents the whole set) or equal per layer")
     p.add_argument("--tier", default="standard", choices=["standard", "hard", "all"],
                    help="pick: which tier to pick from (default: standard, i.e. not the Hard tier)")
+    p.add_argument("--hint-level", choices=["page", "ticket", "hinted"],
+                   help="run: which prompt the agent gets (default: page = symptoms only; recorded per episode)")
     args = p.parse_args()
     cfg = load_config()
+    if args.hint_level:
+        cfg["hint_level"] = args.hint_level
     {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run, "pick": cmd_pick}[args.command](cfg, args)
 
 

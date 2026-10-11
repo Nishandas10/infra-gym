@@ -7,20 +7,31 @@ instance_of:
   template: obs-pii-redaction-removed-069
   version: 1
   params: {}
-content_hash: sha256:258629c7a2b26c73c681fbfc8daa842a52388d0f681b605da0de13461f73e0b2
+content_hash: sha256:150b206ba23917926cbd013ef7a1de84aae5a165806203a9d0ee5b70aba61dfe
+validation_hash: sha256:cfd5434722ef8edae11fb31b93a34855b9867eaf954f95dcc9c1d3acc162c224
 title: PII reaches the tracing backend after the redaction step was removed from the pipeline
 mechanism: observability/telemetry-redaction-removed
-family: observability
 split: train
 seed: 1069
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: 'Compliance alert: plain-text customer email addresses and full card numbers were found in trace data
       in Jaeger. Find how they got there and stop the leak.'
 tags:
+  layer: observability
+  symptom: telemetry-only
+  fix_type:
+  - config-edit
   injector: mixed
 fault:
   steps:
@@ -54,13 +65,25 @@ verifier:
     service: payment
     lookback: 2m
     pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
-  root_cause:
-  - otel-collector
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: configmap/otel-collector-agent
+    namespace: default
+    what: the redaction processors were removed from the traces pipeline, so raw personal data is exported
+  explanation: The services attach raw personal data (customer email, full card number) to spans. Normally the collector's
+    `transform/redact_sensitive_data` and `redaction` processors hash or mask these attributes before export. They
+    were removed from the traces pipeline, so the raw values now reach Jaeger.
+  evidence:
+  - 'Jaeger: checkout/payment spans carry `user.email` and `demo.payment.card_number` in clear text.'
+  - '`kubectl get cm otel-collector-agent -o yaml`: the traces pipeline''s processors list lacks `transform/redact_sensitive_data`
+    and `redaction`, although both processors are still defined.'
+  - 'Restore them in the pipeline and restart the collector. In reality, also purge the leaked data and investigate
+    why apps emit raw PII (here: the `emitRawPii` flag).'
 reference:
   commands:
   - kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml'));
@@ -70,15 +93,6 @@ reference:
     && kubectl apply -f /tmp/relay.yaml
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-  cause: The services attach raw personal data (customer email, full card number) to spans. Normally the collector's
-    `transform/redact_sensitive_data` and `redaction` processors hash or mask these attributes before export. They
-    were removed from the traces pipeline, so the raw values now reach Jaeger.
-  diagnose:
-  - 'Jaeger: checkout/payment spans carry `user.email` and `demo.payment.card_number` in clear text.'
-  - '`kubectl get cm otel-collector-agent -o yaml`: the traces pipeline''s processors list lacks `transform/redact_sensitive_data`
-    and `redaction`, although both processors are still defined.'
-  - 'Restore them in the pipeline and restart the collector. In reality, also purge the leaked data and investigate
-    why apps emit raw PII (here: the `emitRawPii` flag).'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 360
@@ -88,10 +102,3 @@ validation:
 notes:
 - 'Background: the services emit raw personal data in span attributes (emitRawPii). The actual incident: the collector
   pipeline no longer scrubs it.'
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

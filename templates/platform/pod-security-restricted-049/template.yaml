@@ -3,7 +3,6 @@ id: pod-security-restricted-049
 version: 1
 title: Namespace switched to the 'restricted' Pod Security Standard
 mechanism: platform/pod-security-admission
-family: platform
 split: train
 seed: 1049
 world: k8s-shop
@@ -13,6 +12,13 @@ task:
   prompts:
     page: Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - restart
+  drivers:
+  - silent-rejection
   injector: k8s-api
 fault:
   steps:
@@ -35,19 +41,22 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=image-provider
-  root_cause:
-  - pod-security
+ground_truth:
+  root_causes:
+  - component: namespace/default
+    namespace: null
+    what: the namespace enforces the restricted Pod Security Standard, so image-provider's new pod is rejected
+  explanation: The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running,
+    but any recreated pod that does not meet the restricted profile is rejected at admission.
+  evidence:
+  - '`kubectl get pods`: no image-provider pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=image-provider`: `violates PodSecurity "restricted:latest"`.'
+  - '`kubectl get namespace default --show-labels`.'
 reference:
   commands:
   - kubectl label namespace default pod-security.kubernetes.io/enforce-
   - kubectl rollout restart deployment/image-provider
   - kubectl rollout status deployment/image-provider --timeout=300s
-  cause: The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running,
-    but any recreated pod that does not meet the restricted profile is rejected at admission.
-  diagnose:
-  - '`kubectl get pods`: no image-provider pod.'
-  - '`kubectl describe rs -l opentelemetry.io/name=image-provider`: `violates PodSecurity "restricted:latest"`.'
-  - '`kubectl get namespace default --show-labels`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

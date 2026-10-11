@@ -1,0 +1,60 @@
+spec_version: 2
+id: pay-unreachable-007
+version: 1
+title: Checkout calls payment at a dead address (paymentUnreachable)
+mechanism: app-flag/payment-unreachable
+split: train
+seed: 1007
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: 'Orders cannot be placed: ''Place Order'' spins and then errors. The payment provider''s status page says
+      they are fully operational. Find out why and fix it.'
+tags:
+  layer: app
+  symptom: hard-errors
+  fix_type:
+  - flag
+  drivers:
+  - looks-healthy
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: paymentUnreachable
+    variant: 'on'
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 5000
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+ground_truth:
+  root_causes:
+  - component: flag/paymentUnreachable
+    namespace: default
+    what: 'the flag is on: checkout calls payment at an address where nothing listens'
+  explanation: 'The paymentUnreachable flag makes checkout call the payment service at an address where nothing
+    is listening. The payment pod itself is healthy, which is the trap: ''payment is up'' is true but irrelevant.'
+  evidence:
+  - placing an order fails after a delay
+  - payment and checkout pods are both Running
+  - 'checkout logs: the charge call fails with a connection / unavailable error, not a payment decline'
+  - 'Jaeger: the PaymentService/Charge span errors without ever reaching the payment service'
+  - paymentUnreachable is on
+reference:
+  commands:
+  - python injectors/toggle_flag.py paymentUnreachable --off
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+meta:
+  golden: true

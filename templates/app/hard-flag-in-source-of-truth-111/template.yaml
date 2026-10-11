@@ -1,0 +1,79 @@
+spec_version: 2
+id: hard-flag-in-source-of-truth-111
+version: 1
+title: Half of card payments are declined; a live fix does not survive the next restart
+mechanism: hard/fault-in-source-config-live-fix-not-durable
+split: hard
+seed: 1111
+world: k8s-shop
+bench_eligible: true
+tools:
+- kubectl
+- curl
+task:
+  kind: incident
+  prompts:
+    page: About half of all card payments are being declined since this morning's configuration release. Find the
+      cause and fix it.
+    hinted: About half of card payments fail because a feature flag is on. Make sure the fix still holds after the
+      flag service restarts. Find the cause and fix it.
+tags:
+  layer: app
+  symptom: partial
+  fix_type:
+  - flag
+  drivers:
+  - fix-must-be-durable
+  - intermittent
+  - two-sources-of-config
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag_source_config
+    flag: paymentFailure
+    variant: 50%
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 8
+    max_error_pct: 0
+    max_avg_ms: 5000
+ground_truth:
+  root_causes:
+  - component: configmap/flagd-config
+    namespace: default
+    what: paymentFailure is set to 50% in flagd's source configuration, which flagd loads at every start
+  explanation: The feature flag paymentFailure is set to 50% in the flagd-config ConfigMap, the source flagd loads
+    at startup. Flipping the flag only in flagd's live file (the Feature Flags UI / flagd-ui) fixes payments until
+    flagd restarts, then the ConfigMap brings the failure back.
+  evidence:
+  - 'payment logs: about half of charges fail with the feature-flag-driven error.'
+  - flagd's OFREP API (POST /ofrep/v1/evaluate/flags/paymentFailure) returns variant 50%.
+  - The live file in the flagd-ui container and the flagd-config ConfigMap both say 50%.
+  - Fix the ConfigMap (the source of truth) and restart flagd (or fix both the ConfigMap and the live file).
+reference:
+  commands:
+  - python injectors/source_flag.py paymentFailure off
+  traps:
+  - 'Fixing only the live flag file: passes now, fails after the verifier restarts flagd.'
+  - 'Fixing only the ConfigMap without restarting flagd: nothing changes until the next restart.'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+  restart_after_fix:
+  - deployment/flagd
+  restart_settle_s: 45
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  tier: hard
+  layers: 2
+  realistic_pattern: Live hotfix that is overwritten from the declarative source of truth on the next restart
+  built_from:
+  - pay-fail-006 (flag)
+  - new mechanism flag_in_source_config

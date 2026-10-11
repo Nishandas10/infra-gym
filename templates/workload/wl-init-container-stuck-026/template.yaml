@@ -3,7 +3,6 @@ id: wl-init-container-stuck-026
 version: 1
 title: Init container waits for a dependency name that never resolves
 mechanism: workload/init-container-blocked
-family: workload
 split: train
 seed: 1026
 world: k8s-shop
@@ -14,6 +13,10 @@ task:
     page: The cart has been down since the last deploy. The new cart pod never becomes Ready. Find the cause and
       fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - rollback
   injector: k8s-api
 fault:
   steps:
@@ -36,19 +39,22 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=cart
-  root_cause:
-  - cart
-reference:
-  commands:
-  - kubectl rollout undo deployment/cart
-  - kubectl rollout status deployment/cart --timeout=300s
-  cause: The init container `wait-for-valkey-cart` was changed to wait for `valkey-cart-primary`, a host that does
-    not exist. The init container loops forever and the main container never starts.
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/cart
+    namespace: default
+    what: the init container wait-for-valkey-cart waits for valkey-cart-primary, which does not exist
+  explanation: The init container `wait-for-valkey-cart` was changed to wait for `valkey-cart-primary`, a host that
+    does not exist. The init container loops forever and the main container never starts.
+  evidence:
   - '`kubectl get pods`: cart is `Init:0/1`.'
   - '`kubectl logs <cart-pod> -c wait-for-valkey-cart`: repeated `waiting for valkey-cart` / name resolution errors.'
   - '`kubectl get deploy cart -o yaml`: the init command uses `valkey-cart-primary`.'
   - '`kubectl rollout history deployment/cart` shows the change; rolling back fixes it.'
+reference:
+  commands:
+  - kubectl rollout undo deployment/cart
+  - kubectl rollout status deployment/cart --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

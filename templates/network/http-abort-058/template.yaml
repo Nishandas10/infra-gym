@@ -1,0 +1,71 @@
+spec_version: 2
+id: http-abort-058
+version: 1
+title: HTTP requests to a service aborted at layer 7
+mechanism: chaos/http-fault-abort
+split: train
+seed: 1058
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: Customers say order confirmation emails are no longer arriving. Find the cause and fix it.
+    ticket: Order confirmation emails are no longer being sent; the email pod is Running with no errors in its logs.
+      Find the cause and fix it.
+tags:
+  layer: network
+  symptom: silent-data
+  fix_type:
+  - delete-object
+  drivers:
+  - looks-healthy
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest:
+    - apiVersion: chaos-mesh.org/v1alpha1
+      kind: HTTPChaos
+      metadata:
+        name: email-http-abort
+        namespace: default
+      spec:
+        mode: all
+        target: Request
+        port: 8080
+        path: '*'
+        abort: true
+        selector:
+          namespaces:
+          - default
+          labelSelectors:
+            opentelemetry.io/name: email
+verifier:
+  checks:
+  - type: journey
+    journey: email
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: httpchaos/email-http-abort
+    namespace: default
+    what: an HTTPChaos experiment aborts every HTTP request to the email service on port 8080 before it reaches
+      the application
+  explanation: An HTTPChaos experiment aborts every HTTP request to the email service on port 8080, before it reaches
+    the application. That is why the email app's own logs show nothing.
+  evidence:
+  - 'checkout logs: sending confirmations fails (connection reset / EOF).'
+  - The email app logs show no incoming requests at all.
+  - '`kubectl get httpchaos -A`: `email-http-abort`.'
+reference:
+  commands:
+  - kubectl delete httpchaos.chaos-mesh.org email-http-abort
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

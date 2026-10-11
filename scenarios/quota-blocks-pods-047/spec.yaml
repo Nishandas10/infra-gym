@@ -7,20 +7,34 @@ instance_of:
   template: quota-blocks-pods-047
   version: 1
   params: {}
-content_hash: sha256:9c958c03b39562f733923c3112c071effebeab139f3456bfefe6499fd627fcbc
+content_hash: sha256:ea876fa95f1e0e20f6ec654bf470b50d915ac249b1008831c28fca1c746385e9
+validation_hash: sha256:067593232bd543d14606e20002250d16ce39194b599743e009d643cff29e6e18
 title: ResourceQuota lower than the namespace's pod count
 mechanism: platform/resource-quota-exhausted
-family: platform
 split: train
 seed: 1047
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Shipping disappeared after a routine pod restart and has not come back; orders fail. Find the cause and
       fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  - restart
+  drivers:
+  - silent-rejection
   injector: k8s-api
 fault:
   steps:
@@ -45,34 +59,30 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=shipping
-  root_cause:
-  - resource-quota
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: resourcequota/namespace-pod-quota
+    namespace: default
+    what: a quota of 10 pods (about 25 already run) stops shipping's new pod from being created
+  explanation: A ResourceQuota caps the namespace at 10 pods while about 25 already run. When the shipping pod was
+    replaced, the ReplicaSet could not create the new one.
+  evidence:
+  - '`kubectl get pods`: no shipping pod at all (not even Pending).'
+  - '`kubectl describe rs -l opentelemetry.io/name=shipping`: `FailedCreate ... exceeded quota: namespace-pod-quota`.'
+  - '`kubectl get resourcequota`.'
 reference:
   commands:
   - kubectl delete resourcequota namespace-pod-quota
   - kubectl rollout restart deployment/shipping
   - kubectl rollout status deployment/shipping --timeout=300s
-  cause: A ResourceQuota caps the namespace at 10 pods while about 25 already run. When the shipping pod was replaced,
-    the ReplicaSet could not create the new one.
-  diagnose:
-  - '`kubectl get pods`: no shipping pod at all (not even Pending).'
-  - '`kubectl describe rs -l opentelemetry.io/name=shipping`: `FailedCreate ... exceeded quota: namespace-pod-quota`.'
-  - '`kubectl get resourcequota`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

@@ -10,6 +10,10 @@
 2. `kubectl get deploy quote`: 0 replicas.
 3. The report generator's logs mention a database nothing else uses.
 
+## Noise in this scenario (not the cause)
+
+- the crash-looping legacy-report-generator, which logs database connection errors but nothing depends on
+
 ## Fix
 
 ```bash

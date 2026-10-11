@@ -3,7 +3,6 @@ id: pg-revoked-grant-078
 version: 1
 title: Database role lost SELECT on the table the service reads
 mechanism: datastore/db-permission-revoked
-family: datastore
 split: train
 seed: 1078
 world: k8s-shop
@@ -11,9 +10,14 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: The product catalog returns errors on every page, right after a database permissions audit. Find the cause
-      and fix it.
+    page: The product catalog returns errors on every page. Find the cause and fix it.
+    ticket: The product catalog returns errors on every page, right after a database permissions audit. Find the
+      cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
   injector: exec
 fault:
   steps:
@@ -47,18 +51,21 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - astronomy-db
+ground_truth:
+  root_causes:
+  - component: deployment/astronomy-db
+    namespace: default
+    what: SELECT on catalog.products was revoked from astronomy_user, the role product-catalog connects as
+  explanation: The audit revoked `SELECT` on `catalog.products` from `astronomy_user`, the role product-catalog
+    connects as. Every query fails with `permission denied for table products`.
+  evidence:
+  - 'product-catalog logs: `permission denied for table products`.'
+  - '`psql ... -c ''\dp catalog.products''`: astronomy_user has no SELECT.'
+  - Re-grant the privilege.
 reference:
   commands:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO
     astronomy_user'
-  cause: The audit revoked `SELECT` on `catalog.products` from `astronomy_user`, the role product-catalog connects
-    as. Every query fails with `permission denied for table products`.
-  diagnose:
-  - 'product-catalog logs: `permission denied for table products`.'
-  - '`psql ... -c ''\dp catalog.products''`: astronomy_user has no SELECT.'
-  - Re-grant the privilege.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

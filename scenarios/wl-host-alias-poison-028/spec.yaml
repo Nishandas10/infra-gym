@@ -7,20 +7,33 @@ instance_of:
   template: wl-host-alias-poison-028
   version: 1
   params: {}
-content_hash: sha256:af73e6e2df1d834e67b82f97d4eebc885c33bcb5b305202c1dc4b40227fc609f
+content_hash: sha256:58594003b67c82f8e882c1593076b80414dcc22848fafe7f3155960eea19141c
+validation_hash: sha256:e825f9f535b3becea174e66ff3e9fa2ebe470e5fdfa6ba0009a09d28a607655f
 title: hostAliases entry sends a dependency to a dead IP
 mechanism: workload/hostaliases-override
-family: workload
 split: train
 seed: 1028
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Product listings and product pages time out, but checkout (which also uses the catalog) works. Find the
       cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - partial-impact
   injector: k8s-api
 fault:
   steps:
@@ -46,35 +59,31 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - frontend
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
-  - kubectl rollout status deployment/frontend --timeout=300s
-  cause: The frontend pod template has a `hostAliases` entry mapping `product-catalog` to 192.0.2.10 (an unroutable
+ground_truth:
+  root_causes:
+  - component: deployment/frontend
+    namespace: default
+    what: a hostAliases entry maps product-catalog to the unroutable address 192.0.2.10
+  explanation: The frontend pod template has a `hostAliases` entry mapping `product-catalog` to 192.0.2.10 (an unroutable
     test address), which overrides DNS inside the pod through /etc/hosts. Only the frontend is affected, which is
     why checkout still works.
-  diagnose:
+  evidence:
   - '`kubectl logs deploy/frontend`: timeouts calling product-catalog.'
   - Product-catalog is healthy and reachable from other pods (checkout works).
   - '`kubectl exec deploy/frontend -- cat /etc/hosts`: `192.0.2.10 product-catalog`.'
   - '`kubectl get deploy frontend -o yaml`: `hostAliases`.'
+reference:
+  commands:
+  - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
+  - kubectl rollout status deployment/frontend --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

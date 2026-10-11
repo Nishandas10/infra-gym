@@ -3,7 +3,6 @@ id: prometheus-otlp-disabled-088
 version: 1
 title: Prometheus restarted without its OTLP receiver
 mechanism: observability/metrics-ingest-disabled
-family: observability
 split: train
 seed: 1088
 world: k8s-shop
@@ -11,9 +10,14 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Every metrics dashboard went flat after Prometheus was restarted with 'cleaned up' flags. Find the cause
+    page: Every metrics dashboard went flat after Prometheus was restarted. Find the cause and fix it.
+    ticket: Every metrics dashboard went flat after Prometheus was restarted with 'cleaned up' flags. Find the cause
       and fix it.
 tags:
+  layer: observability
+  symptom: telemetry-only
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -35,18 +39,21 @@ verifier:
   - type: prometheus
     query: sum(rate(http_server_request_duration_seconds_count[1m]))
     min_value: 0.01
-  root_cause:
-  - prometheus
+ground_truth:
+  root_causes:
+  - component: deployment/prometheus
+    namespace: default
+    what: Prometheus runs without --web.enable-otlp-receiver, so the collector's OTLP metric pushes are rejected
+  explanation: Prometheus was restarted without `--web.enable-otlp-receiver`. The collector pushes metrics over
+    OTLP, and every push is now rejected (404), so no new samples arrive.
+  evidence:
+  - 'collector logs: `Exporting failed ... prometheus ... 404`.'
+  - Prometheus is up, but queries for application metrics return nothing recent.
+  - '`kubectl get deploy prometheus -o yaml`: the OTLP receiver flag is missing.'
 reference:
   commands:
   - kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
   - kubectl rollout status deployment/prometheus --timeout=240s
-  cause: Prometheus was restarted without `--web.enable-otlp-receiver`. The collector pushes metrics over OTLP,
-    and every push is now rejected (404), so no new samples arrive.
-  diagnose:
-  - 'collector logs: `Exporting failed ... prometheus ... 404`.'
-  - Prometheus is up, but queries for application metrics return nothing recent.
-  - '`kubectl get deploy prometheus -o yaml`: the OTLP receiver flag is missing.'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 360

@@ -1,0 +1,72 @@
+spec_version: 2
+id: compound-two-faults-091
+version: 1
+title: Two unrelated faults at the same time
+mechanism: compound/independent-simultaneous-faults
+split: train
+seed: 1091
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: 'Two complaints came in within minutes: recommendations are missing, and the ad banner keeps disappearing.
+      Find the cause(s) and fix everything.'
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - flag
+  drivers:
+  - independent-faults
+  injector: mixed
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: recommendation
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:PRODUCT_CATALOG_ADDR/value
+      value: product-catalog:8081
+  - mechanism: app.flag
+    flag: adFailure
+    variant: 'on'
+verifier:
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: ads
+    repeat: 30
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: deployment/recommendation
+    namespace: default
+    what: PRODUCT_CATALOG_ADDR uses the wrong port (8081)
+  - component: flag/adFailure
+    namespace: default
+    what: 'the flag is on: the ad service fails some requests'
+  explanation: 'Two independent root causes: recommendation''s `PRODUCT_CATALOG_ADDR` uses the wrong port (8081),
+    and the `adFailure` flag is on. Fixing one leaves the other broken; the verifier requires both.'
+  evidence:
+  - 'recommendation logs: connection refused to product-catalog:8081.'
+  - 'ad logs / Feature Flags UI: `adFailure` on.'
+  - Do not stop after the first fix; re-check both symptoms.
+reference:
+  commands:
+  - kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
+  - kubectl rollout status deployment/recommendation --timeout=300s
+  - python injectors/toggle_flag.py adFailure --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

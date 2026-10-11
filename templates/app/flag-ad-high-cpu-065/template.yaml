@@ -1,0 +1,54 @@
+spec_version: 2
+id: flag-ad-high-cpu-065
+version: 1
+title: Ad service burns CPU on every request (adHighCpu)
+mechanism: app-flag/ad-high-cpu
+split: train
+seed: 1065
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The ad service's CPU usage has spiked far above normal and ad responses are slow. Find the cause and fix
+      it.
+tags:
+  layer: app
+  symptom: latency
+  fix_type:
+  - flag
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: adHighCpu
+    variant: 'on'
+verifier:
+  checks:
+  - type: cpu_usage
+    selector: opentelemetry.io/name=ad
+    max_cores: 0.5
+  - type: journey
+    journey: ads
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1000
+ground_truth:
+  root_causes:
+  - component: flag/adHighCpu
+    namespace: default
+    what: 'the flag is on: the ad service runs a CPU-heavy loop on every request'
+  explanation: The `adHighCpu` flag makes the ad service run a CPU-heavy loop on requests, which saturates its CPU.
+  evidence:
+  - 'Grafana / kubelet stats: ad container CPU far above baseline.'
+  - 'Jaeger: GetAds spans are long, with an attribute showing the high-CPU path.'
+  - 'Feature Flags UI: `adHighCpu` is on.'
+reference:
+  commands:
+  - python injectors/toggle_flag.py adHighCpu --off
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

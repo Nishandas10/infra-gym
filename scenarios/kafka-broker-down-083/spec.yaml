@@ -7,20 +7,33 @@ instance_of:
   template: kafka-broker-down-083
   version: 1
   params: {}
-content_hash: sha256:1c18b5a327fe6348da61fada6a5a97c0f88b52026c633e7394c8918706e5d62a
+content_hash: sha256:759fafdcda467fb9a2c01ed3dabee32bbbeaa4ea024fcd14651dfc37f5948da2
+validation_hash: sha256:a027e3248647f4bb10f445cab4b14ad67882743b181c6184396c749e8c8d970b
 title: Message broker scaled to zero (async pipeline stops silently)
 mechanism: datastore/message-broker-down
-family: datastore
 split: train
 seed: 1083
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the
       cause and fix it.
 tags:
+  layer: datastore
+  symptom: silent-data
+  fix_type:
+  - scale
+  drivers:
+  - async-path
   injector: k8s-api
 fault:
   steps:
@@ -43,13 +56,23 @@ verifier:
     timeout_s: 60
   - type: pods_ready
     selector: opentelemetry.io/name=kafka
-  root_cause:
-  - kafka
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/kafka
+    namespace: default
+    what: 'Kafka was scaled to 0 replicas: the consumers are disconnected and checkout''s producer gets stuck'
+  explanation: The Kafka Deployment was scaled to zero. The consumers (accounting, fraud-detection) sit disconnected,
+    and checkout's Kafka producer gets stuck, so orders eventually time out too.
+  evidence:
+  - 'accounting logs: `brokers are down`; checkout requests time out.'
+  - '`kubectl get deploy kafka`: 0 replicas.'
+  - After restoring the broker, recreate the `orders` topic (no persistent volume in this demo) and restart checkout
+    and the consumers; they do not recover on their own.
 reference:
   commands:
   - kubectl scale deployment kafka --replicas=1
@@ -61,23 +84,9 @@ reference:
   - kubectl rollout status deployment/checkout --timeout=300s
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
-  cause: The Kafka Deployment was scaled to zero. The consumers (accounting, fraud-detection) sit disconnected,
-    and checkout's Kafka producer gets stuck, so orders eventually time out too.
-  diagnose:
-  - 'accounting logs: `brokers are down`; checkout requests time out.'
-  - '`kubectl get deploy kafka`: 0 replicas.'
-  - After restoring the broker, recreate the `orders` topic (no persistent volume in this demo) and restart checkout
-    and the consumers; they do not recover on their own.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 480
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

@@ -1,0 +1,112 @@
+# The allowed values of every template's tags (gym/core/schema.py rejects anything else).
+# Each axis is independent: a scenario has one layer, one symptom, one or more fix types,
+# any number of difficulty drivers, and one injector.
+
+layer:   # where the root cause lives (also the template's folder: templates/<layer>/<id>/)
+  app: the shop's own behaviour, switched by its feature flags or the flag configuration
+  workload: a Deployment / DaemonSet / pod spec (env, ports, probes, resources, security context, scheduling)
+  service-net: Service objects, endpoints, NetworkPolicies, the edge proxy's routing
+  network: packet- or request-level faults between pods (latency, loss, partition, DNS answers, L7 faults)
+  platform: cluster-wide machinery (CoreDNS, kube-proxy, admission webhooks, quotas, LimitRanges, Pod Security)
+  node: the nodes themselves (cordons, taints, labels)
+  datastore: Postgres, Valkey or Kafka state and settings
+  observability: the telemetry pipeline (collector, Prometheus, Grafana, exporters)
+
+symptom:   # what the people affected notice first
+  hard-errors: a user journey fails every time
+  latency: requests succeed but are slow
+  partial: only some requests, users or products fail, or failures come and go
+  silent-data: user journeys succeed, but data or side effects are lost (orders not recorded, emails not sent)
+  telemetry-only: customers are unaffected; traces, metrics or dashboards are wrong or missing
+  resource: wasted CPU or traffic with little customer impact
+
+fix_type:   # what the correct fix does (a scenario may need several)
+  config-edit: change a field of an object (env, port, probe, resources, selector, policy rule, label)
+  delete-object: remove an object that causes the fault (policy, quota, webhook, rogue workload, experiment)
+  restore-object: recreate an object that was deleted
+  scale: scale a workload back up
+  flag: switch a feature flag back (live, or in its source configuration)
+  datastore-cmd: run a command against a datastore (GRANT, ALTER ROLE, CONFIG SET, topic config)
+  node-op: uncordon, untaint or relabel nodes
+  restart: restart a workload so it picks up the fix or drops bad state
+  rollback: roll a Deployment back to its previous revision
+
+drivers:   # what makes a scenario harder than finding one broken setting
+  async-path: the damage is in an asynchronous pipeline, away from the request path
+  fix-is-blocked: the obvious fix is applied but something prevents it from taking effect
+  fix-must-be-durable: a live fix is lost on the next restart unless the source of truth is fixed
+  fix-must-hold: the fix must survive a re-break or a stability window
+  fix-reveals-next-fault: fixing the first fault exposes a second one
+  hidden-second-actor: automation or another party keeps re-breaking it
+  independent-faults: two unrelated faults at the same time; both must be fixed
+  intermittent: failures come and go
+  looks-correct-config: the configuration looks right at first glance
+  looks-healthy: the faulty component reports healthy (Running, Ready, no errors in its logs)
+  loud-secondary-fault: a real but less important fault produces the loudest signals
+  misattributed-symptom: the symptom points at a different component than the cause
+  multi-hop: the cause is two or more services away from where the symptom shows
+  network-path: the fault is in the path between components, not in either one
+  partial-fix-trap: an obvious partial fix leaves the incident unresolved
+  partial-impact: only part of the traffic, users or features is affected
+  partial-reachability: some clients can reach the dependency and others cannot
+  precedence-rules: which of several settings wins decides the outcome
+  prioritization: several things are wrong; the customer-facing one must come first
+  recent-change-bias: an unrelated recent change invites blame
+  red-herring: a loud, broken but irrelevant component is nearby
+  sequential-layers: the incident has layers that are only visible one after another
+  silent-failure: nothing reports an error where the agent would first look
+  silent-rejection: the API accepts the change, then something rejects pods quietly (events only)
+  slow-burn: the fault builds up over minutes before it is visible
+  two-sources-of-config: the same setting comes from two places
+
+injector:   # how the gym injects the fault (informational; it does not change the fix)
+  k8s-api: changes Kubernetes objects
+  chaos-mesh: a Chaos Mesh experiment (not bench-eligible, because its only fix is deleting the experiment)
+  exec: commands run inside a pod (database, key-value store, Kafka tools)
+  flagd: the shop's feature flags
+  mixed: several of the above
+
+# A page-level prompt (task.prompts.page) reads like an alert or a customer report: symptoms and
+# when they started, never the kind of change or the component internals. The linter rejects a
+# page prompt that contains any of these terms (case-insensitive). A template can add terms with
+# task.leak_terms and allow one with task.leak_allow.
+prompt_leak_terms:
+  - networkpolicy
+  - network policy
+  - network-policy
+  - security policy
+  - selector
+  - targetport
+  - target port
+  - taint
+  - cordon
+  - quota
+  - limitrange
+  - limit range
+  - configmap
+  - secret
+  - probe
+  - liveness
+  - readiness
+  - feature flag
+  - coredns
+  - kube-proxy
+  - webhook
+  - oom
+  - oomkilled
+  - memory limit
+  - cpu limit
+  - replicas
+  - scaled
+  - nodeselector
+  - hostalias
+  - env var
+  - environment variable
+  - image tag
+  - grant
+  - permission
+  - password
+  - dns
+  - resource tuning
+  - hardening
+  - chaos

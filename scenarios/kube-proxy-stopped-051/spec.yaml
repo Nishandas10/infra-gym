@@ -7,20 +7,34 @@ instance_of:
   template: kube-proxy-stopped-051
   version: 1
   params: {}
-content_hash: sha256:639253668ea9173b3334467ad35c654053265988517abe0e34252fed74012fad
+content_hash: sha256:7f3808ace9023bb8ec49baa44926421b4d28a41f0635699e8d3ac5e0bbe9cd85
+validation_hash: sha256:9e56aab31210304f8d20272920adce09ac4ba07dfa791bcb6eafe539897fd9d1
 title: kube-proxy removed; Service rules go stale when a pod moves
 mechanism: platform/service-proxy-down
-family: platform
 split: train
 seed: 1051
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: After the payment pod was restarted, every order fails. The new payment pod is Running and Ready, and
+    page: Every order has failed since the payment pod was restarted. Find the cause and fix it.
+    ticket: After the payment pod was restarted, every order fails. The new payment pod is Running and Ready, and
       its endpoints look correct. Find the cause and fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
   injector: k8s-api
 fault:
   steps:
@@ -45,34 +59,31 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - kube-proxy
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: daemonset/kube-proxy
+    namespace: kube-system
+    what: a nodeSelector that matches no node removed kube-proxy, so Service rules went stale when payment's pod
+      moved
+  explanation: kube-proxy (which programs Service IPs into node network rules) was removed by a nodeSelector no
+    node matches. The old rules stay in place, so nothing breaks until an endpoint changes. When payment got a new
+    pod IP, the `payment` Service kept sending traffic to the old IP.
+  evidence:
+  - Endpoints for `payment` show the new pod IP, yet checkout cannot connect.
+  - '`kubectl -n kube-system get pods -l k8s-app=kube-proxy`: none running.'
+  - '`kubectl -n kube-system get ds kube-proxy -o yaml`: nodeSelector `proxy-tier=disabled`.'
 reference:
   commands:
   - kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
   - kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
-  cause: kube-proxy (which programs Service IPs into node network rules) was removed by a nodeSelector no node matches.
-    The old rules stay in place, so nothing breaks until an endpoint changes. When payment got a new pod IP, the
-    `payment` Service kept sending traffic to the old IP.
-  diagnose:
-  - Endpoints for `payment` show the new pod IP, yet checkout cannot connect.
-  - '`kubectl -n kube-system get pods -l k8s-app=kube-proxy`: none running.'
-  - '`kubectl -n kube-system get ds kube-proxy -o yaml`: nodeSelector `proxy-tier=disabled`.'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

@@ -3,7 +3,6 @@ id: wl-ephemeral-storage-evicted-027
 version: 1
 title: Tiny ephemeral-storage limit -> pods evicted over and over
 mechanism: workload/ephemeral-storage-eviction
-family: workload
 split: train
 seed: 1027
 world: k8s-shop
@@ -14,6 +13,10 @@ task:
     page: Traces keep disappearing from Jaeger for minutes at a time, and the telemetry collector pods keep being
       replaced. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: telemetry-only
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -36,20 +39,24 @@ verifier:
     service: frontend
     lookback: 1m
     min_traces: 1
-  root_cause:
-  - otel-collector
+ground_truth:
+  root_causes:
+  - component: daemonset/otel-collector-agent
+    namespace: default
+    what: an ephemeral-storage limit of 64Ki gets the collector pods evicted soon after they start
+  explanation: The collector DaemonSet got an `ephemeral-storage` limit of 64Ki. Container logs count toward that
+    limit, and the collector's debug exporter logs continuously, so the kubelet evicts the pods soon after they
+    start.
+  evidence:
+  - '`kubectl get pods -l app.kubernetes.io/name=opentelemetry-collector`: pods `Evicted` / constantly new.'
+  - '`kubectl describe pod <evicted-pod>`: `Pod ephemeral local storage usage exceeds the total limit of containers
+    64Ki`.'
+  - '`kubectl get ds otel-collector-agent -o yaml`: the ephemeral-storage limit.'
 reference:
   commands:
   - kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/ephemeral-storage"}]'
   - kubectl rollout status daemonset/otel-collector-agent --timeout=240s
   - kubectl delete pods --field-selector=status.phase=Failed
-  cause: The collector DaemonSet got an `ephemeral-storage` limit of 64Ki. Container logs count toward that limit,
-    and the collector's debug exporter logs continuously, so the kubelet evicts the pods soon after they start.
-  diagnose:
-  - '`kubectl get pods -l app.kubernetes.io/name=opentelemetry-collector`: pods `Evicted` / constantly new.'
-  - '`kubectl describe pod <evicted-pod>`: `Pod ephemeral local storage usage exceeds the total limit of containers
-    64Ki`.'
-  - '`kubectl get ds otel-collector-agent -o yaml`: the ephemeral-storage limit.'
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 420

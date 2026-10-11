@@ -7,20 +7,31 @@ instance_of:
   template: wl-client-dns-typo-015
   version: 1
   params: {}
-content_hash: sha256:962684251b082f1c737cda0c467d9adf4135fbcdd01c025fbd128784f5f477e2
+content_hash: sha256:04a6746c77e9bb62df6ba998a523effa2c52c898354c40fa155dbc825a16b65b
+validation_hash: sha256:de4bed94e5ff54f19efffae732f2a785b1e66de52da19ddc0392986d34f8687a
 title: Client configured with a dependency hostname that does not exist
 mechanism: workload/client-dependency-hostname
-family: workload
 split: train
 seed: 1015
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Customers cannot add anything to their cart; the cart shows an error. Browsing products works. Find the
       cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -43,34 +54,30 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - frontend
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl set env deployment/frontend CART_ADDR=cart:8080
-  - kubectl rollout status deployment/frontend --timeout=300s
-  cause: The frontend's `CART_ADDR` points at `cart-service:8080`. No Service has that name, so every cart call
-    from the frontend fails DNS resolution. The cart service itself is fine.
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/frontend
+    namespace: default
+    what: CART_ADDR points at cart-service:8080, a name no Service has
+  explanation: The frontend's `CART_ADDR` points at `cart-service:8080`. No Service has that name, so every cart
+    call from the frontend fails DNS resolution. The cart service itself is fine.
+  evidence:
   - '`kubectl get pods`: everything is Running.'
   - '`kubectl logs deploy/frontend`: errors resolving `cart-service` (ENOTFOUND / name resolution).'
   - '`kubectl get svc`: there is no `cart-service`, only `cart`.'
   - '`kubectl get deploy frontend -o yaml`: `CART_ADDR=cart-service:8080`.'
+reference:
+  commands:
+  - kubectl set env deployment/frontend CART_ADDR=cart:8080
+  - kubectl rollout status deployment/frontend --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

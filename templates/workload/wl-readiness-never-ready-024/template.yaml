@@ -3,7 +3,6 @@ id: wl-readiness-never-ready-024
 version: 1
 title: Readiness probe can never succeed -> no endpoints
 mechanism: workload/readiness-probe-misconfigured
-family: workload
 split: train
 seed: 1024
 world: k8s-shop
@@ -11,9 +10,16 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: 'The cart is broken for everyone: adding items fails and orders fail. The cart pod is Running. Find the
-      cause and fix it.'
+    page: 'The cart is broken for everyone: adding items fails and orders fail. Find the cause and fix it.'
+    ticket: 'The cart is broken for everyone: adding items fails and orders fail. The cart pod is Running. Find
+      the cause and fix it.'
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
   injector: k8s-api
 fault:
   steps:
@@ -37,18 +43,22 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: cart
-  root_cause:
-  - cart
+ground_truth:
+  root_causes:
+  - component: deployment/cart
+    namespace: default
+    what: a readiness probe does HTTP GET /healthz on a gRPC-only server, so the pod is never Ready and the Service
+      has no endpoints
+  explanation: A readiness probe was added that does an HTTP GET on `/healthz`. The cart server only speaks gRPC
+    and has no such endpoint, so the pod is never Ready and the `cart` Service has no endpoints.
+  evidence:
+  - '`kubectl get pods`: cart is Running but `0/1` READY.'
+  - '`kubectl describe pod -l opentelemetry.io/name=cart`: `Readiness probe failed`.'
+  - '`kubectl get endpointslices -l kubernetes.io/service-name=cart`: no ready endpoints.'
 reference:
   commands:
   - kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
   - kubectl rollout status deployment/cart --timeout=300s
-  cause: A readiness probe was added that does an HTTP GET on `/healthz`. The cart server only speaks gRPC and has
-    no such endpoint, so the pod is never Ready and the `cart` Service has no endpoints.
-  diagnose:
-  - '`kubectl get pods`: cart is Running but `0/1` READY.'
-  - '`kubectl describe pod -l opentelemetry.io/name=cart`: `Readiness probe failed`.'
-  - '`kubectl get endpointslices -l kubernetes.io/service-name=cart`: no ready endpoints.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

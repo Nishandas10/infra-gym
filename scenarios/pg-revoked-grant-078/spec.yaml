@@ -7,20 +7,32 @@ instance_of:
   template: pg-revoked-grant-078
   version: 1
   params: {}
-content_hash: sha256:2aa8147c562f8a9493e227aa0562ba21445de07793a9ecd2ed1f0d900a9c8dd8
+content_hash: sha256:8c47b14d48a8bbcb2c642e465c2b47cec4676299bcdb3170ccf6947961d397ff
+validation_hash: sha256:1d22556679eb371530e5b19dfd56584d1fe1f4e84a11f07b139a7c336139db02
 title: Database role lost SELECT on the table the service reads
 mechanism: datastore/db-permission-revoked
-family: datastore
 split: train
 seed: 1078
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: The product catalog returns errors on every page, right after a database permissions audit. Find the cause
-      and fix it.
+    page: The product catalog returns errors on every page. Find the cause and fix it.
+    ticket: The product catalog returns errors on every page, right after a database permissions audit. Find the
+      cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
   injector: exec
 fault:
   steps:
@@ -54,33 +66,29 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - astronomy-db
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/astronomy-db
+    namespace: default
+    what: SELECT on catalog.products was revoked from astronomy_user, the role product-catalog connects as
+  explanation: The audit revoked `SELECT` on `catalog.products` from `astronomy_user`, the role product-catalog
+    connects as. Every query fails with `permission denied for table products`.
+  evidence:
+  - 'product-catalog logs: `permission denied for table products`.'
+  - '`psql ... -c ''\dp catalog.products''`: astronomy_user has no SELECT.'
+  - Re-grant the privilege.
 reference:
   commands:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO
     astronomy_user'
-  cause: The audit revoked `SELECT` on `catalog.products` from `astronomy_user`, the role product-catalog connects
-    as. Every query fails with `permission denied for table products`.
-  diagnose:
-  - 'product-catalog logs: `permission denied for table products`.'
-  - '`psql ... -c ''\dp catalog.products''`: astronomy_user has no SELECT.'
-  - Re-grant the privilege.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

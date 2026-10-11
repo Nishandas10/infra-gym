@@ -1,0 +1,57 @@
+spec_version: 2
+id: flag-image-slow-load-071
+version: 1
+title: Images served with an artificial delay (imageSlowLoad)
+mechanism: app-flag/image-slow-load
+split: train
+seed: 1071
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product images take about 10 seconds to appear. Find the cause and fix it.
+tags:
+  layer: app
+  symptom: latency
+  fix_type:
+  - flag
+  drivers:
+  - misattributed-symptom
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: imageSlowLoad
+    variant: 10sec
+verifier:
+  checks:
+  - type: journey
+    journey: images_browser
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 3000
+    timeout_s: 15
+ground_truth:
+  root_causes:
+  - component: flag/imageSlowLoad
+    namespace: default
+    what: 'the flag is on: the browser code adds an Envoy fault-delay header, so the edge proxy holds every image
+      request for 10 seconds'
+  explanation: 'The `imageSlowLoad` flag is read by the shop''s browser code, which then sends every image request
+    with `x-envoy-fault-delay-request: 10000`. The Envoy edge proxy honours that header and holds each image for
+    10 seconds. The image server itself is fast.'
+  evidence:
+  - Only image requests are slow; the rest of each page is fast.
+  - 'The browser dev tools / frontend-proxy logs: image requests carry `x-envoy-fault-delay-request`; image-provider''s
+    own response time is milliseconds.'
+  - 'Feature Flags UI: `imageSlowLoad` is at 10sec.'
+reference:
+  commands:
+  - python injectors/toggle_flag.py imageSlowLoad --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

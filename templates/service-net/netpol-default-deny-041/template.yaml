@@ -1,0 +1,66 @@
+spec_version: 2
+id: netpol-default-deny-041
+version: 1
+title: Namespace-wide default-deny ingress policy
+mechanism: network-policy/namespace-default-deny
+split: train
+seed: 1041
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The entire shop is unreachable and internal calls time out. Find the cause and fix it.
+    ticket: The entire shop is unreachable and internal calls time out, right after the security team applied 'baseline'
+      policies. Find the cause and fix it.
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: default-deny-ingress
+        namespace: default
+      spec:
+        podSelector: {}
+        policyTypes:
+        - Ingress
+verifier:
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: networkpolicy/default-deny-ingress
+    namespace: default
+    what: a namespace-wide default-deny ingress policy with no allow rules
+  explanation: A `default-deny-ingress` NetworkPolicy with an empty podSelector blocks all new inbound connections
+    to every pod in the namespace. There are no allow rules to go with it.
+  evidence:
+  - Requests to frontend-proxy time out; new connections between services time out too.
+  - '`kubectl get networkpolicy`: `default-deny-ingress` with `podSelector: {}`.'
+  - Remove it, or add explicit allow policies before enforcing default-deny.
+reference:
+  commands:
+  - kubectl delete networkpolicy default-deny-ingress
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

@@ -7,19 +7,30 @@ instance_of:
   template: wl-scaled-to-zero-025
   version: 1
   params: {}
-content_hash: sha256:0a1b709579fdb70fc1c45ed165cb6788ee8a33c3e4cb799099acc92eeac343cd
+content_hash: sha256:0fefcfcc50a23ac8a3a5c619009d39526afdff08bd17bbb8e0843bc7fdaab0a7
+validation_hash: sha256:2a0a73966ed3a894db27e19739b5eda56ea84561781c0201765535e3ec44b912
 title: Deployment scaled to zero replicas
 mechanism: workload/scaled-to-zero
-family: workload
 split: train
 seed: 1025
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Browsing and the cart work, but 'Place Order' always fails. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - scale
   injector: k8s-api
 fault:
   steps:
@@ -39,33 +50,29 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: checkout
-  root_cause:
-  - checkout
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/checkout
+    namespace: default
+    what: checkout was scaled to 0 replicas
+  explanation: The checkout Deployment was scaled to 0 replicas (a leftover of a maintenance action), so there is
+    no checkout pod at all.
+  evidence:
+  - '`kubectl get pods`: no checkout pod.'
+  - '`kubectl get deploy checkout`: `0/0` replicas.'
+  - '`kubectl logs deploy/frontend`: checkout calls fail (unavailable / no endpoints).'
 reference:
   commands:
   - kubectl scale deployment checkout --replicas=1
   - kubectl rollout status deployment/checkout --timeout=300s
-  cause: The checkout Deployment was scaled to 0 replicas (a leftover of a maintenance action), so there is no checkout
-    pod at all.
-  diagnose:
-  - '`kubectl get pods`: no checkout pod.'
-  - '`kubectl get deploy checkout`: `0/0` replicas.'
-  - '`kubectl logs deploy/frontend`: checkout calls fail (unavailable / no endpoints).'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

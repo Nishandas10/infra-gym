@@ -1,0 +1,68 @@
+spec_version: 2
+id: kafka-backlog-010
+version: 1
+title: Kafka flooded and consumers slowed (kafkaQueueProblems)
+mechanism: app-flag/kafka-queue-overload
+split: train
+seed: 1010
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Checkout works and customers get order confirmations, but the fraud team says new orders reach their system
+      minutes late or not at all. Investigate and fix it.
+tags:
+  layer: app
+  symptom: silent-data
+  fix_type:
+  - flag
+  drivers:
+  - async-path
+  - silent-failure
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: kafkaQueueProblems
+    variant: 'on'
+verifier:
+  checks:
+  - type: kafka_lag
+    group: fraud-detection
+    max_lag: 50
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+ground_truth:
+  root_causes:
+  - component: flag/kafkaQueueProblems
+    namespace: default
+    what: 'the flag is on: checkout floods the orders topic with duplicates and the consumers are slowed down'
+  explanation: The kafkaQueueProblems flag makes checkout flood the orders topic with duplicate messages and slows
+    the consumers down. Checkout keeps returning success; the damage is downstream and silent.
+  evidence:
+  - checkout succeeds (POST /api/checkout returns an order ID)
+  - the fraud-detection and accounting consumer groups' lag grows by hundreds or thousands
+  - fraud-detection consumes, just slowly; checkout sends many messages per order
+  - kafkaQueueProblems is on
+reference:
+  commands:
+  - python injectors/toggle_flag.py kafkaQueueProblems --off
+validation:
+  detect_timeout_s: 600
+  recover_timeout_s: 900
+  hold_s: 60
+  poll_s: 15
+budget:
+  max_steps: 40
+  wall_s: 1800
+meta:
+  golden: true

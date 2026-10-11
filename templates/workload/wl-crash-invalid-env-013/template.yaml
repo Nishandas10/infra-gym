@@ -3,7 +3,6 @@ id: wl-crash-invalid-env-013
 version: 1
 title: Invalid configuration value makes the service crash at startup
 mechanism: workload/invalid-config-crash
-family: workload
 split: train
 seed: 1013
 world: k8s-shop
@@ -11,8 +10,13 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Since the last configuration change every order fails at the shipping step. Find the cause and fix it.
+    page: Every order fails at the shipping step. Find the cause and fix it.
+    ticket: Since the last configuration change every order fails at the shipping step. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -32,18 +36,21 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=shipping
-  root_cause:
-  - shipping
+ground_truth:
+  root_causes:
+  - component: deployment/shipping
+    namespace: default
+    what: SHIPPING_PORT is 'eighty-eighty', so shipping exits at startup and crash-loops
+  explanation: '`SHIPPING_PORT` was set to `eighty-eighty`. The shipping service cannot parse it into a listen address
+    and exits at startup, so it crash-loops.'
+  evidence:
+  - '`kubectl get pods`: shipping is in `CrashLoopBackOff`.'
+  - '`kubectl logs deploy/shipping --previous`: startup error about the port / bind address.'
+  - '`kubectl get deploy shipping -o yaml`: `SHIPPING_PORT` has an invalid value.'
 reference:
   commands:
   - kubectl set env deployment/shipping SHIPPING_PORT=8080
   - kubectl rollout status deployment/shipping --timeout=300s
-  cause: '`SHIPPING_PORT` was set to `eighty-eighty`. The shipping service cannot parse it into a listen address
-    and exits at startup, so it crash-loops.'
-  diagnose:
-  - '`kubectl get pods`: shipping is in `CrashLoopBackOff`.'
-  - '`kubectl logs deploy/shipping --previous`: startup error about the port / bind address.'
-  - '`kubectl get deploy shipping -o yaml`: `SHIPPING_PORT` has an invalid value.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

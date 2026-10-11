@@ -3,7 +3,6 @@ id: wl-host-alias-poison-028
 version: 1
 title: hostAliases entry sends a dependency to a dead IP
 mechanism: workload/hostaliases-override
-family: workload
 split: train
 seed: 1028
 world: k8s-shop
@@ -14,6 +13,12 @@ task:
     page: Product listings and product pages time out, but checkout (which also uses the catalog) works. Find the
       cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - partial-impact
   injector: k8s-api
 fault:
   steps:
@@ -39,20 +44,23 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - frontend
-reference:
-  commands:
-  - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
-  - kubectl rollout status deployment/frontend --timeout=300s
-  cause: The frontend pod template has a `hostAliases` entry mapping `product-catalog` to 192.0.2.10 (an unroutable
+ground_truth:
+  root_causes:
+  - component: deployment/frontend
+    namespace: default
+    what: a hostAliases entry maps product-catalog to the unroutable address 192.0.2.10
+  explanation: The frontend pod template has a `hostAliases` entry mapping `product-catalog` to 192.0.2.10 (an unroutable
     test address), which overrides DNS inside the pod through /etc/hosts. Only the frontend is affected, which is
     why checkout still works.
-  diagnose:
+  evidence:
   - '`kubectl logs deploy/frontend`: timeouts calling product-catalog.'
   - Product-catalog is healthy and reachable from other pods (checkout works).
   - '`kubectl exec deploy/frontend -- cat /etc/hosts`: `192.0.2.10 product-catalog`.'
   - '`kubectl get deploy frontend -o yaml`: `hostAliases`.'
+reference:
+  commands:
+  - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
+  - kubectl rollout status deployment/frontend --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

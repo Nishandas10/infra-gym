@@ -3,7 +3,6 @@ id: pg-password-rotated-079
 version: 1
 title: Database password rotated without updating the clients
 mechanism: datastore/db-credential-rotation
-family: datastore
 split: train
 seed: 1079
 world: k8s-shop
@@ -14,6 +13,10 @@ task:
     page: After a database maintenance window, product pages fail and new orders are not being recorded. Find the
       cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
   injector: exec
 fault:
   steps:
@@ -48,18 +51,22 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - astronomy-db
-reference:
-  commands:
-  - kubectl exec deploy/astronomy-db -- psql -U postgres -c "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
-  cause: '`astronomy_user`''s password was rotated in Postgres and existing sessions were terminated, but product-catalog
-    and accounting still use the old password from their configuration. Every reconnect fails authentication.'
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/astronomy-db
+    namespace: default
+    what: astronomy_user's password was rotated in Postgres while product-catalog and accounting still use the old
+      one
+  explanation: '`astronomy_user`''s password was rotated in Postgres and existing sessions were terminated, but
+    product-catalog and accounting still use the old password from their configuration. Every reconnect fails authentication.'
+  evidence:
   - 'product-catalog logs: `password authentication failed for user "astronomy_user"`.'
   - The database is up; other roles can log in.
   - Either roll the password back or update the clients' secret. The reference fix restores the password the apps
     are configured with.
+reference:
+  commands:
+  - kubectl exec deploy/astronomy-db -- psql -U postgres -c "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

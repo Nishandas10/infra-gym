@@ -1,0 +1,62 @@
+spec_version: 2
+id: pod-kill-003
+version: 1
+title: A service's pod is killed every 45 seconds
+mechanism: chaos/pod-kill-periodic
+split: train
+seed: 1003
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: 'Checkout fails intermittently: some orders go through, others error out, and a retry usually works. Find
+      out why and fix it.'
+tags:
+  layer: workload
+  symptom: partial
+  fix_type:
+  - delete-object
+  drivers:
+  - intermittent
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest: chaos.yaml
+verifier:
+  checks:
+  - type: pods_stable
+    selector: opentelemetry.io/name=checkout
+    min_age_s: 90
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 5000
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+ground_truth:
+  root_causes:
+  - component: schedule/pod-kill-003
+    namespace: default
+    what: a Chaos Mesh Schedule kills the checkout pod every 45 seconds
+  explanation: A Chaos Mesh Schedule kills the checkout pod every 45 seconds. Each replacement takes a few seconds
+    to start, so orders placed in that window fail; a retry lands on the new pod and works, which is why it looks
+    intermittent.
+  evidence:
+  - the checkout pod's name changes about every 45 seconds and its age never passes a minute
+  - repeated Killing events for checkout with no OOM or probe failure behind them
+  - kubectl get schedules.chaos-mesh.org -A shows the schedule
+reference:
+  commands:
+  - kubectl delete schedule.chaos-mesh.org pod-kill-003
+validation:
+  detect_timeout_s: 150
+  recover_timeout_s: 240
+  hold_s: 45
+meta:
+  golden: true

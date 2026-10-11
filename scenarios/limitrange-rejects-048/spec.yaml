@@ -7,19 +7,33 @@ instance_of:
   template: limitrange-rejects-048
   version: 1
   params: {}
-content_hash: sha256:6d3ba6b7305173af0c77cc04d941146a95032c3519a8da6127a46a29311525c0
+content_hash: sha256:c3afbbe1f375d2c8331a1b909da9939687cb4e115bfa7c86ad8cb9533618bd77
+validation_hash: sha256:d9f77e2adbc39438dba7ab53af53cff75f0edbb5d5b5436e8674fe14e174e68f
 title: LimitRange max is lower than a container's limit
 mechanism: platform/limit-range-rejects
-family: platform
 split: train
 seed: 1048
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: The ad service vanished after a restart and never came back. Find the cause and fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  - restart
+  drivers:
+  - silent-rejection
   injector: k8s-api
 fault:
   steps:
@@ -46,35 +60,31 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=ad
-  root_cause:
-  - limit-range
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: limitrange/container-memory-cap
+    namespace: default
+    what: the LimitRange caps containers at 128Mi, so admission rejects ad's new pod (300Mi limit)
+  explanation: A LimitRange caps any container at 128Mi of memory. The ad container's limit is 300Mi, so admission
+    rejects the replacement pod.
+  evidence:
+  - '`kubectl get pods`: no ad pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=ad`: `maximum memory usage per Container is 128Mi, but limit
+    is 300Mi`.'
+  - '`kubectl get limitrange`.'
 reference:
   commands:
   - kubectl delete limitrange container-memory-cap
   - kubectl rollout restart deployment/ad
   - kubectl rollout status deployment/ad --timeout=300s
-  cause: A LimitRange caps any container at 128Mi of memory. The ad container's limit is 300Mi, so admission rejects
-    the replacement pod.
-  diagnose:
-  - '`kubectl get pods`: no ad pod.'
-  - '`kubectl describe rs -l opentelemetry.io/name=ad`: `maximum memory usage per Container is 128Mi, but limit
-    is 300Mi`.'
-  - '`kubectl get limitrange`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

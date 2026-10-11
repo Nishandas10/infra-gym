@@ -7,20 +7,34 @@ instance_of:
   template: wl-bad-command-012
   version: 1
   params: {}
-content_hash: sha256:2d90b8137957e7912e36f4dcfcce7f190d792e9bc928c336e76d24a05ce86817
+content_hash: sha256:ca67062b2019bb57bae65e8c06b0f51d9da98cf61d31171ef11f04efe1a37b85
+validation_hash: sha256:a9f5d8efc4525910119cb2abf48ceaca79a54cba33d2ff1f7f3219271826908d
 title: Container command points at a binary that does not exist
 mechanism: workload/bad-entrypoint
-family: workload
 split: train
 seed: 1012
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: Every order fails with a shipping error. The shipping service itself is Running. Find the cause and fix
-      it.
+    page: Every order fails with a shipping error. Find the cause and fix it.
+    ticket: Every order fails with a shipping error. The shipping service itself is Running. Find the cause and
+      fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - multi-hop
   injector: k8s-api
 fault:
   steps:
@@ -41,36 +55,32 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=quote
-  root_cause:
-  - quote
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
-  - kubectl rollout status deployment/quote --timeout=300s
-  cause: The quote Deployment overrides the container command with `/usr/local/bin/quote-server`, which does not
-    exist in the image. The container can never start, so shipping cannot get a price quote and checkout fails two
-    hops away from the real problem.
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/quote
+    namespace: default
+    what: the container command is overridden with /usr/local/bin/quote-server, which does not exist in the image
+  explanation: The quote Deployment overrides the container command with `/usr/local/bin/quote-server`, which does
+    not exist in the image. The container can never start, so shipping cannot get a price quote and checkout fails
+    two hops away from the real problem.
+  evidence:
   - '`kubectl logs deploy/checkout`: the shipping quote call fails.'
   - '`kubectl logs deploy/shipping`: requests to quote fail.'
   - '`kubectl get pods`: quote is `RunContainerError` / `CrashLoopBackOff`; `kubectl describe` says `exec: "/usr/local/bin/quote-server":
     no such file or directory`.'
   - The Deployment spec has a `command:` override the image does not support.
+reference:
+  commands:
+  - kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
+  - kubectl rollout status deployment/quote --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

@@ -88,8 +88,8 @@ def validate(spec_path, world_timeout=300):
     _logfile.write_text("")
     v = spec.get("validation") or {}
     spec_checks = checks_of(spec)
-    rec = {"id": sid, "type": fault_label(spec), "content_hash": spec["content_hash"],
-           "template_version": spec["instance_of"]["version"],
+    rec = {"id": sid, "type": fault_label(spec), "validation_hash": spec["validation_hash"],
+           "content_hash": spec["content_hash"], "template_version": spec["instance_of"]["version"],
            "started": datetime.datetime.now().isoformat(timespec="seconds"),
            "timings": {}, "verdict": None, "notes": []}
     log(f"=== {sid} ({fault_label(spec)})")

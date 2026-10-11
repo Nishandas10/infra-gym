@@ -7,20 +7,32 @@ instance_of:
   template: grafana-datasource-089
   version: 1
   params: {}
-content_hash: sha256:2a208b5b24156abbab949c8e9091fe7c433d38be2f4e415711af5ccd55172523
+content_hash: sha256:4b9e91904c6f0cb76cb9311a591b566daf80d116996d832d9a84cba2456309b7
+validation_hash: sha256:13f9bea619a3c11495fabe6ca361fe913aa2886629e074ce27fea179eb571711
 title: Grafana's Prometheus datasource points at the wrong port
 mechanism: observability/dashboard-datasource-misconfigured
-family: observability
 split: train
 seed: 1089
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause
+    page: Every Grafana dashboard shows 'No data'. Find the cause and fix it.
+    ticket: Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause
       and fix it.
 tags:
+  layer: observability
+  symptom: telemetry-only
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -37,25 +49,28 @@ verifier:
     expect_status: 200
     contains: '"status":"OK"'
     max_ms: 10000
-  root_cause:
-  - grafana
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace
-    -f -
-  cause: The provisioned Prometheus datasource URL was changed to port 9099, where nothing listens, so Grafana's
+ground_truth:
+  root_causes:
+  - component: configmap/grafana-datasources
+    namespace: default
+    what: the provisioned Prometheus datasource URL points at port 9099, where nothing listens
+  explanation: The provisioned Prometheus datasource URL was changed to port 9099, where nothing listens, so Grafana's
     queries time out while Prometheus and the data are fine. The datasource sidecar applies ConfigMap edits to Grafana
     live, so fixing the ConfigMap is enough; no restart is needed.
-  diagnose:
+  evidence:
   - 'Grafana > Connections > Data sources > Prometheus > Test: the query to :9099 times out.'
   - '`kubectl get cm grafana-datasources -o yaml`: the URL.'
   - '`kubectl logs deploy/grafana -c grafana-sc-datasources`: it wrote the new file and Grafana reloaded it.'
   - Prometheus answers on :9090 directly.
+reference:
+  commands:
+  - kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace
+    -f -
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 300
@@ -68,10 +83,3 @@ notes:
 - An earlier version restarted Grafana on inject and fix. The verifier then failed only because Grafana itself was
   down, and each rolling restart briefly ran two 4-container Grafana pods, which thrashed the 6 GB VM late in long
   batches.
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

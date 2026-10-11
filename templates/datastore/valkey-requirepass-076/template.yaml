@@ -3,7 +3,6 @@ id: valkey-requirepass-076
 version: 1
 title: Valkey password set; the client does not know it
 mechanism: datastore/kv-credential-mismatch
-family: datastore
 split: train
 seed: 1076
 world: k8s-shop
@@ -11,9 +10,15 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Since the cart service restarted, every cart operation fails with an authentication error. Find the cause
-      and fix it.
+    page: Every cart operation has failed since the cart service restarted. Find the cause and fix it.
+    ticket: Since the cart service restarted, every cart operation fails with an authentication error. Find the
+      cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
+  - restart
   injector: exec
 fault:
   steps:
@@ -43,19 +48,22 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - valkey-cart
+ground_truth:
+  root_causes:
+  - component: deployment/valkey-cart
+    namespace: default
+    what: requirepass was set; the restarted cart service connects without a password and gets NOAUTH
+  explanation: Someone set `requirepass` on valkey-cart. Already-open connections kept working, but after cart restarted
+    it connected without a password and got `NOAUTH Authentication required`.
+  evidence:
+  - 'cart logs: `NOAUTH Authentication required`.'
+  - '`kubectl exec deploy/valkey-cart -- valkey-cli PING`: `NOAUTH`.'
+  - Either remove the password or give cart the credential; the reference fix removes the unauthorised change.
 reference:
   commands:
   - kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''
   - kubectl rollout restart deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
-  cause: Someone set `requirepass` on valkey-cart. Already-open connections kept working, but after cart restarted
-    it connected without a password and got `NOAUTH Authentication required`.
-  diagnose:
-  - 'cart logs: `NOAUTH Authentication required`.'
-  - '`kubectl exec deploy/valkey-cart -- valkey-cli PING`: `NOAUTH`.'
-  - Either remove the password or give cart the credential; the reference fix removes the unauthorised change.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

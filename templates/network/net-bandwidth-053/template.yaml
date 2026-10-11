@@ -1,0 +1,72 @@
+spec_version: 2
+id: net-bandwidth-053
+version: 1
+title: Bandwidth throttled to a trickle on the image server
+mechanism: chaos/network-bandwidth-limit
+split: train
+seed: 1053
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: Pages load quickly but product images take forever or never appear. Find the cause and fix it.
+tags:
+  layer: network
+  symptom: latency
+  fix_type:
+  - delete-object
+  drivers:
+  - partial-impact
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest:
+    - apiVersion: chaos-mesh.org/v1alpha1
+      kind: NetworkChaos
+      metadata:
+        name: images-bandwidth
+        namespace: default
+      spec:
+        action: bandwidth
+        mode: all
+        selector:
+          namespaces:
+          - default
+          labelSelectors:
+            opentelemetry.io/name: image-provider
+        bandwidth:
+          rate: 2kbps
+          limit: 20971520
+          buffer: 10000
+        direction: to
+verifier:
+  checks:
+  - type: journey
+    journey: images
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 1500
+    timeout_s: 10
+ground_truth:
+  root_causes:
+  - component: networkchaos/images-bandwidth
+    namespace: default
+    what: a NetworkChaos experiment limits image-provider's bandwidth to about 2 kilobytes per second
+  explanation: A NetworkChaos bandwidth experiment limits the image server to 2 kilobytes per second. Small API
+    responses are barely affected, but images of tens of kilobytes take many seconds to transfer.
+  evidence:
+  - Only large responses are slow; latency grows with response size.
+  - '`kubectl get networkchaos -A`: `images-bandwidth`.'
+reference:
+  commands:
+  - kubectl delete networkchaos.chaos-mesh.org images-bandwidth
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+notes:
+- 'tc units: "kbps" = kilobytes per second. At 8kbps images took ~2.6s (vs ~0.2s).'

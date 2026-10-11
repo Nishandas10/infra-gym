@@ -7,19 +7,33 @@ instance_of:
   template: pod-security-restricted-049
   version: 1
   params: {}
-content_hash: sha256:e6576780da0cf13e8e1484b163630d89dffb7c38c728e56c225eb4d7fa7cb3cd
+content_hash: sha256:a8498b5a5dd0503d65f0e8ca7e070c916e1e78b6115922c28c9b78dc64d73948
+validation_hash: sha256:625b22f4acbbc06b5d144fec24f274eb0fb983cbc2139a9b2b2a4d8ed4f26525
 title: Namespace switched to the 'restricted' Pod Security Standard
 mechanism: platform/pod-security-admission
-family: platform
 split: train
 seed: 1049
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it.
 tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - restart
+  drivers:
+  - silent-rejection
   injector: k8s-api
 fault:
   steps:
@@ -42,34 +56,30 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=image-provider
-  root_cause:
-  - pod-security
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: namespace/default
+    namespace: null
+    what: the namespace enforces the restricted Pod Security Standard, so image-provider's new pod is rejected
+  explanation: The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running,
+    but any recreated pod that does not meet the restricted profile is rejected at admission.
+  evidence:
+  - '`kubectl get pods`: no image-provider pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=image-provider`: `violates PodSecurity "restricted:latest"`.'
+  - '`kubectl get namespace default --show-labels`.'
 reference:
   commands:
   - kubectl label namespace default pod-security.kubernetes.io/enforce-
   - kubectl rollout restart deployment/image-provider
   - kubectl rollout status deployment/image-provider --timeout=300s
-  cause: The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running,
-    but any recreated pod that does not meet the restricted profile is rejected at admission.
-  diagnose:
-  - '`kubectl get pods`: no image-provider pod.'
-  - '`kubectl describe rs -l opentelemetry.io/name=image-provider`: `violates PodSecurity "restricted:latest"`.'
-  - '`kubectl get namespace default --show-labels`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

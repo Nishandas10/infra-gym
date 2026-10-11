@@ -3,7 +3,6 @@ id: wl-nodeselector-018
 version: 1
 title: nodeSelector matches no node -> Pending
 mechanism: workload/unschedulable-node-selector
-family: workload
 split: train
 seed: 1018
 world: k8s-shop
@@ -13,6 +12,10 @@ task:
   prompts:
     page: The advertisement banner has disappeared from the shop. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -33,18 +36,21 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=ad
-  root_cause:
-  - ad
+ground_truth:
+  root_causes:
+  - component: deployment/ad
+    namespace: default
+    what: nodeSelector disktype=ssd matches no node, so the pod stays Pending
+  explanation: 'The ad Deployment was given `nodeSelector: disktype=ssd`. No node carries that label, so the scheduler
+    cannot place the pod.'
+  evidence:
+  - '`kubectl get pods`: ad is `Pending`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=ad`: `didn''t match Pod''s node affinity/selector`.'
+  - '`kubectl get nodes --show-labels`: no node has `disktype=ssd`.'
 reference:
   commands:
   - kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
   - kubectl rollout status deployment/ad --timeout=300s
-  cause: 'The ad Deployment was given `nodeSelector: disktype=ssd`. No node carries that label, so the scheduler
-    cannot place the pod.'
-  diagnose:
-  - '`kubectl get pods`: ad is `Pending`.'
-  - '`kubectl describe pod -l opentelemetry.io/name=ad`: `didn''t match Pod''s node affinity/selector`.'
-  - '`kubectl get nodes --show-labels`: no node has `disktype=ssd`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

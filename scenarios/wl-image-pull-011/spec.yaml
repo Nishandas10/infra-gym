@@ -7,19 +7,30 @@ instance_of:
   template: wl-image-pull-011
   version: 1
   params: {}
-content_hash: sha256:1867ce9c3a517bc34454d8e13704b2b74c8c738dae46aa3c8487cfd2b47b9008
+content_hash: sha256:db5c8da1959156b213fc10e0732f356bbc2db3c36e983ef728fc412195e9db50
+validation_hash: sha256:d235619a9fbbdaf9a2477f055f32bd80f2bd97412eee55d9016ba01c91cadad4
 title: Mistyped image tag -> ImagePullBackOff
 mechanism: workload/image-pull-failure
-family: workload
 split: train
 seed: 1011
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Prices no longer show when customers switch currency, and every order fails. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -44,33 +55,29 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=currency
-  root_cause:
-  - currency
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/currency
+    namespace: default
+    what: the image tag is mistyped (3.1.0-curency), so the pod is stuck in ImagePullBackOff
+  explanation: The currency Deployment's image tag was mistyped (`3.1.0-curency`). The registry has no such image,
+    so the new pod is stuck in ImagePullBackOff, and the Recreate strategy removed the old pod first.
+  evidence:
+  - '`kubectl get pods`: currency is `ErrImagePull` / `ImagePullBackOff`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=currency`: events say the image tag was not found.'
+  - '`kubectl get deploy currency -o jsonpath=''{.spec.template.spec.containers[0].image}''` shows the typo.'
 reference:
   commands:
   - kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
   - kubectl rollout status deployment/currency --timeout=300s
-  cause: The currency Deployment's image tag was mistyped (`3.1.0-curency`). The registry has no such image, so
-    the new pod is stuck in ImagePullBackOff, and the Recreate strategy removed the old pod first.
-  diagnose:
-  - '`kubectl get pods`: currency is `ErrImagePull` / `ImagePullBackOff`.'
-  - '`kubectl describe pod -l opentelemetry.io/name=currency`: events say the image tag was not found.'
-  - '`kubectl get deploy currency -o jsonpath=''{.spec.template.spec.containers[0].image}''` shows the typo.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

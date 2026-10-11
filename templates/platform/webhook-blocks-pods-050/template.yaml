@@ -3,7 +3,6 @@ id: webhook-blocks-pods-050
 version: 1
 title: Validating webhook with failurePolicy=Fail and no backend
 mechanism: platform/admission-webhook-unavailable
-family: platform
 split: train
 seed: 1050
 world: k8s-shop
@@ -14,6 +13,13 @@ task:
     page: Order confirmation emails stopped after the email pod restarted, and no new email pod appears. Find the
       cause and fix it.
 tags:
+  layer: platform
+  symptom: silent-data
+  fix_type:
+  - delete-object
+  - restart
+  drivers:
+  - silent-rejection
   injector: k8s-api
 fault:
   steps:
@@ -59,20 +65,23 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=email
-  root_cause:
-  - admission-webhook
+ground_truth:
+  root_causes:
+  - component: validatingwebhookconfiguration/pod-policy-guard
+    namespace: null
+    what: the webhook (failurePolicy Fail) has no backend, so every pod creation is rejected
+  explanation: 'A ValidatingWebhookConfiguration `pod-policy-guard` intercepts every pod creation in the namespace
+    with `failurePolicy: Fail`, but its backend service does not exist. Every pod create is rejected.'
+  evidence:
+  - '`kubectl get pods`: no email pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=email`: `failed calling webhook "pods.policy-guard.gym.local"
+    ... service "policy-guard" not found`.'
+  - '`kubectl get validatingwebhookconfigurations`.'
 reference:
   commands:
   - kubectl delete validatingwebhookconfiguration pod-policy-guard
   - kubectl rollout restart deployment/email
   - kubectl rollout status deployment/email --timeout=300s
-  cause: 'A ValidatingWebhookConfiguration `pod-policy-guard` intercepts every pod creation in the namespace with
-    `failurePolicy: Fail`, but its backend service does not exist. Every pod create is rejected.'
-  diagnose:
-  - '`kubectl get pods`: no email pod.'
-  - '`kubectl describe rs -l opentelemetry.io/name=email`: `failed calling webhook "pods.policy-guard.gym.local"
-    ... service "policy-guard" not found`.'
-  - '`kubectl get validatingwebhookconfigurations`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300

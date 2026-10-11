@@ -1,0 +1,61 @@
+spec_version: 2
+id: svc-targetport-mismatch-036
+version: 1
+title: Service targetPort points at a port nothing listens on
+mechanism: service/target-port-mismatch
+split: train
+seed: 1036
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Orders fail at the shipping step. Find the cause and fix it.
+    ticket: Orders fail at the shipping step. Shipping's pod is healthy and its logs show no errors. Find the cause
+      and fix it.
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: service
+    name: shipping
+    restart_after:
+    - deployment/shipping
+    ops:
+    - op: replace
+      path: /spec/ports/0/targetPort
+      value: 8888
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: service/shipping
+    namespace: default
+    what: the Service's targetPort was changed to 8888; the pod listens on 8080
+  explanation: The `shipping` Service's targetPort was changed to 8888. The pod listens on 8080, so connections
+    through the Service are refused while the pod looks perfectly healthy.
+  evidence:
+  - '`kubectl logs deploy/checkout`: connection refused calling shipping.'
+  - '`kubectl get svc shipping -o yaml`: `targetPort: 8888`.'
+  - '`kubectl get endpointslices -l kubernetes.io/service-name=shipping -o yaml`: port 8888.'
+reference:
+  commands:
+  - kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

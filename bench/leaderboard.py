@@ -10,7 +10,10 @@ from pathlib import Path
 RES = Path(__file__).resolve().parent / "results"
 sys.path.insert(0, str(RES.parents[1]))
 
+import yaml  # noqa: E402
+
 from gym.faults import canonical  # noqa: E402
+from gym.spec import all_specs  # noqa: E402
 
 
 def wilson(k, n, z=1.96):
@@ -34,12 +37,18 @@ def main():
     path = RES / "results.jsonl"
     if not path.exists():
         sys.exit("No results yet. Run: python bench/agent_bench.py run")
+    layer_by_id = {}
+    for p in all_specs():
+        s = yaml.safe_load(p.read_text())
+        layer_by_id[s["id"]] = s["tags"]["layer"]
     latest = {}
     for line in open(path):
         if line.strip():
             r = json.loads(line)
             if r.get("fault_type"):  # results from before spec v2 use the old mechanism names
                 r["fault_type"] = canonical(r["fault_type"])
+            if "layer" not in r:     # results from before Phase 2 recorded a family instead
+                r["layer"] = layer_by_id.get(r.get("scenario"), r.get("family", "unknown"))
             latest[(r["key"], r["model"], r["attempt"])] = r
     if args.model:
         wanted = [w.strip() for w in args.model.split(",") if w.strip()]
@@ -88,7 +97,7 @@ def main():
                    f"{s['steps']:.1f} | {s['tokens']:,.0f} | {s['skipped']} |")
 
     models = [s["model"] for s in stats]
-    for field, title in (("family", "Pass rate by family"), ("fault_type", "Pass rate by fault type")):
+    for field, title in (("layer", "Pass rate by layer"), ("fault_type", "Pass rate by fault type")):
         groups = sorted({r.get(field, "unknown") for r in latest.values()})
         out += ["", f"## {title}", "", f"| {field} | " + " | ".join(models) + " |", "|---|" + "---|" * len(models)]
         for g in groups:

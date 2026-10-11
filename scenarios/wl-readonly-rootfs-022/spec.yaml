@@ -7,20 +7,31 @@ instance_of:
   template: wl-readonly-rootfs-022
   version: 1
   params: {}
-content_hash: sha256:e8fa384b282d66524198d1bbd7bc06393330478866b5eb1206a22ef88eed897b
+content_hash: sha256:b9d927fda0f3097937f5e39fc137d181136e718ea9ee8e20625c56e6887c9c7b
+validation_hash: sha256:5d8c3385c56a57c104358f760b1bcb451b9104588273420a8e2ff91acb9f0da4
 title: readOnlyRootFilesystem on a server that writes to disk -> crash
 mechanism: workload/read-only-root-filesystem
-family: workload
 split: train
 seed: 1022
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: All product images in the shop are broken, although the pages themselves load. Find the cause and fix
       it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -40,33 +51,29 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=image-provider
-  root_cause:
-  - image-provider
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/image-provider
+    namespace: default
+    what: readOnlyRootFilesystem is set, but nginx must write under /run and /var/cache/nginx, so it exits at startup
+  explanation: image-provider (nginx) was given a read-only root filesystem, but nginx must write its pid file and
+    cache under `/run` and `/var/cache/nginx`. It exits at startup.
+  evidence:
+  - '`kubectl get pods`: image-provider is in `CrashLoopBackOff`.'
+  - '`kubectl logs deploy/image-provider --previous`: `Read-only file system` errors.'
+  - '`kubectl get deploy image-provider -o yaml`: `readOnlyRootFilesystem: true`.'
 reference:
   commands:
   - kubectl patch deployment image-provider --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem"}]'
   - kubectl rollout status deployment/image-provider --timeout=300s
-  cause: image-provider (nginx) was given a read-only root filesystem, but nginx must write its pid file and cache
-    under `/run` and `/var/cache/nginx`. It exits at startup.
-  diagnose:
-  - '`kubectl get pods`: image-provider is in `CrashLoopBackOff`.'
-  - '`kubectl logs deploy/image-provider --previous`: `Read-only file system` errors.'
-  - '`kubectl get deploy image-provider -o yaml`: `readOnlyRootFilesystem: true`.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

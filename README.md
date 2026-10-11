@@ -12,7 +12,8 @@ whether it was fixed. All scenarios are listed in [scenarios/CATALOG.md](scenari
 
 | Path | What it is |
 |---|---|
-| `templates/<family>/<id>/template.yaml` | **Where scenarios are written**: fault, prompts, verifier checks, reference fix, notes (spec v2, `gym/core/schema.py`) |
+| `templates/<layer>/<id>/template.yaml` | **Where scenarios are written**: tags, fault, prompts, verifier checks, ground truth, reference fix, notes (spec v2, `gym/core/schema.py`) |
+| `templates/taxonomy.yaml` | Allowed tag values (layer, symptom, fix type, difficulty drivers, injector) and the words a page prompt must not contain |
 | `templates/defaults.yaml` | Defaults for every template (forbidden actions, tools, budget) |
 | `scenarios/<id>/` | **Generated** from the template by `scripts/generate.py`: `spec.yaml` (resolved, content-hashed) and `reference_solution.md`. Do not edit. |
 | `gym/` | Library: fault mechanisms (with exact undo), verifier checks, validation harness |
@@ -34,15 +35,27 @@ python scripts/gym_setup.py          # helper pods in namespace gym-system (prob
 
 ## Write or change a scenario
 
-1. Edit (or add) `templates/<family>/<id>/template.yaml`. Files the fault reads (`chaos.yaml`)
-   live in the same folder. A hand-written `reference_solution.md` there is used as is;
-   otherwise it is generated from `reference.cause`, `reference.diagnose` and `reference.commands`.
-2. If the change affects behaviour (fault, checks, fix, prompts, validation, budget), bump `version`.
-3. `python scripts/generate.py` writes `scenarios/<id>/` and `scenarios/CATALOG.md`.
-4. `python scripts/lint_scenarios.py` and `pytest`; then validate it on the cluster (below).
+1. Edit (or add) `templates/<layer>/<id>/template.yaml`; the folder is the template's
+   `tags.layer`. Files the fault reads (`chaos.yaml`) live in the same folder. A hand-written
+   `reference_solution.md` there is used as is; otherwise it is generated from `ground_truth`
+   and `reference`.
+2. Fill in:
+   - `tags`: `layer`, `symptom`, `fix_type`, `drivers`, `injector`, from `templates/taxonomy.yaml`.
+   - `task.prompts.page`: symptoms only, as an alert or a customer report reads. Optional
+     `ticket` (plus what a first responder found) and `hinted` (points at the area of the cause).
+     The linter rejects a page prompt that gives the cause away.
+   - `ground_truth`: every root cause (`component` as kind/name, `namespace`, `what`), the
+     `explanation`, the `evidence` an engineer can see, and any `red_herrings`. It is the
+     judge's answer key.
+3. If the change affects behaviour (fault, checks, fix, prompts, ground truth, validation,
+   budget), bump `version`.
+4. `python scripts/generate.py` writes `scenarios/<id>/` and `scenarios/CATALOG.md`.
+5. `python scripts/lint_scenarios.py` and `pytest`; then validate it on the cluster (below).
 
-Each instance has a `content_hash` over everything that decides its behaviour, so results can
-be tied to the exact version of a scenario they ran. Fault steps name their mechanism:
+Each instance has two hashes: `validation_hash` over what a live validation run depends on
+(fault, checks, reference fix, timings, extra files) and `content_hash` over everything that
+decides behaviour and grading (also prompts, ground truth, forbidden actions, budget). Results
+are tied to the exact version of a scenario they ran. Fault steps name their mechanism:
 `k8s.*` (Kubernetes objects), `app.*` (the shop's feature flags), `runtime.*` (commands in
 pods), `chaos.*` (Chaos Mesh); see `gym/faults/`.
 

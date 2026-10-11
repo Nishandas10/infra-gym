@@ -7,20 +7,31 @@ instance_of:
   template: wl-dns-policy-none-029
   version: 1
   params: {}
-content_hash: sha256:74fd9c59b2f807cefc3aeabf8c15f013a9ab73116a5b9f06f8ae6204615de052
+content_hash: sha256:dab72bad4a7892d5f3d9ce33579116cc8c45eec9d9e8c07f7f47427c385fdbc1
+validation_hash: sha256:01b4c33bdb6bc26321344230e58a57dd485258ad3233578f95f19aa395586199
 title: Pod DNS set to an unreachable nameserver
 mechanism: workload/pod-dns-config
-family: workload
 split: train
 seed: 1029
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Placing an order fails with errors about every dependency at once. Other services work. Find the cause
       and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -45,24 +56,27 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - checkout
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
-  - kubectl rollout status deployment/checkout --timeout=300s
-  cause: 'The checkout pod template sets `dnsPolicy: None` with a nameserver at 192.0.2.53 that does not exist,
+ground_truth:
+  root_causes:
+  - component: deployment/checkout
+    namespace: default
+    what: dnsPolicy None with a nameserver (192.0.2.53) that does not exist
+  explanation: 'The checkout pod template sets `dnsPolicy: None` with a nameserver at 192.0.2.53 that does not exist,
     so checkout cannot resolve any service name. Every dependency fails at once.'
-  diagnose:
+  evidence:
   - '`kubectl logs deploy/checkout`: every outgoing call fails with name-resolution errors.'
   - Other pods resolve names fine, so it is not a cluster-wide DNS outage.
   - '`kubectl exec deploy/checkout -- cat /etc/resolv.conf` (or the pod spec): nameserver 192.0.2.53, `dnsPolicy:
     None`.'
+reference:
+  commands:
+  - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+  - kubectl rollout status deployment/checkout --timeout=300s
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
@@ -72,10 +86,3 @@ validation:
 notes:
 - 'Recreate: checkout''s init container also needs DNS, so a rolling update would leave the old pod serving and
   never cause an outage.'
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

@@ -1,0 +1,166 @@
+spec_version: 2
+id: hard-fix-reverted-by-cronjob-101
+version: 1
+title: Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute
+mechanism: hard/drift-reapplied-by-automation
+split: hard
+seed: 1101
+world: k8s-shop
+bench_eligible: true
+tools:
+- kubectl
+- curl
+task:
+  kind: incident
+  prompts:
+    page: 'Customers cannot complete checkout: the payment step fails. Find the cause and fix it.'
+    hinted: Checkout fails at the payment step. A teammate already fixed the payment config once, but it broke again
+      a minute later. Find the cause and fix it so it stays fixed.
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  - config-edit
+  drivers:
+  - fix-must-hold
+  - hidden-second-actor
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: payment
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:PAYMENT_PORT/value
+      value: '8081'
+    pause_s: 20
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: config-sync
+        namespace: default
+        labels:
+          app.kubernetes.io/name: config-sync
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: config-sync
+        namespace: default
+      rules:
+      - apiGroups:
+        - apps
+        resources:
+        - deployments
+        verbs:
+        - get
+        - patch
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: config-sync
+        namespace: default
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: config-sync
+      subjects:
+      - kind: ServiceAccount
+        name: config-sync
+        namespace: default
+    - apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: payment-config-sync
+        namespace: default
+        labels:
+          app.kubernetes.io/name: config-sync
+          app.kubernetes.io/managed-by: platform-release
+        annotations:
+          platform.example.com/description: Re-applies payment runtime settings from the release manifest
+      spec:
+        schedule: '* * * * *'
+        concurrencyPolicy: Forbid
+        startingDeadlineSeconds: 30
+        successfulJobsHistoryLimit: 2
+        failedJobsHistoryLimit: 1
+        jobTemplate:
+          spec:
+            backoffLimit: 0
+            ttlSecondsAfterFinished: 300
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: config-sync
+              spec:
+                serviceAccountName: config-sync
+                restartPolicy: Never
+                containers:
+                - name: sync
+                  image: curlimages/curl:latest
+                  command:
+                  - sh
+                  - -c
+                  - 'TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); curl -sS --fail -o /dev/null
+                    -X PATCH --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer
+                    $TOKEN" -H ''Content-Type: application/strategic-merge-patch+json'' --data ''{"spec": {"template":
+                    {"spec": {"containers": [{"name": "payment", "env": [{"name": "PAYMENT_PORT", "value": "8081"}]}]}}}}''
+                    https://kubernetes.default.svc/apis/apps/v1/namespaces/default/deployments/payment && echo ''config-sync:
+                    payment runtime settings match release manifest r2026.10.08'''
+                  resources:
+                    limits:
+                      memory: 32Mi
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_stable
+    selector: opentelemetry.io/name=payment
+    min_age_s: 150
+ground_truth:
+  root_causes:
+  - component: deployment/payment
+    namespace: default
+    what: PAYMENT_PORT is 8081 while the payment Service targets 8080
+  - component: cronjob/payment-config-sync
+    namespace: default
+    what: the CronJob re-applies PAYMENT_PORT=8081 every minute
+  explanation: payment listens on 8081 while its Service targets 8080. A CronJob (payment-config-sync, labelled
+    as platform automation) PATCHes PAYMENT_PORT=8081 back every minute, so fixing the Deployment alone is undone
+    within 60 seconds.
+  evidence:
+  - 'checkout logs: charging the card fails with ''connection refused'' to the payment Service.'
+  - payment logs say it listens on 8081; `kubectl get svc payment` targets 8080. Env PAYMENT_PORT=8081.
+  - 'Fix the env var; checkout recovers. Watch for a minute: payment rolls again and breaks.'
+  - '`kubectl rollout history deployment/payment`, the deployment''s managedFields (manager ''curl'') and `kubectl
+    get cronjobs,jobs` show payment-config-sync re-applying the bad value every minute.'
+  - Stop the automation (delete or suspend the CronJob) and fix the env var.
+reference:
+  commands:
+  - kubectl delete cronjob payment-config-sync
+  - kubectl set env deployment/payment PAYMENT_PORT=8080
+  - kubectl rollout status deployment/payment --timeout=300s
+  traps:
+  - 'Fixing only the Deployment: passes for under a minute, then the verifier''s hold/stability check fails.'
+  - 'Not verifying after the fix: the re-break happens after the agent declares success.'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 90
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  tier: hard
+  layers: 3
+  realistic_pattern: GitOps/config-sync automation reconciling a bad value over a manual hotfix
+  built_from:
+  - wl-listen-port-drift-014

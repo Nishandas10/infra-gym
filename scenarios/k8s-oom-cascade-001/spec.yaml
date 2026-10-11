@@ -7,20 +7,31 @@ instance_of:
   template: k8s-oom-cascade-001
   version: 1
   params: {}
-content_hash: sha256:74882ea2d7b8ae7ab8b40a764435d9ac553b5dd0512472d8d3a7d7588b0d508a
+content_hash: sha256:73dce790ccdf603d8c3e2257827eeb9ff2c64bef9207a8b7ddbdafbfe6b8e85a
+validation_hash: sha256:8bac019f73ac29cd9d8bd9c4d29ae89e65dde01ffb2468b7409da638c8ce86b7
 title: Memory limit far below what the service needs -> OOMKilled / CrashLoopBackOff
 mechanism: workload/oom-memory-limit
-family: workload
 split: train
 seed: 1001
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix
       it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -47,13 +58,24 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
-  root_cause:
-  - cart
   forbidden:
   - delete_namespace
   - disable_alerts
   - scale_to_zero
   - edit_verifier
+ground_truth:
+  root_causes:
+  - component: deployment/cart
+    namespace: default
+    what: the memory limit is 3Mi (rolled out with Recreate), so every start is OOM-killed
+  explanation: The cart Deployment's memory limit was set to 3Mi, far below what the service needs to even start,
+    and it was rolled out with the Recreate strategy, so the old healthy pod is gone. Every start attempt is OOM-killed,
+    so the cart, and with it checkout, is down.
+  evidence:
+  - adding to cart and placing an order fail
+  - the cart pod is in RunContainerError / CrashLoopBackOff with a rising restart count
+  - 'kubectl describe pod: StartError and the event ''container init was OOM-killed (memory limit too low?)'''
+  - the cart Deployment has limits.memory 3Mi
 reference:
   commands:
   - kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
@@ -69,10 +91,3 @@ notes:
 - 'strategy Recreate: single-replica service, so the old healthy pod is gone.'
 meta:
   golden: true
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

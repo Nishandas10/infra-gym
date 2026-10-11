@@ -7,19 +7,32 @@ instance_of:
   template: valkey-maxmemory-075
   version: 1
   params: {}
-content_hash: sha256:3f62b44512376929382bf99537c1ec852bed7181c0879ceff3dc705fa52725f0
+content_hash: sha256:23ce8513a64461df717f2de4eb9e0ca71c8941ed5416d66a20eca4c7d7e966ce
+validation_hash: sha256:7e2413a27b34ab17c689423c42fa6e7c510b9247bd4c826a6ac701a62caa50ab
 title: Valkey memory cap reached with 'noeviction' -> writes rejected
 mechanism: datastore/kv-memory-cap-noeviction
-family: datastore
 split: train
 seed: 1075
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Customers can view their carts but adding an item fails. Find the cause and fix it.
 tags:
+  layer: datastore
+  symptom: hard-errors
+  fix_type:
+  - datastore-cmd
+  drivers:
+  - partial-impact
   injector: exec
 fault:
   steps:
@@ -44,22 +57,25 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - valkey-cart
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
-reference:
-  commands:
-  - kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
-  cause: Valkey's `maxmemory` was set to 256kb, below the memory it already uses, while `maxmemory-policy` is `noeviction`.
-    Reads work; every write fails with `OOM command not allowed when used memory > 'maxmemory'`.
-  diagnose:
+ground_truth:
+  root_causes:
+  - component: deployment/valkey-cart
+    namespace: default
+    what: maxmemory is 256kb with maxmemory-policy noeviction, so every write is rejected
+  explanation: Valkey's `maxmemory` was set to 256kb, below the memory it already uses, while `maxmemory-policy`
+    is `noeviction`. Reads work; every write fails with `OOM command not allowed when used memory > 'maxmemory'`.
+  evidence:
   - 'cart logs: `OOM command not allowed` on writes.'
   - '`kubectl exec deploy/valkey-cart -- valkey-cli INFO memory`: used_memory > maxmemory, policy noeviction.'
   - Raise or remove the cap (or allow eviction).
+reference:
+  commands:
+  - kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
@@ -68,10 +84,3 @@ validation:
   baseline_timeout_s: 120
 notes:
 - 256kb is below even an empty instance's footprint, so every write is refused.
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

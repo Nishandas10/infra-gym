@@ -7,20 +7,34 @@ instance_of:
   template: wl-paused-rollout-trap-030
   version: 1
   params: {}
-content_hash: sha256:3492f6e42a138c753281ca11a2c817a44b9e4150a0bfd517dfab5a85a8bbd309
+content_hash: sha256:77e7370eb10d5dc7ec3e5f278c17f884564021e9791cf38e3fdbb25ba1d1d4e6
+validation_hash: sha256:8c2fbd9502096e70950e92dd861bb52b569df1459966302cb312352118c4cf7a
 title: 'Bad config plus a paused Deployment: the fix does not roll out'
 mechanism: workload/paused-rollout-blocks-fix
-family: workload
 split: train
 seed: 1030
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: 'The cart is broken: adding items fails. A colleague says they already fixed the config, but nothing changed.
-      Find the cause and fix it for real.'
+    page: 'The cart is broken: adding items fails. Find the cause and fix it.'
+    ticket: 'The cart is broken: adding items fails. A colleague says they already fixed the config, but nothing
+      changed. Find the cause and fix it for real.'
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - fix-is-blocked
   injector: k8s-api
 fault:
   steps:
@@ -46,34 +60,31 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - cart
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/cart
+    namespace: default
+    what: VALKEY_ADDR points at valkey-cart-v2 (does not exist) and the Deployment is paused, so corrected templates
+      never roll out
+  explanation: Cart's `VALKEY_ADDR` was pointed at `valkey-cart-v2`, which does not exist. The Deployment was then
+    paused, so any corrected template, including the colleague's fix, is recorded but never rolled out.
+  evidence:
+  - '`kubectl logs deploy/cart`: cannot connect to `valkey-cart-v2`.'
+  - '`kubectl get deploy cart -o yaml`: `paused: true`; `kubectl rollout status` says the rollout is paused.'
+  - After fixing the env var, `kubectl rollout resume deployment/cart` is needed for it to take effect.
 reference:
   commands:
   - kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
   - kubectl rollout resume deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
-  cause: Cart's `VALKEY_ADDR` was pointed at `valkey-cart-v2`, which does not exist. The Deployment was then paused,
-    so any corrected template, including the colleague's fix, is recorded but never rolled out.
-  diagnose:
-  - '`kubectl logs deploy/cart`: cannot connect to `valkey-cart-v2`.'
-  - '`kubectl get deploy cart -o yaml`: `paused: true`; `kubectl rollout status` says the rollout is paused.'
-  - After fixing the env var, `kubectl rollout resume deployment/cart` is needed for it to take effect.
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

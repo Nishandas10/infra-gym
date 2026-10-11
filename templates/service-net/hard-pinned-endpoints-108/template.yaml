@@ -1,0 +1,119 @@
+spec_version: 2
+id: hard-pinned-endpoints-108
+version: 1
+title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
+mechanism: hard/manual-endpoints-stale-ip
+split: hard
+seed: 1108
+world: k8s-shop
+bench_eligible: true
+tools:
+- kubectl
+- curl
+task:
+  kind: incident
+  prompts:
+    page: Checkout fails while calculating shipping costs. Find the cause and fix it.
+    hinted: Checkout fails while calculating shipping costs. The quote pods are healthy, but requests to the quote
+      Service never reach them. Find the cause and fix it.
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - delete-object
+  drivers:
+  - looks-healthy
+  - partial-fix-trap
+  - red-herring
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    noise: true
+    manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: quote-cache-warmer
+        namespace: default
+        labels: &id001
+          app: quote-cache-warmer
+          team: pricing
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: quote-cache-warmer
+        template:
+          metadata:
+            labels: *id001
+          spec:
+            containers:
+            - name: main
+              image: busybox:1.36
+              command:
+              - sh
+              - -c
+              - 'echo "WARN quote-cache-warmer: refresh failed: GET http://quote-api.pricing.internal/v2/rates:
+                context deadline exceeded" >&2; sleep 5; exit 1'
+              resources:
+                limits:
+                  memory: 16Mi
+                  cpu: 50m
+                requests:
+                  memory: 8Mi
+                  cpu: 5m
+  - mechanism: k8s.pin_endpoints
+    service: quote
+    ips:
+    - 10.244.250.17
+    annotations:
+      ops.example.com/pinned-by: INC-5521 quote migration
+      ops.example.com/expires: '2026-09-30'
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 4
+    max_error_pct: 0
+    max_avg_ms: 2500
+ground_truth:
+  root_causes:
+  - component: service/quote
+    namespace: default
+    what: the selector was removed and a hand-made EndpointSlice (quote-pinned) points at 10.244.250.17, an IP no
+      pod has
+  explanation: 'The quote Service has no selector and a hand-made EndpointSlice (quote-pinned, from incident INC-5521)
+    that points at 10.244.250.17, an IP no pod has any more. shipping''s calls to quote time out. Restoring the
+    selector alone is not enough: the pinned slice keeps the dead IP in rotation.'
+  evidence:
+  - 'shipping logs: requests to http://quote:8080 time out. quote pods are Running and log nothing.'
+  - '`kubectl get endpointslices -l kubernetes.io/service-name=quote` shows quote-pinned with 10.244.250.17, which
+    matches no pod (`kubectl get pods -o wide`).'
+  - '`kubectl get svc quote -o yaml`: no spec.selector, so Kubernetes manages no endpoints for it.'
+  - Restore the selector from the quote Deployment's labels and delete the pinned EndpointSlice.
+  red_herrings:
+  - crash-looping quote-cache-warmer (pricing team) logging upstream timeouts
+reference:
+  commands:
+  - kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
+  - kubectl delete endpointslice quote-pinned
+  traps:
+  - Restarting quote or shipping (changes nothing).
+  - 'Restoring the selector but keeping the pinned slice: the dead IP stays in rotation (intermittent).'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  tier: hard
+  layers: 1
+  realistic_pattern: Manual EndpointSlice pinned during an incident and forgotten
+  built_from:
+  - new mechanism pin_endpoints

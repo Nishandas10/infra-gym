@@ -1,0 +1,55 @@
+spec_version: 2
+id: flag-intl-shipping-slow-072
+version: 1
+title: International shipping quotes delayed (intlShippingSlowdown)
+mechanism: app-flag/intl-shipping-slowdown
+split: train
+seed: 1072
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Customers outside the US say placing an order takes forever; US customers are fine. Find the cause and
+      fix it.
+tags:
+  layer: app
+  symptom: latency
+  fix_type:
+  - flag
+  drivers:
+  - partial-impact
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: intlShippingSlowdown
+    variant: 10sec
+verifier:
+  checks:
+  - type: journey
+    journey: checkout_intl
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+    timeout_s: 20
+ground_truth:
+  root_causes:
+  - component: flag/intlShippingSlowdown
+    namespace: default
+    what: 'the flag is on: shipping delays quotes for non-US addresses by 10 seconds'
+  explanation: The `intlShippingSlowdown` flag makes shipping delay quotes for non-US addresses by 10 seconds. It
+    only affects some customers, so aggregate latency barely moves.
+  evidence:
+  - 'Jaeger: shipping spans are ~10s only for orders with a non-US address.'
+  - US orders are fast.
+  - 'Feature Flags UI: `intlShippingSlowdown` is at 10sec.'
+reference:
+  commands:
+  - python injectors/toggle_flag.py intlShippingSlowdown --off
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

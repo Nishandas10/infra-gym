@@ -45,8 +45,12 @@ def fault_label(spec):
     return steps[0]["mechanism"] if len(steps) == 1 else "composite"
 
 
-def steps_of(spec):
-    return spec["fault"]["steps"]
+def layer_of(spec):
+    return spec["tags"]["layer"]
+
+
+def tier_of(spec):
+    return "hard" if spec["split"] == "hard" else "standard"
 
 
 def all_specs():

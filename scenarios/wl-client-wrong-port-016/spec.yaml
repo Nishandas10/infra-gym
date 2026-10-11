@@ -7,19 +7,32 @@ instance_of:
   template: wl-client-wrong-port-016
   version: 1
   params: {}
-content_hash: sha256:8af837301d9c71a5a05d047ad7d7749cea976ae947d6c62bc07c2b2563e8da3d
+content_hash: sha256:707ecd3fcc2287dbf2bb80951326f131f51b732375bd65210f26513571e179f8
+validation_hash: sha256:abff444e6c78a5128315d3c42f8bc5ea78ba1fa1f193d1d0b4d178d9fb04bad0
 title: Client configured with the wrong port for a dependency
 mechanism: workload/client-dependency-port
-family: workload
 split: train
 seed: 1016
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
     page: Browsing and the cart work, but placing an order always fails. Find the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - partial-impact
   injector: k8s-api
 fault:
   steps:
@@ -37,33 +50,29 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
-  root_cause:
-  - checkout
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/checkout
+    namespace: default
+    what: PRODUCT_CATALOG_ADDR uses port 9090; product-catalog only exposes 8080
+  explanation: Checkout's `PRODUCT_CATALOG_ADDR` uses port 9090. The product-catalog Service only exposes 8080,
+    so checkout cannot look up product prices. Browsing still works because the frontend uses the right address.
+  evidence:
+  - '`kubectl logs deploy/checkout`: `connection refused` / unavailable for product-catalog.'
+  - The frontend can reach product-catalog, so the catalog itself is healthy.
+  - '`kubectl get deploy checkout -o yaml` vs `kubectl get svc product-catalog`: port mismatch 9090 vs 8080.'
 reference:
   commands:
   - kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
   - kubectl rollout status deployment/checkout --timeout=300s
-  cause: Checkout's `PRODUCT_CATALOG_ADDR` uses port 9090. The product-catalog Service only exposes 8080, so checkout
-    cannot look up product prices. Browsing still works because the frontend uses the right address.
-  diagnose:
-  - '`kubectl logs deploy/checkout`: `connection refused` / unavailable for product-catalog.'
-  - The frontend can reach product-catalog, so the catalog itself is healthy.
-  - '`kubectl get deploy checkout -o yaml` vs `kubectl get svc product-catalog`: port mismatch 9090 vs 8080.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

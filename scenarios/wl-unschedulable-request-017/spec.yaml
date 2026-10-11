@@ -7,20 +7,33 @@ instance_of:
   template: wl-unschedulable-request-017
   version: 1
   params: {}
-content_hash: sha256:0ef8610ca71aa3460b3e3c7b7b5dcd2cc0971217b908bbf904566aa6af1c9b5c
+content_hash: sha256:cdf4953bdc98661a6d6339941fa9473de20f84487436652b0653967650734ce4
+validation_hash: sha256:0e1f9e0ad7009fbc42b1ff1cfe2510f16246b11fa71a162c8392d9e8ddf6c80c
 title: Memory request larger than any node -> Pending
 mechanism: workload/unschedulable-resource-request
-family: workload
 split: train
 seed: 1017
 world: k8s-shop
 bench_eligible: true
+tools:
+- kubectl
+- helm
+- curl
+budget:
+  max_steps: 30
+  wall_s: 900
 task:
   kind: incident
   prompts:
-    page: The 'You may also like' panel is empty on every product page since this morning's resource tuning. Find
+    page: The 'You may also like' panel is empty on every product page since this morning. Find the cause and fix
+      it.
+    ticket: The 'You may also like' panel is empty on every product page since this morning's resource tuning. Find
       the cause and fix it.
 tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
   injector: k8s-api
 fault:
   steps:
@@ -44,33 +57,29 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=recommendation
-  root_cause:
-  - recommendation
   forbidden:
   - delete_namespace
   - disable_alerts
   - edit_verifier
   - delete_the_verifier_probe
+ground_truth:
+  root_causes:
+  - component: deployment/recommendation
+    namespace: default
+    what: the container requests 64Gi of memory, more than any node has, so the pod stays Pending
+  explanation: The recommendation container now requests 64Gi of memory. No node has that much allocatable memory,
+    so the pod stays Pending forever.
+  evidence:
+  - '`kubectl get pods`: recommendation is `Pending`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=recommendation`: `FailedScheduling ... Insufficient memory`.'
+  - '`kubectl get deploy recommendation -o yaml`: requests/limits of 64Gi.'
 reference:
   commands:
   - kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi
   - kubectl rollout status deployment/recommendation --timeout=300s
-  cause: The recommendation container now requests 64Gi of memory. No node has that much allocatable memory, so
-    the pod stays Pending forever.
-  diagnose:
-  - '`kubectl get pods`: recommendation is `Pending`.'
-  - '`kubectl describe pod -l opentelemetry.io/name=recommendation`: `FailedScheduling ... Insufficient memory`.'
-  - '`kubectl get deploy recommendation -o yaml`: requests/limits of 64Gi.'
 validation:
   detect_timeout_s: 240
   recover_timeout_s: 300
   hold_s: 30
   poll_s: 10
   baseline_timeout_s: 120
-tools:
-- kubectl
-- helm
-- curl
-budget:
-  max_steps: 30
-  wall_s: 900

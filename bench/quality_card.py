@@ -39,7 +39,7 @@ if a.set:
 meta = {}
 for p in sorted((REPO / "scenarios").glob("*/spec.yaml")):
     s = yaml.safe_load(p.read_text())
-    meta[s["id"]] = {"tier": "hard" if s.get("split") == "hard" else "standard", "family": s.get("family")}
+    meta[s["id"]] = {"tier": "hard" if s.get("split") == "hard" else "standard", "layer": s["tags"]["layer"]}
 
 
 def med(rs, key):
@@ -48,7 +48,7 @@ def med(rs, key):
 
 
 ids = wanted or sorted(meta)
-out = ["| Scenario | Tier | Family | Runs | Validated | Flake rate | Detect | Recover | Reset | Last verdict |",
+out = ["| Scenario | Tier | Layer | Runs | Validated | Flake rate | Detect | Recover | Reset | Last verdict |",
        "|---|---|---|---|---|---|---|---|---|---|"]
 tot_runs = tot_ok = 0
 for sid in ids:
@@ -58,7 +58,7 @@ for sid in ids:
     tot_ok += ok
     flake = f"{100 * (len(rs) - ok) / len(rs):.0f}%" if rs else "-"
     m = meta.get(sid, {})
-    out.append(f"| {sid} | {m.get('tier', 'standard')} | {m.get('family', '?')} | {len(rs)} | {ok} | {flake} | "
+    out.append(f"| {sid} | {m.get('tier', 'standard')} | {m.get('layer', '?')} | {len(rs)} | {ok} | {flake} | "
                f"{med(rs, 'detect_s')} | {med(rs, 'recover_s')} | {med(rs, 'restore_s')} | "
                f"{rs[-1]['verdict'] if rs else 'not run'} |")
 out += ["", f"{len(ids)} scenarios, {tot_runs} validation runs, "

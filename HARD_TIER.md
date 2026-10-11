@@ -5,7 +5,7 @@ hard enough that a strong model does not solve them by reflex, fair enough that 
 (or model) can solve every one with the agent's normal permissions.
 
 Status: **validated on the live cluster** (all 12 VALIDATED once, `results/hard-validation-1.log`).
-The templates are in `templates/hard/<id>/`.
+The templates have `split: hard` and live under their layer: `templates/<layer>/hard-*/`.
 
 ## Design rules
 
@@ -52,8 +52,9 @@ The templates are in `templates/hard/<id>/`.
   listed workloads are restarted and the verifier must pass again (verdict `FIX_NOT_DURABLE`
   otherwise).
 - `injectors/source_flag.py`: set a flag in the ConfigMap and restart flagd (durable fix).
-- `templates/hard/<id>/template.yaml`: the 12 scenarios (their noise workloads came from
-  `gym/modifiers/noise.py`); `scripts/generate.py` writes the specs and reference solutions.
+- `templates/<layer>/hard-*/template.yaml`: the 12 scenarios (their noise workloads came from
+  `gym/modifiers/noise.py`; the noise is listed in `ground_truth.red_herrings`);
+  `scripts/generate.py` writes the specs and reference solutions.
 - `tests/test_inject_revert.py`: injects and reverts every scenario (with extra state checks for
   each Hard scenario) against an in-memory fake cluster and checks the world is restored exactly
   (`pytest`, see the README).
