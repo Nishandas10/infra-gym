@@ -6,7 +6,7 @@ For each scenario:
   2. inject              break the system as the spec says
   3. detect FAIL         the verifier notices (within detect_timeout_s)
   4. hold                a do-nothing agent is still failing hold_s later
-  5. reference solution  run the documented fix (spec.solution.commands)
+  5. reference solution  run the documented fix (spec.reference.commands)
   6. recover PASS        the verifier passes again (within recover_timeout_s)
   7. restore             undo the injection exactly, then WORLD_HEALTHY again
 """
@@ -14,12 +14,14 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import subprocess
+import sys
 import time
 import traceback
 
 from . import checks, faults
-from .spec import REPO, checks_of, load
+from .spec import REPO, checks_of, fault_label, load
 
 RESULTS = REPO / "results" / "validation.jsonl"
 LOG_DIR = REPO / "results" / "logs"
@@ -52,9 +54,12 @@ def poll(check_list, want, timeout, interval=10, quiet=False):
 
 
 def run_solution(commands):
+    # Reference fixes call repo scripts as `python ...`: make that the interpreter running the
+    # harness (e.g. the venv's), even when the venv is not activated.
+    env = dict(os.environ, PATH=os.pathsep.join([os.path.dirname(sys.executable), os.environ.get("PATH", "")]))
     for cmd in commands:
         log(f"    $ {cmd}")
-        r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True, timeout=900)
+        r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True, timeout=900, env=env)
         out = (r.stdout + r.stderr).strip()
         if out:
             for line in out.splitlines()[-4:]:
@@ -83,9 +88,11 @@ def validate(spec_path, world_timeout=300):
     _logfile.write_text("")
     v = spec.get("validation") or {}
     spec_checks = checks_of(spec)
-    rec = {"id": sid, "type": spec["fault"]["type"], "started": datetime.datetime.now().isoformat(timespec="seconds"),
+    rec = {"id": sid, "type": fault_label(spec), "content_hash": spec["content_hash"],
+           "template_version": spec["instance_of"]["version"],
+           "started": datetime.datetime.now().isoformat(timespec="seconds"),
            "timings": {}, "verdict": None, "notes": []}
-    log(f"=== {sid} ({spec['fault']['type']})")
+    log(f"=== {sid} ({fault_label(spec)})")
     injected = False
     try:
         log("  0. world healthy?")
@@ -132,7 +139,7 @@ def validate(spec_path, world_timeout=300):
             rec["verdict"] = "SELF_HEALED"
             return rec
         log("  5. reference solution")
-        run_solution(spec["solution"]["commands"])
+        run_solution(spec["reference"]["commands"])
         log(f"  6. verifier must PASS (<= {v.get('recover_timeout_s', 300)}s)")
         ok, _, t = poll(spec_checks, checks.PASS, v.get("recover_timeout_s", 300), v.get("poll_s", 10))
         rec["timings"]["recover_s"] = t

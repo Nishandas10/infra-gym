@@ -1,0 +1,58 @@
+spec_version: 2
+id: grafana-datasource-089
+version: 1
+title: Grafana's Prometheus datasource points at the wrong port
+mechanism: observability/dashboard-datasource-misconfigured
+family: observability
+split: train
+seed: 1089
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause
+      and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.configmap_edit
+    name: grafana-datasources
+    key: default.yaml
+    replace:
+    - - 'url: http://prometheus:9090'
+      - 'url: http://prometheus:9099'
+verifier:
+  checks:
+  - type: http
+    url: http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health
+    expect_status: 200
+    contains: '"status":"OK"'
+    max_ms: 10000
+  root_cause:
+  - grafana
+reference:
+  commands:
+  - kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace
+    -f -
+  cause: The provisioned Prometheus datasource URL was changed to port 9099, where nothing listens, so Grafana's
+    queries time out while Prometheus and the data are fine. The datasource sidecar applies ConfigMap edits to Grafana
+    live, so fixing the ConfigMap is enough; no restart is needed.
+  diagnose:
+  - 'Grafana > Connections > Data sources > Prometheus > Test: the query to :9099 times out.'
+  - '`kubectl get cm grafana-datasources -o yaml`: the URL.'
+  - '`kubectl logs deploy/grafana -c grafana-sc-datasources`: it wrote the new file and Grafana reloaded it.'
+  - Prometheus answers on :9090 directly.
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+notes:
+- 'No restarts: the grafana-sc-datasources sidecar watches ConfigMaps labelled grafana_datasource and calls Grafana''s
+  provisioning reload API, so edits apply live (~15s).'
+- An earlier version restarted Grafana on inject and fix. The verifier then failed only because Grafana itself was
+  down, and each rolling restart briefly ran two 4-container Grafana pods, which thrashed the 6 GB VM late in long
+  batches.

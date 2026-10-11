@@ -128,9 +128,10 @@ def answer_key(sid):
 
 
 def task_prompt(sid):
+    """The prompt the agent saw (the page-level prompt of the scenario instance)."""
     p = REPO / "scenarios" / sid / "spec.yaml"
     try:
-        return (yaml.safe_load(p.read_text(encoding="utf-8")).get("task") or {}).get("prompt", "")
+        return yaml.safe_load(p.read_text(encoding="utf-8"))["task"]["prompts"]["page"]
     except Exception:
         return ""
 

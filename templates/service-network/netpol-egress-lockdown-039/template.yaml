@@ -1,0 +1,73 @@
+spec_version: 2
+id: netpol-egress-lockdown-039
+version: 1
+title: Egress policy lets a service reach nothing but DNS
+mechanism: network-policy/egress-deny
+family: service-network
+split: train
+seed: 1039
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Checkout has been down since a security policy rollout; its new pod never becomes Ready. Find the cause
+      and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=checkout
+    manifests:
+    - apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: checkout-egress-lockdown
+        namespace: default
+      spec:
+        podSelector:
+          matchLabels:
+            opentelemetry.io/name: checkout
+        policyTypes:
+        - Egress
+        egress:
+        - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+          ports:
+          - protocol: UDP
+            port: 53
+          - protocol: TCP
+            port: 53
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=checkout
+  root_cause:
+  - checkout
+reference:
+  commands:
+  - kubectl delete networkpolicy checkout-egress-lockdown
+  - kubectl rollout restart deployment/checkout
+  - kubectl rollout status deployment/checkout --timeout=300s
+  cause: An egress NetworkPolicy lets checkout pods reach only DNS. Checkout's init container waits for Kafka and
+    can never connect, so the pod stays in `Init:0/1`. Even if it started, every dependency call would be blocked.
+  diagnose:
+  - '`kubectl get pods`: checkout is `Init:0/1`.'
+  - '`kubectl logs <checkout-pod> -c wait-for-kafka`: `waiting for kafka` forever (the name resolves; the connection
+    fails).'
+  - '`kubectl get networkpolicy checkout-egress-lockdown -o yaml`: egress allowed only to port 53.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

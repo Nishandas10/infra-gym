@@ -1,0 +1,65 @@
+spec_version: 2
+id: wl-liveness-wrong-port-023
+version: 1
+title: Liveness probe checks the wrong port -> restart loop
+mechanism: workload/liveness-probe-misconfigured
+family: workload
+split: train
+seed: 1023
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product pages fail every few seconds, and the product-catalog pod's restart count keeps rising. Find the
+      cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: product-catalog
+    recreate_pods: false
+    ops:
+    - op: set
+      path: /spec/template/spec/containers/$c/livenessProbe
+      value:
+        tcpSocket:
+          port: 9999
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 2
+verifier:
+  checks:
+  - type: pods_stable
+    selector: opentelemetry.io/name=product-catalog
+    min_age_s: 120
+  - type: journey
+    journey: browse
+    repeat: 4
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - product-catalog
+reference:
+  commands:
+  - kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
+  - kubectl rollout status deployment/product-catalog --timeout=300s
+  cause: A liveness probe was added that checks TCP port 9999; the service listens on 8080. The kubelet kills the
+    healthy container every ~15 seconds.
+  diagnose:
+  - '`kubectl get pods -w`: product-catalog restarts repeatedly.'
+  - '`kubectl describe pod -l opentelemetry.io/name=product-catalog`: `Liveness probe failed: dial tcp ...:9999:
+    connection refused`.'
+  - The app logs show normal startup each time, so it isn't crashing by itself.
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 360
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

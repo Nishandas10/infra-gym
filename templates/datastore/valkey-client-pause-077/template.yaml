@@ -1,0 +1,56 @@
+spec_version: 2
+id: valkey-client-pause-077
+version: 1
+title: Valkey clients paused -> writes hang
+mechanism: datastore/kv-clients-paused
+family: datastore
+split: train
+seed: 1077
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Adding to cart spins forever and then times out; viewing the cart still works. Find the cause and fix
+      it.
+tags:
+  injector: exec
+fault:
+  steps:
+  - mechanism: runtime.exec
+    target: deploy/valkey-cart
+    commands:
+    - - valkey-cli
+      - CLIENT
+      - PAUSE
+      - '86400000'
+      - WRITE
+    undo_commands:
+    - - valkey-cli
+      - CLIENT
+      - UNPAUSE
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+  root_cause:
+  - valkey-cart
+reference:
+  commands:
+  - kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+  cause: A `CLIENT PAUSE ... WRITE` was issued on valkey-cart (typically left over from a failover or maintenance
+    script), so every write command blocks while reads continue.
+  diagnose:
+  - 'cart logs: timeouts on writes only.'
+  - '`kubectl exec deploy/valkey-cart -- valkey-cli INFO clients`: clients blocked; `CLIENT LIST` shows paused writes.'
+  - '`CLIENT UNPAUSE` releases them.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

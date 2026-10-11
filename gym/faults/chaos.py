@@ -39,7 +39,7 @@ def wait_injected(doc, timeout=90):
     return kube.wait_until(injected, timeout=timeout, interval=3)
 
 
-@mechanism("chaos_mesh", "chaos", "Apply Chaos Mesh experiment(s) from the scenario folder")
+@mechanism("chaos.mesh", "chaos", "Apply Chaos Mesh experiment(s) from the scenario folder")
 def chaos_mesh(fault, undo, ctx):
     docs = load_manifests(fault, ctx)
     for doc in docs:

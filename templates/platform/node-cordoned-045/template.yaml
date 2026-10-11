@@ -1,0 +1,64 @@
+spec_version: 2
+id: node-cordoned-045
+version: 1
+title: All worker nodes cordoned; a pod cannot be rescheduled
+mechanism: platform/nodes-cordoned
+family: platform
+split: train
+seed: 1045
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The cart went down after its pod was evicted during node maintenance, and it never came back. Find the
+      cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: node
+    name: ai-gym-worker
+    namespace: null
+    ops:
+    - op: set
+      path: /spec/unschedulable
+      value: true
+  - mechanism: k8s.object_patch
+    kind: node
+    name: ai-gym-worker2
+    namespace: null
+    ops:
+    - op: set
+      path: /spec/unschedulable
+      value: true
+    recreate_pods_after:
+    - opentelemetry.io/name=cart
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=cart
+  root_cause:
+  - nodes
+reference:
+  commands:
+  - kubectl uncordon ai-gym-worker ai-gym-worker2
+  - kubectl rollout status deployment/cart --timeout=300s
+  cause: Both worker nodes were cordoned for maintenance and never uncordoned. When the cart pod was removed, its
+    replacement had nowhere to be scheduled (the control-plane node is tainted).
+  diagnose:
+  - '`kubectl get pods`: cart `Pending`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=cart`: `node(s) were unschedulable`.'
+  - '`kubectl get nodes`: both workers `SchedulingDisabled`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

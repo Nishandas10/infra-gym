@@ -34,7 +34,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
 from gym import checks, faults, harness, kube, toolbox  # noqa: E402
-from gym.spec import checks_of  # noqa: E402
+from gym.spec import all_specs, checks_of, fault_label, load, prompt_of  # noqa: E402
 from gym.undo import UndoLog, restart as restart_target  # noqa: E402
 import world  # noqa: E402
 
@@ -115,10 +115,13 @@ def latest_verdicts():
 def select_scenarios(cfg):
     verdicts = latest_verdicts()
     chosen = []
-    for spec_path in sorted((REPO / "scenarios").glob("*/spec.yaml")):
-        spec = yaml.safe_load(spec_path.read_text())
+    if cfg.get("exclude_fault_types"):
+        log("config: exclude_fault_types is no longer used; scenarios marked bench_eligible: false "
+            "(Chaos Mesh) are always excluded")
+    for spec_path in all_specs():
+        spec, sdir = load(spec_path)
         sid, meta = spec["id"], spec.get("meta") or {}
-        if spec["fault"]["type"] in cfg.get("exclude_fault_types", []):
+        if not spec.get("bench_eligible", True):
             continue
         if cfg.get("only_golden") and not meta.get("golden"):
             continue
@@ -128,8 +131,8 @@ def select_scenarios(cfg):
             continue
         if sid in cfg.get("exclude", []):
             continue
-        chosen.append({"id": sid, "spec": spec, "dir": spec_path.parent,
-                       "family": meta.get("family", "unknown"), "fault_type": spec["fault"]["type"]})
+        chosen.append({"id": sid, "spec": spec, "dir": sdir,
+                       "family": spec["family"], "fault_type": fault_label(spec)})
     return chosen
 
 
@@ -602,18 +605,15 @@ def forbidden_actions(messages, protected=None):
 def distractor_refs(fault):
     """(kind, name, namespace) of everything a scenario's noise steps (noise: true) create or patch."""
     out = set()
-    for step in (fault.get("steps", []) if fault.get("type") == "composite" else [fault]):
-        if step.get("type") == "composite":
-            out |= set(distractor_refs(step))
-            continue
+    for step in fault["steps"]:
         if not step.get("noise"):
             continue
-        if step["type"] == "create_objects":
+        if step["mechanism"] == "k8s.create_objects":
             for m in step.get("manifests", []):
                 out.add((m["kind"], m["metadata"]["name"], m["metadata"].get("namespace", kube.APP_NS)))
-        elif step["type"] == "workload_patch":
+        elif step["mechanism"] == "k8s.workload_patch":
             out.add((step.get("kind", "deployment"), step["target"], step.get("namespace", kube.APP_NS)))
-        elif step["type"] == "object_patch":
+        elif step["mechanism"] == "k8s.object_patch":
             out.add((step["kind"], step["name"], step["namespace"] if "namespace" in step else kube.APP_NS))
     return sorted(out)
 
@@ -721,7 +721,7 @@ def _play(sc, ms, client, cfg, row, state):
     world_during_fault = {checks.describe(c): st for c, st, _ in checks.run_checks(checks.WORLD_HEALTHY)}
     refresh_sandbox()
     budget = spec.get("budget") or {}
-    agent = run_agent(client, ms, spec["task"]["prompt"],
+    agent = run_agent(client, ms, prompt_of(spec, "page"),
                       budget.get("max_steps", cfg.get("default_max_steps", 30)),
                       budget.get("wall_s", cfg.get("default_wall_s", 900)),
                       cfg.get("temperature", 0.2))
@@ -791,7 +791,7 @@ def _cleanup(spec, snap, state):
 def episode(sc, ms, attempt, client, cfg):
     sid, model = sc["id"], ms["id"]
     row = {"key": sid, "scenario": sid, "family": sc["family"], "fault_type": sc["fault_type"],
-           "model": model, "attempt": attempt, "at": now()}
+           "content_hash": sc["spec"]["content_hash"], "model": model, "attempt": attempt, "at": now()}
     start = time.time()
     recovery = ensure_world() or []
     if UndoLog(sid).active:  # left over from a crash
@@ -840,7 +840,7 @@ def append(path, row):
 # ------------------------------------------------------------------ commands
 def cmd_preflight(cfg, args):
     scenarios = select_scenarios(cfg)
-    log(f"{len(scenarios)} scenarios selected (chaos excluded: {'chaos_mesh' in cfg.get('exclude_fault_types', [])})")
+    log(f"{len(scenarios)} scenarios selected (not bench-eligible, e.g. Chaos Mesh, excluded)")
     log("1/4 Helper pods in gym-system...")
     toolbox.ensure()
     log("2/4 Is the shop healthy?")

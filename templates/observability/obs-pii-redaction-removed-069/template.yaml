@@ -1,0 +1,78 @@
+spec_version: 2
+id: obs-pii-redaction-removed-069
+version: 1
+title: PII reaches the tracing backend after the redaction step was removed from the pipeline
+mechanism: observability/telemetry-redaction-removed
+family: observability
+split: train
+seed: 1069
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: 'Compliance alert: plain-text customer email addresses and full card numbers were found in trace data
+      in Jaeger. Find how they got there and stop the leak.'
+tags:
+  injector: mixed
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: emitRawPii
+    variant: 'on'
+  - mechanism: k8s.configmap_edit
+    name: otel-collector-agent
+    key: relay
+    replace:
+    - - |2
+              - transform/redact_sensitive_data
+      - ''
+    - - |2
+              - redaction
+      - ''
+    restart_after:
+    - daemonset/otel-collector-agent
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  - type: jaeger_attr_absent
+    service: checkout
+    lookback: 2m
+    pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
+  - type: jaeger_attr_absent
+    service: payment
+    lookback: 2m
+    pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
+  root_cause:
+  - otel-collector
+reference:
+  commands:
+  - kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml'));
+    c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for
+    x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None)
+    for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))"
+    && kubectl apply -f /tmp/relay.yaml
+  - kubectl rollout restart daemonset/otel-collector-agent
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+  cause: The services attach raw personal data (customer email, full card number) to spans. Normally the collector's
+    `transform/redact_sensitive_data` and `redaction` processors hash or mask these attributes before export. They
+    were removed from the traces pipeline, so the raw values now reach Jaeger.
+  diagnose:
+  - 'Jaeger: checkout/payment spans carry `user.email` and `demo.payment.card_number` in clear text.'
+  - '`kubectl get cm otel-collector-agent -o yaml`: the traces pipeline''s processors list lacks `transform/redact_sensitive_data`
+    and `redaction`, although both processors are still defined.'
+  - 'Restore them in the pipeline and restart the collector. In reality, also purge the leaked data and investigate
+    why apps emit raw PII (here: the `emitRawPii` flag).'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 360
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+notes:
+- 'Background: the services emit raw personal data in span attributes (emitRawPii). The actual incident: the collector
+  pipeline no longer scrubs it.'

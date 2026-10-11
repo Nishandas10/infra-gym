@@ -71,7 +71,7 @@ def targeting_context(config_text, flag):
         return {}
 
 
-@mechanism("feature_flag", "application", "Turn on one of the demo's built-in failure flags")
+@mechanism("app.flag", "application", "Turn on one of the demo's built-in failure flags")
 def feature_flag(fault, undo, ctx):
     flag, variant = fault["flag"], str(fault.get("variant", "on"))
     original = read_config()
@@ -97,7 +97,7 @@ def set_source_variant(flag, variant, configmap=CONFIGMAP, key=CONFIG_KEY):
     return text
 
 
-@mechanism("flag_in_source_config", "application",
+@mechanism("app.flag_source_config", "application",
            "Change a flag in the flagd-config ConfigMap (the source of truth) and restart flagd so it loads it; "
            "fixing only the live file does not survive the next flagd restart")
 def flag_in_source_config(fault, undo, ctx):

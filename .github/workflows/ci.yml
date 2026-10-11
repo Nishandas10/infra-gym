@@ -16,5 +16,6 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: ruff check .
+      - run: python scripts/generate.py --check
       - run: python scripts/lint_scenarios.py
       - run: pytest

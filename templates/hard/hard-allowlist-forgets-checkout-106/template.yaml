@@ -1,0 +1,122 @@
+spec_version: 2
+id: hard-allowlist-forgets-checkout-106
+version: 1
+title: A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame
+mechanism: hard/ingress-allowlist-omits-client-with-decoy-deploy
+family: hard
+split: hard
+seed: 1106
+world: k8s-shop
+bench_eligible: true
+tools:
+- kubectl
+- curl
+task:
+  kind: incident
+  prompts:
+    page: Checkout started failing right after this morning's deploys. Browsing the shop still works. Find the cause
+      and fix it.
+    hinted: Checkout fails while browsing works. Checkout's calls to product-catalog time out, while the frontend's
+      calls to product-catalog work. Find the cause and fix it.
+tags:
+  injector: k8s-api
+  drivers:
+  - red-herring
+  - recent-change-bias
+  - partial-reachability
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    noise: true
+    kind: deployment
+    name: payment
+    ops:
+    - op: set
+      path: /metadata/annotations/kubernetes.io~1change-cause
+      value: 'payment: bump payment-sdk 4.1.7 -> 4.2.0 (CHG-3317)'
+  - mechanism: k8s.workload_patch
+    noise: true
+    target: payment
+    recreate_pods: false
+    pause_s: 20
+    ops:
+    - op: set
+      path: /spec/template/metadata/annotations/deploy.example.com~1release
+      value: 2026.10.08-1
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=product-catalog
+    manifests:
+    - apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: product-catalog-allow-clients
+        namespace: default
+        labels:
+          security.example.com/ticket: ZT-104
+        annotations:
+          security.example.com/summary: 'Zero-trust: only known clients may call product-catalog'
+      spec:
+        podSelector:
+          matchLabels:
+            opentelemetry.io/name: product-catalog
+        policyTypes:
+        - Ingress
+        ingress:
+        - from:
+          - podSelector:
+              matchExpressions:
+              - key: opentelemetry.io/name
+                operator: In
+                values:
+                - frontend
+                - recommendation
+          ports:
+          - protocol: TCP
+            port: 8080
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - ingress-allowlist-omits-client-with-decoy-deploy
+reference:
+  commands:
+  - kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+  cause: NetworkPolicy product-catalog-allow-clients admits only frontend and recommendation, so checkout's product
+    lookups time out. Browsing works because the frontend is allowed. The payment rollout with a scary change-cause
+    happened at the same time but is harmless.
+  diagnose:
+  - 'checkout logs: preparing the order fails getting products from product-catalog (deadline exceeded).'
+  - 'product-catalog is healthy and the frontend reaches it (browse works): the failure is client-specific.'
+  - '`kubectl get networkpolicy` shows product-catalog-allow-clients; its allow-list omits checkout.'
+  - Add checkout to the allow-list (removing the policy also works, but weakens the zero-trust change).
+  traps:
+  - Rolling back payment because of its recent 'SDK bump' (a decoy; counts as a distractor touch).
+  - Restarting checkout or product-catalog (changes nothing).
+  noise:
+  - payment rolled out minutes earlier with a risky-sounding change-cause
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 60
+  poll_s: 10
+  baseline_timeout_s: 180
+budget:
+  max_steps: 40
+  wall_s: 1200
+meta:
+  tier: hard
+  layers: 1
+  realistic_pattern: Zero-trust NetworkPolicy rollout that missed one legitimate caller
+  built_from:
+  - netpol-ingress-deny-038
+  - wl-client-wrong-port-016 (symptom path)

@@ -4,8 +4,8 @@ usage:
   python injectors/inject.py scenarios/<id>            # inject the fault
   python injectors/inject.py scenarios/<id> --revert   # undo it exactly
 
-The mechanism is chosen by fault.type in spec.yaml (see gym/faults/). Every
-injection records how to undo itself in .gym_state/<id>.json.
+Each fault step names its mechanism (fault.steps[].mechanism in spec.yaml, see
+gym/faults/). Every injection records how to undo itself in .gym_state/<id>.json.
 """
 import argparse
 import pathlib
@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from gym import faults  # noqa: E402
-from gym.spec import load  # noqa: E402
+from gym.spec import fault_label, load  # noqa: E402
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
         print(f"Reverted '{spec['id']}'.")
         return
     faults.inject(spec, sdir, force=args.force)
-    print(f"Injected fault '{spec['id']}' ({spec['fault']['type']}).")
+    print(f"Injected fault '{spec['id']}' ({fault_label(spec)}).")
     print("Give it 20-60 seconds, then run: python verifiers/verify.py " + args.spec_path)
 
 

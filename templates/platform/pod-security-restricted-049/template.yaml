@@ -1,0 +1,56 @@
+spec_version: 2
+id: pod-security-restricted-049
+version: 1
+title: Namespace switched to the 'restricted' Pod Security Standard
+mechanism: platform/pod-security-admission
+family: platform
+split: train
+seed: 1049
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: namespace
+    name: default
+    namespace: null
+    recreate_pods_after:
+    - opentelemetry.io/name=image-provider
+    ops:
+    - op: set
+      path: /metadata/labels/pod-security.kubernetes.io~1enforce
+      value: restricted
+verifier:
+  checks:
+  - type: journey
+    journey: images
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=image-provider
+  root_cause:
+  - pod-security
+reference:
+  commands:
+  - kubectl label namespace default pod-security.kubernetes.io/enforce-
+  - kubectl rollout restart deployment/image-provider
+  - kubectl rollout status deployment/image-provider --timeout=300s
+  cause: The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running,
+    but any recreated pod that does not meet the restricted profile is rejected at admission.
+  diagnose:
+  - '`kubectl get pods`: no image-provider pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=image-provider`: `violates PodSecurity "restricted:latest"`.'
+  - '`kubectl get namespace default --show-labels`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

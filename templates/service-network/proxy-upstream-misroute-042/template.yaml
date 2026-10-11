@@ -1,0 +1,56 @@
+spec_version: 2
+id: proxy-upstream-misroute-042
+version: 1
+title: Edge proxy routes shop traffic to the wrong upstream port
+mechanism: edge-proxy/upstream-misconfigured
+family: service-network
+split: train
+seed: 1042
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The shop returns 503 for every page, while Grafana and Jaeger under the same address still work. Find
+      the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: frontend-proxy
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:FRONTEND_PORT/value
+      value: '8081'
+verifier:
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - frontend-proxy
+reference:
+  commands:
+  - kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080
+  - kubectl rollout status deployment/frontend-proxy --timeout=300s
+  cause: The Envoy edge proxy builds its routes from environment variables. `FRONTEND_PORT` was set to 8081, so
+    the shop routes go to `frontend:8081`, where nothing listens. The routes for the other tools are unaffected.
+  diagnose:
+  - '`curl -i http://localhost:8080/`: `503 upstream connect error`.'
+  - '`kubectl logs deploy/frontend-proxy`: upstream connection failures to frontend.'
+  - 'The frontend pod is healthy; `kubectl get deploy frontend-proxy -o yaml`: `FRONTEND_PORT=8081`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

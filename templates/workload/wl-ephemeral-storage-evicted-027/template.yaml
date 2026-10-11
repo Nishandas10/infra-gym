@@ -1,0 +1,58 @@
+spec_version: 2
+id: wl-ephemeral-storage-evicted-027
+version: 1
+title: Tiny ephemeral-storage limit -> pods evicted over and over
+mechanism: workload/ephemeral-storage-eviction
+family: workload
+split: train
+seed: 1027
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Traces keep disappearing from Jaeger for minutes at a time, and the telemetry collector pods keep being
+      replaced. Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    kind: daemonset
+    target: otel-collector-agent
+    recreate_pods: false
+    ops:
+    - op: set
+      path: /spec/template/spec/containers/$c/resources/limits/ephemeral-storage
+      value: 64Ki
+  revert_hooks:
+  - delete_failed_pods: true
+verifier:
+  checks:
+  - type: pods_stable
+    selector: app.kubernetes.io/name=opentelemetry-collector
+    min_age_s: 180
+  - type: jaeger_traces
+    service: frontend
+    lookback: 1m
+    min_traces: 1
+  root_cause:
+  - otel-collector
+reference:
+  commands:
+  - kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/ephemeral-storage"}]'
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=240s
+  - kubectl delete pods --field-selector=status.phase=Failed
+  cause: The collector DaemonSet got an `ephemeral-storage` limit of 64Ki. Container logs count toward that limit,
+    and the collector's debug exporter logs continuously, so the kubelet evicts the pods soon after they start.
+  diagnose:
+  - '`kubectl get pods -l app.kubernetes.io/name=opentelemetry-collector`: pods `Evicted` / constantly new.'
+  - '`kubectl describe pod <evicted-pod>`: `Pod ephemeral local storage usage exceeds the total limit of containers
+    64Ki`.'
+  - '`kubectl get ds otel-collector-agent -o yaml`: the ephemeral-storage limit.'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

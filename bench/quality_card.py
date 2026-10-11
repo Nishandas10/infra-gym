@@ -39,7 +39,7 @@ if a.set:
 meta = {}
 for p in sorted((REPO / "scenarios").glob("*/spec.yaml")):
     s = yaml.safe_load(p.read_text())
-    meta[s["id"]] = s.get("meta") or {}
+    meta[s["id"]] = {"tier": "hard" if s.get("split") == "hard" else "standard", "family": s.get("family")}
 
 
 def med(rs, key):

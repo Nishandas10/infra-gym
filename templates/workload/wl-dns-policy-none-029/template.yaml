@@ -1,0 +1,62 @@
+spec_version: 2
+id: wl-dns-policy-none-029
+version: 1
+title: Pod DNS set to an unreachable nameserver
+mechanism: workload/pod-dns-config
+family: workload
+split: train
+seed: 1029
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Placing an order fails with errors about every dependency at once. Other services work. Find the cause
+      and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: checkout
+    strategy: Recreate
+    ops:
+    - op: set
+      path: /spec/template/spec/dnsPolicy
+      value: None
+    - op: set
+      path: /spec/template/spec/dnsConfig
+      value:
+        nameservers:
+        - 192.0.2.53
+        searches:
+        - default.svc.cluster.local
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - checkout
+reference:
+  commands:
+  - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+  - kubectl rollout status deployment/checkout --timeout=300s
+  cause: 'The checkout pod template sets `dnsPolicy: None` with a nameserver at 192.0.2.53 that does not exist,
+    so checkout cannot resolve any service name. Every dependency fails at once.'
+  diagnose:
+  - '`kubectl logs deploy/checkout`: every outgoing call fails with name-resolution errors.'
+  - Other pods resolve names fine, so it is not a cluster-wide DNS outage.
+  - '`kubectl exec deploy/checkout -- cat /etc/resolv.conf` (or the pod spec): nameserver 192.0.2.53, `dnsPolicy:
+    None`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120
+notes:
+- 'Recreate: checkout''s init container also needs DNS, so a rolling update would leave the old pod serving and
+  never cause an outage.'

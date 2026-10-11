@@ -1,0 +1,50 @@
+spec_version: 2
+id: otel-service-endpoint-087
+version: 1
+title: One service exports telemetry to a collector name that does not exist
+mechanism: observability/service-exporter-misconfigured
+family: observability
+split: train
+seed: 1087
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Checkout's spans are missing from every trace (traces jump from the frontend straight to payment and shipping).
+      Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: checkout
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:OTEL_EXPORTER_OTLP_ENDPOINT/value
+      value: http://otel-collector-gateway:4318
+verifier:
+  checks:
+  - type: jaeger_traces
+    service: checkout
+    lookback: 1m
+    min_traces: 1
+  root_cause:
+  - checkout
+reference:
+  commands:
+  - kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
+  - kubectl rollout status deployment/checkout --timeout=300s
+  cause: Checkout's `OTEL_EXPORTER_OTLP_ENDPOINT` points at `otel-collector-gateway`, which does not exist. Only
+    checkout's telemetry is lost, which leaves gaps in otherwise healthy traces.
+  diagnose:
+  - 'Jaeger: no traces for service `checkout`, while others are fine.'
+  - 'checkout logs: OTLP export errors resolving `otel-collector-gateway`.'
+  - '`kubectl get deploy checkout -o yaml`: the endpoint.'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

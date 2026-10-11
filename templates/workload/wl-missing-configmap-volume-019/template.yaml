@@ -1,0 +1,62 @@
+spec_version: 2
+id: wl-missing-configmap-volume-019
+version: 1
+title: Pod mounts a ConfigMap that does not exist -> stuck ContainerCreating
+mechanism: workload/missing-configmap-volume
+family: workload
+split: train
+seed: 1019
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The fraud team says no new orders have reached their system for a while, although checkout works. Find
+      the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: fraud-detection
+    strategy: Recreate
+    ops:
+    - op: append
+      path: /spec/template/spec/volumes
+      value:
+        name: rules
+        configMap:
+          name: fraud-rules
+    - op: append
+      path: /spec/template/spec/containers/$c/volumeMounts
+      value:
+        name: rules
+        mountPath: /etc/fraud-rules
+verifier:
+  checks:
+  - type: pods_ready
+    selector: opentelemetry.io/name=fraud-detection
+  - type: kafka_lag
+    group: fraud-detection
+    max_lag: 50
+  root_cause:
+  - fraud-detection
+reference:
+  commands:
+  - kubectl rollout undo deployment/fraud-detection
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
+  cause: The last change to fraud-detection mounts a ConfigMap named `fraud-rules` that was never created. The kubelet
+    cannot set up the volume, so the pod never starts and the Kafka consumer group has no members. Orders pile up
+    unread. Checkout is unaffected, so the failure is silent.
+  diagnose:
+  - '`kubectl get pods`: fraud-detection is stuck in `ContainerCreating`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=fraud-detection`: `FailedMount ... configmap "fraud-rules" not
+    found`.'
+  - 'Kafka: consumer group `fraud-detection` has no active members and growing lag.'
+  - '`kubectl rollout history deployment/fraud-detection`: the latest revision added the volume.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

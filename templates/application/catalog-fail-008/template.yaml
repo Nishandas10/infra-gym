@@ -1,0 +1,48 @@
+spec_version: 2
+id: catalog-fail-008
+version: 1
+title: One product always fails (productCatalogFailure)
+mechanism: app-flag/catalog-single-product-failure
+family: application
+split: train
+seed: 1008
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: A customer reports that one product page (the 'National Park Foundation Explorascope') always shows an
+      error, while every other product works. Find the cause and fix it.
+tags:
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: productCatalogFailure
+    variant: 'on'
+verifier:
+  checks:
+  - type: http
+    url: http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z
+    expect_status: 200
+    max_ms: 3000
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 34
+    max_avg_ms: 2500
+  root_cause:
+  - product-catalog
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+reference:
+  commands:
+  - python injectors/toggle_flag.py productCatalogFailure --off
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+meta:
+  golden: true

@@ -12,8 +12,10 @@ restore anything else the model changed (`world.py`) -> world healthy again.
 
 ## Fairness and safety rules
 
-- **Chaos Mesh scenarios are excluded** (`exclude_fault_types` in config.yaml). Their only fix
-  is deleting the chaos object, which an SRE never does in a real incident.
+- **Chaos Mesh scenarios are excluded** (`bench_eligible: false` in their templates). Their only
+  fix is deleting the chaos object, which an SRE never does in a real incident.
+- **Every result row records the scenario's `content_hash`**, so results can be tied to the exact
+  version of the scenario that ran.
 - **The model works in a container that cannot see this repo**, so it can't read reference
   solutions, checks or the undo log.
 - **Its Kubernetes account** (`sandbox_up.sh`) can operate `default` and `kube-system`, nodes,

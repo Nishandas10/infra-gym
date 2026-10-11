@@ -1,0 +1,64 @@
+spec_version: 2
+id: k8s-oom-cascade-001
+version: 1
+title: Memory limit far below what the service needs -> OOMKilled / CrashLoopBackOff
+mechanism: workload/oom-memory-limit
+family: workload
+split: train
+seed: 1001
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix
+      it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.memory_limit
+    target_deployment: cart
+    target_label: app.kubernetes.io/name=cart
+    bad_memory_limit: 3Mi
+    bad_memory_request: 3Mi
+    strategy: Recreate
+verifier:
+  checks:
+  - type: pods_ready
+    selector: opentelemetry.io/name=cart
+  - type: pods_stable
+    selector: opentelemetry.io/name=cart
+    min_age_s: 120
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 3000
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  root_cause:
+  - cart
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+reference:
+  commands:
+  - kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
+  - kubectl rollout status deployment/cart --timeout=180s
+validation:
+  detect_timeout_s: 600
+  recover_timeout_s: 360
+  hold_s: 45
+notes:
+- 'The cart is a native-compiled .NET binary that needs only a few MiB. Measured on this cluster: at 5-20Mi it starts
+  and is only OOM-killed after 6-15 minutes of traffic growth; at 3Mi the container is OOM-killed while starting,
+  every time ("container init was OOM-killed (memory limit too low?)").'
+- 'strategy Recreate: single-replica service, so the old healthy pod is gone.'
+meta:
+  golden: true

@@ -8,6 +8,9 @@ from collections import defaultdict
 from pathlib import Path
 
 RES = Path(__file__).resolve().parent / "results"
+sys.path.insert(0, str(RES.parents[1]))
+
+from gym.faults import canonical  # noqa: E402
 
 
 def wilson(k, n, z=1.96):
@@ -35,6 +38,8 @@ def main():
     for line in open(path):
         if line.strip():
             r = json.loads(line)
+            if r.get("fault_type"):  # results from before spec v2 use the old mechanism names
+                r["fault_type"] = canonical(r["fault_type"])
             latest[(r["key"], r["model"], r["attempt"])] = r
     if args.model:
         wanted = [w.strip() for w in args.model.split(",") if w.strip()]

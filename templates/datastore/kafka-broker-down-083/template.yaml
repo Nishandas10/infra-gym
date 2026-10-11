@@ -1,0 +1,64 @@
+spec_version: 2
+id: kafka-broker-down-083
+version: 1
+title: Message broker scaled to zero (async pipeline stops silently)
+mechanism: datastore/message-broker-down
+family: datastore
+split: train
+seed: 1083
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the
+      cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: kafka
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 0
+  restart_on_revert:
+  - deployment/checkout
+  - deployment/accounting
+  - deployment/fraud-detection
+  revert_hooks:
+  - kafka_topic: orders
+verifier:
+  checks:
+  - type: orders_recorded
+    timeout_s: 60
+  - type: pods_ready
+    selector: opentelemetry.io/name=kafka
+  root_cause:
+  - kafka
+reference:
+  commands:
+  - kubectl scale deployment kafka --replicas=1
+  - kubectl rollout status deployment/kafka --timeout=300s
+  - for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh
+    --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions
+    1 --replication-factor 1 && break; sleep 5; done
+  - kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+  - kubectl rollout status deployment/checkout --timeout=300s
+  - kubectl rollout status deployment/accounting --timeout=300s
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
+  cause: The Kafka Deployment was scaled to zero. The consumers (accounting, fraud-detection) sit disconnected,
+    and checkout's Kafka producer gets stuck, so orders eventually time out too.
+  diagnose:
+  - 'accounting logs: `brokers are down`; checkout requests time out.'
+  - '`kubectl get deploy kafka`: 0 replicas.'
+  - After restoring the broker, recreate the `orders` topic (no persistent volume in this demo) and restart checkout
+    and the consumers; they do not recover on their own.
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 480
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

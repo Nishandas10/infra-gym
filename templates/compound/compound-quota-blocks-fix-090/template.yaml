@@ -1,0 +1,65 @@
+spec_version: 2
+id: compound-quota-blocks-fix-090
+version: 1
+title: Broken config plus a quota that blocks the rollout of the fix
+mechanism: compound/fix-blocked-by-quota
+family: compound
+split: train
+seed: 1090
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Orders fail at shipping. The obvious config fix was applied, but the rollout never completes. Find the
+      cause and fix it for real.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: shipping
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:QUOTE_ADDR/value
+      value: http://quote-svc:8080
+    pause_s: 25
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: namespace-pod-quota
+        namespace: default
+      spec:
+        hard:
+          pods: '10'
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - shipping
+  - resource-quota
+reference:
+  commands:
+  - kubectl delete resourcequota namespace-pod-quota
+  - kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
+  - kubectl rollout status deployment/shipping --timeout=300s
+  cause: 'Two problems. Shipping''s `QUOTE_ADDR` points at `quote-svc`, which does not exist. And a ResourceQuota
+    caps the namespace at 10 pods (about 25 already run), so the corrected Deployment''s new pod cannot be created:
+    the rollout stalls and the broken pod keeps serving.'
+  diagnose:
+  - 'shipping logs: cannot resolve `quote-svc`.'
+  - 'After fixing the env var: `kubectl rollout status` hangs; `kubectl describe rs` shows `exceeded quota: namespace-pod-quota`.'
+  - Remove/raise the quota, then the fix rolls out.
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

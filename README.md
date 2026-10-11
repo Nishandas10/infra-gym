@@ -12,10 +12,11 @@ whether it was fixed. All scenarios are listed in [scenarios/CATALOG.md](scenari
 
 | Path | What it is |
 |---|---|
-| `scenarios/<id>/spec.yaml` | The scenario: fault, task prompt, verifier checks, reference solution commands |
-| `scenarios/<id>/reference_solution.md` | How a competent SRE diagnoses and fixes it |
+| `templates/<family>/<id>/template.yaml` | **Where scenarios are written**: fault, prompts, verifier checks, reference fix, notes (spec v2, `gym/core/schema.py`) |
+| `templates/defaults.yaml` | Defaults for every template (forbidden actions, tools, budget) |
+| `scenarios/<id>/` | **Generated** from the template by `scripts/generate.py`: `spec.yaml` (resolved, content-hashed) and `reference_solution.md`. Do not edit. |
 | `gym/` | Library: fault mechanisms (with exact undo), verifier checks, validation harness |
-| `gym/catalog.py` | Definitions of the generated (non-golden) scenarios |
+| `gym/core/` | Spec v2 schema and the template -> instance generator |
 | `injectors/inject.py` | Inject any scenario (`--revert` undoes it exactly) |
 | `injectors/toggle_flag.py` | Flip the demo's feature flags (works with demo 3.x) |
 | `verifiers/verify.py` | Run a scenario's verifier (exit 0 = healthy) |
@@ -31,11 +32,26 @@ bash scripts/install_chaos_mesh.sh   # needed by the chaos-* scenarios
 python scripts/gym_setup.py          # helper pods in namespace gym-system (probe, kafka tools)
 ```
 
+## Write or change a scenario
+
+1. Edit (or add) `templates/<family>/<id>/template.yaml`. Files the fault reads (`chaos.yaml`)
+   live in the same folder. A hand-written `reference_solution.md` there is used as is;
+   otherwise it is generated from `reference.cause`, `reference.diagnose` and `reference.commands`.
+2. If the change affects behaviour (fault, checks, fix, prompts, validation, budget), bump `version`.
+3. `python scripts/generate.py` writes `scenarios/<id>/` and `scenarios/CATALOG.md`.
+4. `python scripts/lint_scenarios.py` and `pytest`; then validate it on the cluster (below).
+
+Each instance has a `content_hash` over everything that decides its behaviour, so results can
+be tied to the exact version of a scenario they ran. Fault steps name their mechanism:
+`k8s.*` (Kubernetes objects), `app.*` (the shop's feature flags), `runtime.*` (commands in
+pods), `chaos.*` (Chaos Mesh); see `gym/faults/`.
+
 ## Offline tests (no cluster needed)
 
 ```bash
 pip install -e ".[dev]"
 ruff check .
+python scripts/generate.py --check   # scenarios/ matches templates/
 pytest
 ```
 
@@ -68,7 +84,7 @@ python injectors/inject.py scenarios/pay-fail-006 --revert # always clean up exa
 ```bash
 python scripts/validate_scenario.py scenarios/net-delay-002
 python scripts/validate_scenario.py --all            # hours; stops if the cluster is left unhealthy
-python scripts/generate_scenarios.py --index         # refresh scenarios/CATALOG.md with verdicts
+python scripts/generate.py --index                   # refresh scenarios/CATALOG.md with verdicts
 ```
 
 Each run proves: baseline healthy -> inject -> verifier FAILs -> still FAILs for
@@ -78,6 +94,7 @@ the world is restored exactly.
 ## What counts as a unique scenario
 
 A scenario is unique only if its root-cause mechanism differs from every other
-scenario's (`meta.mechanism`, enforced by `scripts/lint_scenarios.py`).
+scenario's (the template's `mechanism`, enforced by `scripts/generate.py`).
 Changing only numbers (memory size, latency, percentage), service names or
-random seeds creates a variant, not a new scenario.
+random seeds creates a variant, not a new scenario. Mechanisms that were tried
+and dropped are listed in `templates/dropped.yaml`.

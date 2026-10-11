@@ -1,0 +1,47 @@
+spec_version: 2
+id: pay-fail-006
+version: 1
+title: Payment service rejects every charge (paymentFailure)
+mechanism: app-flag/payment-failure
+family: application
+split: train
+seed: 1006
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Customers can browse and fill their carts, but every order fails at the 'Place Order' step with a payment
+      error. Find the cause and fix it.
+tags:
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: paymentFailure
+    variant: 100%
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 5000
+  - type: pods_ready
+    selector: opentelemetry.io/name=payment
+  root_cause:
+  - payment
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+reference:
+  commands:
+  - python injectors/toggle_flag.py paymentFailure --off
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+  hold_s: 30
+meta:
+  golden: true

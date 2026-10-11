@@ -61,7 +61,7 @@ models:
     price: {input: 0.04, output: 0.50}
 
 # ---- Which scenarios (runs normally use --set; these are the defaults otherwise)
-exclude_fault_types: [chaos_mesh]   # fix = delete the chaos object, tests nothing
+# Scenarios with bench_eligible: false (Chaos Mesh: the fix is deleting the chaos object) are always excluded.
 only_golden: false
 only_validated: true                # only scenarios that passed scripts/validate_scenario.py
 include: []

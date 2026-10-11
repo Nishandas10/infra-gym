@@ -20,14 +20,6 @@ from tests.fakes import FakeCluster, install
 SPECS = all_specs()
 
 
-def steps(fault):
-    if fault["type"] == "composite":
-        for s in fault["steps"]:
-            yield from steps(s)
-    else:
-        yield fault
-
-
 def env_of(fake, deployment):
     return fake.obj("deployment", deployment)["spec"]["template"]["spec"]["containers"][0]["env"]
 
@@ -103,6 +95,6 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
     assert fake.flags_live() == flags_before, "flagd's live flags not restored"
 
     reverted_cmds = [cmd for _, cmd, _ in fake.execs[execs_at_revert:]]
-    for st in steps(spec["fault"]):
+    for st in spec["fault"]["steps"]:
         for cmd in st.get("undo_commands", []):
             assert cmd in reverted_cmds, f"undo command not run: {json.dumps(cmd)[:120]}"

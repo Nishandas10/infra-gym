@@ -1,0 +1,81 @@
+spec_version: 2
+id: webhook-blocks-pods-050
+version: 1
+title: Validating webhook with failurePolicy=Fail and no backend
+mechanism: platform/admission-webhook-unavailable
+family: platform
+split: train
+seed: 1050
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Order confirmation emails stopped after the email pod restarted, and no new email pod appears. Find the
+      cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=email
+    manifests:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      metadata:
+        name: pod-policy-guard
+      webhooks:
+      - name: pods.policy-guard.gym.local
+        admissionReviewVersions:
+        - v1
+        sideEffects: None
+        failurePolicy: Fail
+        timeoutSeconds: 5
+        clientConfig:
+          service:
+            namespace: gym-system
+            name: policy-guard
+            port: 443
+            path: /validate
+        rules:
+        - operations:
+          - CREATE
+          apiGroups:
+          - ''
+          apiVersions:
+          - v1
+          resources:
+          - pods
+        namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: default
+verifier:
+  checks:
+  - type: journey
+    journey: email
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=email
+  root_cause:
+  - admission-webhook
+reference:
+  commands:
+  - kubectl delete validatingwebhookconfiguration pod-policy-guard
+  - kubectl rollout restart deployment/email
+  - kubectl rollout status deployment/email --timeout=300s
+  cause: 'A ValidatingWebhookConfiguration `pod-policy-guard` intercepts every pod creation in the namespace with
+    `failurePolicy: Fail`, but its backend service does not exist. Every pod create is rejected.'
+  diagnose:
+  - '`kubectl get pods`: no email pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=email`: `failed calling webhook "pods.policy-guard.gym.local"
+    ... service "policy-guard" not found`.'
+  - '`kubectl get validatingwebhookconfigurations`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

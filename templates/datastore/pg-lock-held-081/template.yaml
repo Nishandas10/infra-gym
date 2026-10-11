@@ -1,0 +1,88 @@
+spec_version: 2
+id: pg-lock-held-081
+version: 1
+title: A stuck maintenance job holds an exclusive table lock
+mechanism: datastore/db-lock-held
+family: datastore
+split: train
+seed: 1081
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product pages hang until they time out; the database is up and not busy. Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: catalog-maintenance
+        namespace: default
+        labels:
+          app: catalog-maintenance
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: catalog-maintenance
+        template:
+          metadata:
+            labels:
+              app: catalog-maintenance
+          spec:
+            containers:
+            - name: reindex
+              image: postgres:18.4
+              env:
+              - name: PGPASSWORD
+                value: changeit
+              command:
+              - psql
+              - -h
+              - astronomy-db
+              - -U
+              - postgres
+              - -d
+              - astronomy_db
+              - -c
+              - BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);
+              resources:
+                limits:
+                  memory: 64Mi
+verifier:
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+  root_cause:
+  - astronomy-db
+reference:
+  commands:
+  - kubectl delete deployment catalog-maintenance
+  cause: A `catalog-maintenance` job opened a transaction and took an ACCESS EXCLUSIVE lock on `catalog.products`,
+    then got stuck. Every product query waits behind the lock.
+  diagnose:
+  - 'product-catalog: queries hang (no error, just timeouts).'
+  - '`psql -c "select pid, state, query, wait_event_type from pg_stat_activity"`: product queries waiting on a Lock;
+    one session idle in transaction holding it.'
+  - '`kubectl get pods`: `catalog-maintenance` is the lock holder. Stop it (or `pg_terminate_backend`).'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

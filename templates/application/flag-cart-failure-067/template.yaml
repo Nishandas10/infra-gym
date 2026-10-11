@@ -1,0 +1,49 @@
+spec_version: 2
+id: flag-cart-failure-067
+version: 1
+title: Cart service errors (cartFailure)
+mechanism: app-flag/cart-failure
+family: application
+split: train
+seed: 1067
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Customers report errors around their cart and when placing orders. Find the cause and fix it.
+tags:
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: cartFailure
+    variant: 100%
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - cart
+reference:
+  commands:
+  - python injectors/toggle_flag.py cartFailure --off
+  cause: The `cartFailure` flag (at 100%) makes the cart service fail its operations on purpose.
+  diagnose:
+  - 'cart logs / Jaeger: cart RPC errors carrying the feature-flag attribute.'
+  - Pods are healthy, and valkey-cart is healthy.
+  - 'Feature Flags UI: `cartFailure` is at 100%.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

@@ -3,10 +3,14 @@
 usage:
   python scripts/snapshot_specs.py          # write the snapshot (only when a change is intended)
 
-tests/test_spec_snapshot.py fails whenever a scenario's fault, checks, reference fix, validation
-timings or prompt differ from this snapshot. Restructuring (schema v2, templates, generators)
-must leave it passing; a deliberate behaviour change updates the snapshot in the same commit,
-so the diff shows exactly which scenarios changed.
+tests/test_spec_snapshot.py fails whenever a scenario's fault, checks, forbidden actions,
+reference fix, validation timings, page prompt or budget differ from this snapshot.
+Restructuring must leave it passing; a deliberate behaviour change updates the snapshot in the
+same commit, so the diff shows exactly which scenarios changed.
+
+The snapshot keeps the spec-v1 shape it was first recorded in (fault.type / composite), so the
+v1 -> v2 migration is checked against exactly what ran before it: `contract()` maps a v2
+instance back to that shape.
 """
 import json
 import pathlib
@@ -15,21 +19,33 @@ import sys
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from gym.faults import ALIASES  # noqa: E402
 from gym.spec import all_specs, load  # noqa: E402
 
 OUT = REPO / "tests" / "golden" / "specs.json"
+V1_NAME = {new: old for old, new in ALIASES.items()}
+FAULT_LEVEL = ("restart_on_revert", "revert_hooks")
+
+
+def v1_fault(fault):
+    steps = [{"type": V1_NAME[s["mechanism"]], **{k: v for k, v in s.items() if k != "mechanism"}}
+             for s in fault["steps"]]
+    top = {k: fault[k] for k in FAULT_LEVEL if fault.get(k) is not None}
+    if len(steps) == 1:
+        return {**steps[0], **top}
+    return {"type": "composite", "steps": steps, **top}
 
 
 def contract(spec):
     """The fields that decide what a scenario does and how it is judged."""
     return {
-        "fault": spec["fault"],
+        "fault": v1_fault(spec["fault"]),
         "checks": spec["verifier"]["checks"],
-        "forbidden": spec["verifier"].get("forbidden", []),
-        "solution": spec["solution"]["commands"],
+        "forbidden": spec["verifier"]["forbidden"],
+        "solution": spec["reference"]["commands"],
         "validation": spec.get("validation") or {},
-        "prompt": spec["task"]["prompt"],
-        "budget": spec.get("budget") or {},
+        "prompt": spec["task"]["prompts"]["page"],
+        "budget": spec["budget"],
     }
 
 
@@ -43,8 +59,9 @@ def snapshot():
 
 def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(snapshot(), indent=1, sort_keys=True) + "\n")
-    print(f"wrote {OUT.relative_to(REPO)} ({len(snapshot())} scenarios)")
+    snap = snapshot()
+    OUT.write_text(json.dumps(snap, indent=1, sort_keys=True) + "\n")
+    print(f"wrote {OUT.relative_to(REPO)} ({len(snap)} scenarios)")
 
 
 if __name__ == "__main__":

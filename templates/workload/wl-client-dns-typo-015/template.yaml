@@ -1,0 +1,57 @@
+spec_version: 2
+id: wl-client-dns-typo-015
+version: 1
+title: Client configured with a dependency hostname that does not exist
+mechanism: workload/client-dependency-hostname
+family: workload
+split: train
+seed: 1015
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Customers cannot add anything to their cart; the cart shows an error. Browsing products works. Find the
+      cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: frontend
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:CART_ADDR/value
+      value: cart-service:8080
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - frontend
+reference:
+  commands:
+  - kubectl set env deployment/frontend CART_ADDR=cart:8080
+  - kubectl rollout status deployment/frontend --timeout=300s
+  cause: The frontend's `CART_ADDR` points at `cart-service:8080`. No Service has that name, so every cart call
+    from the frontend fails DNS resolution. The cart service itself is fine.
+  diagnose:
+  - '`kubectl get pods`: everything is Running.'
+  - '`kubectl logs deploy/frontend`: errors resolving `cart-service` (ENOTFOUND / name resolution).'
+  - '`kubectl get svc`: there is no `cart-service`, only `cart`.'
+  - '`kubectl get deploy frontend -o yaml`: `CART_ADDR=cart-service:8080`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

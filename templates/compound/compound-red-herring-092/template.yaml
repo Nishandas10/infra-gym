@@ -1,0 +1,80 @@
+spec_version: 2
+id: compound-red-herring-092
+version: 1
+title: A loud but irrelevant failing pod next to the real, quieter fault
+mechanism: compound/red-herring
+family: compound
+split: train
+seed: 1092
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Orders are failing. The on-call channel is full of alerts about a crash-looping pod that keeps logging
+      database connection errors. Find the real cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: legacy-report-generator
+        namespace: default
+        labels:
+          app: legacy-report-generator
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: legacy-report-generator
+        template:
+          metadata:
+            labels:
+              app: legacy-report-generator
+          spec:
+            containers:
+            - name: report
+              image: busybox:latest
+              command:
+              - sh
+              - -c
+              - 'echo ''FATAL: cannot connect to reporting-db:5432 (connection refused)''; exit 1'
+              resources:
+                limits:
+                  memory: 16Mi
+  - mechanism: k8s.workload_patch
+    target: quote
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 0
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - quote
+reference:
+  commands:
+  - kubectl scale deployment quote --replicas=1
+  - kubectl rollout status deployment/quote --timeout=300s
+  cause: 'The crash-looping `legacy-report-generator` is a red herring: it is broken but nothing depends on it.
+    The orders fail because the quote Deployment was scaled to zero, so shipping cannot get quotes.'
+  diagnose:
+  - 'Start from the failing request: checkout logs point at shipping, and shipping logs point at quote.'
+  - '`kubectl get deploy quote`: 0 replicas.'
+  - The report generator's logs mention a database nothing else uses.
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

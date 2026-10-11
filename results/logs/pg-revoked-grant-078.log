@@ -1,21 +1,21 @@
-14:21:00 === pg-revoked-grant-078 (exec_commands)
-14:21:00   0. world healthy?
-14:21:06   1. baseline must PASS
-14:21:07       [PASS   ] journey:browse - 3/3 ok, avg 19ms
-14:21:07       [PASS   ] journey:catalog - 3/3 ok, avg 12ms
-14:21:07   2. inject
-14:21:07   3. verifier must FAIL (<= 240s)
-14:21:07       [FAIL   ] journey:browse - 0/3 ok, avg 15ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
-14:21:07       [FAIL   ] journey:catalog - 0/3 ok, avg 11ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-14:21:07   4. do-nothing agent: still FAIL after 30s?
-14:21:38       [FAIL   ] journey:browse - 0/3 ok, avg 22ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
-14:21:38       [FAIL   ] journey:catalog - 0/3 ok, avg 11ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-14:21:38       failing in 2/2 checks during the hold
-14:21:38   5. reference solution
-14:21:38     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'
-14:21:38       GRANT
-14:21:38   6. verifier must PASS (<= 300s)
-14:21:38       [PASS   ] journey:browse - 3/3 ok, avg 13ms
-14:21:38       [PASS   ] journey:catalog - 3/3 ok, avg 11ms
-14:21:38   7. restore exactly
-14:21:44   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}
+20:32:33 === pg-revoked-grant-078 (runtime.exec)
+20:32:33   0. world healthy?
+20:32:39   1. baseline must PASS
+20:32:40       [PASS   ] journey:browse - 3/3 ok, avg 16ms
+20:32:40       [PASS   ] journey:catalog - 3/3 ok, avg 13ms
+20:32:40   2. inject
+20:32:40   3. verifier must FAIL (<= 240s)
+20:32:41       [FAIL   ] journey:browse - 0/3 ok, avg 16ms; e.g. GET /api/products/1YMWWN1N4O -> 500 b'Internal Server Error'
+20:32:41       [FAIL   ] journey:catalog - 0/3 ok, avg 12ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+20:32:41   4. do-nothing agent: still FAIL after 30s?
+20:33:11       [FAIL   ] journey:browse - 0/3 ok, avg 16ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+20:33:11       [FAIL   ] journey:catalog - 0/3 ok, avg 13ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+20:33:11       failing in 2/2 checks during the hold
+20:33:11   5. reference solution
+20:33:11     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'
+20:33:11       GRANT
+20:33:11   6. verifier must PASS (<= 300s)
+20:33:12       [PASS   ] journey:browse - 3/3 ok, avg 15ms
+20:33:12       [PASS   ] journey:catalog - 3/3 ok, avg 12ms
+20:33:12   7. restore exactly
+20:33:19   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 7}

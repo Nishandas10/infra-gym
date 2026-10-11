@@ -4,8 +4,8 @@
 hard enough that a strong model does not solve them by reflex, fair enough that a careful SRE
 (or model) can solve every one with the agent's normal permissions.
 
-Status: **built and tested offline; not yet validated on the live cluster.** Run
-`python scripts/validate_scenario.py scenarios/hard-*` on the VM before benchmarking with them.
+Status: **validated on the live cluster** (all 12 VALIDATED once, `results/hard-validation-1.log`).
+The templates are in `templates/hard/<id>/`.
 
 ## Design rules
 
@@ -21,7 +21,7 @@ Status: **built and tested offline; not yet validated on the live cluster.** Run
    the composition, not the fault itself.
 5. Noise steps carry `noise: true`. The bench records whether the agent changed or deleted them
    ("touched unrelated objects"), which gives a **clean-fix** score next to the pass rate.
-6. Each spec has `meta.prompt_easier`, a hint-level prompt used only if calibration shows a
+6. Each template has `task.prompts.hinted`, a hint-level prompt used only if calibration shows a
    scenario is too hard for every model.
 
 ## The 12 scenarios
@@ -43,16 +43,17 @@ Status: **built and tested offline; not yet validated on the live cluster.** Run
 
 ## What was added to the framework
 
-- `gym/faults/flags.py`: mechanism `flag_in_source_config` (flag changed in the ConfigMap, flagd
+- `gym/faults/flags.py`: mechanism `app.flag_source_config` (flag changed in the ConfigMap, flagd
   restarted; revert restores the ConfigMap and restarts flagd).
-- `gym/faults/k8s_objects.py`: mechanism `pin_endpoints` (selector removed, hand-made
+- `gym/faults/k8s_objects.py`: mechanism `k8s.pin_endpoints` (selector removed, hand-made
   EndpointSlice with the Service's port names and numeric target ports; revert restores the
   selector, then deletes the slice).
 - `gym/harness.py`: optional `validation.restart_after_fix`. After the reference fix passes, the
   listed workloads are restarted and the verifier must pass again (verdict `FIX_NOT_DURABLE`
   otherwise).
 - `injectors/source_flag.py`: set a flag in the ConfigMap and restart flagd (durable fix).
-- `scripts/build_hard_scenarios.py`: the single source of the 12 specs and reference solutions.
+- `templates/hard/<id>/template.yaml`: the 12 scenarios (their noise workloads came from
+  `gym/modifiers/noise.py`); `scripts/generate.py` writes the specs and reference solutions.
 - `tests/test_inject_revert.py`: injects and reverts every scenario (with extra state checks for
   each Hard scenario) against an in-memory fake cluster and checks the world is restored exactly
   (`pytest`, see the README).

@@ -1,0 +1,45 @@
+spec_version: 2
+id: pay-unreachable-007
+version: 1
+title: Checkout calls payment at a dead address (paymentUnreachable)
+mechanism: app-flag/payment-unreachable
+family: application
+split: train
+seed: 1007
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: 'Orders cannot be placed: ''Place Order'' spins and then errors. The payment provider''s status page says
+      they are fully operational. Find out why and fix it.'
+tags:
+  injector: flagd
+fault:
+  steps:
+  - mechanism: app.flag
+    flag: paymentUnreachable
+    variant: 'on'
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 5000
+  root_cause:
+  - checkout
+  - payment
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+reference:
+  commands:
+  - python injectors/toggle_flag.py paymentUnreachable --off
+validation:
+  detect_timeout_s: 120
+  recover_timeout_s: 120
+meta:
+  golden: true

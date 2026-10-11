@@ -1,0 +1,52 @@
+spec_version: 2
+id: otel-collector-unscheduled-086
+version: 1
+title: Collector DaemonSet has a nodeSelector that matches no node
+mechanism: observability/collector-not-running
+family: observability
+split: train
+seed: 1086
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: 'All telemetry stopped at once: no new traces, and metrics have gone flat. Find the cause and fix it.'
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    kind: daemonset
+    target: otel-collector-agent
+    recreate_pods: false
+    ops:
+    - op: set
+      path: /spec/template/spec/nodeSelector/telemetry-tier
+      value: dedicated
+verifier:
+  checks:
+  - type: pods_ready
+    selector: app.kubernetes.io/name=opentelemetry-collector
+  - type: jaeger_traces
+    service: frontend
+    lookback: 1m
+    min_traces: 1
+  root_cause:
+  - otel-collector
+reference:
+  commands:
+  - kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+  cause: The collector DaemonSet now requires nodes labelled `telemetry-tier=dedicated`. No node has that label,
+    so the DaemonSet runs zero pods and every service's telemetry export fails.
+  diagnose:
+  - '`kubectl get ds otel-collector-agent`: DESIRED 0.'
+  - 'Service logs: OTLP export errors to otel-collector.'
+  - '`kubectl get ds otel-collector-agent -o yaml`: the nodeSelector.'
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

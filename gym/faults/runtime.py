@@ -16,7 +16,7 @@ def _run(target, cmd, namespace, container=None, stdin=None):
     return r.stdout
 
 
-@mechanism("exec_commands", "runtime",
+@mechanism("runtime.exec", "runtime",
            "Run commands inside a pod (e.g. valkey-cli CONFIG SET, psql ALTER ROLE) with explicit undo commands")
 def exec_commands(fault, undo, ctx):
     target = fault["target"]

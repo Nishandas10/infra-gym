@@ -1,0 +1,6 @@
+# Mechanisms that were implemented and tested but dropped, because an outside-evidence verifier
+# cannot observe them in this environment. Kept so they are not re-added; the linter rejects a
+# template whose mechanism is listed here.
+app-flag/db-lock-contention: >-
+  productCatalogLockContention showed no user-visible latency change, even with 12 concurrent
+  requests (~300ms both ways). It is aimed at continuous profiling, which is disabled here.

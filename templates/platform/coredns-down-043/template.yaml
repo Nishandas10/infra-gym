@@ -1,0 +1,58 @@
+spec_version: 2
+id: coredns-down-043
+version: 1
+title: Cluster DNS scaled to zero
+mechanism: platform/cluster-dns-down
+family: platform
+split: train
+seed: 1043
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: New connections across the cluster fail with name-resolution errors; some existing traffic still works.
+      Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    namespace: kube-system
+    target: coredns
+    recreate_pods: false
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 0
+verifier:
+  checks:
+  - type: journey
+    journey: home
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - coredns
+reference:
+  commands:
+  - kubectl -n kube-system scale deployment coredns --replicas=2
+  - kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+  cause: The CoreDNS Deployment in kube-system was scaled to 0. Nothing in the cluster can resolve names. Existing
+    long-lived connections keep working, which makes the outage look partial.
+  diagnose:
+  - 'Application logs: `no such host` / `EAI_AGAIN` for service names.'
+  - '`kubectl -n kube-system get deploy coredns`: 0 replicas; `kubectl -n kube-system get pods -l k8s-app=kube-dns`:
+    none.'
+  - Scale it back up.
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

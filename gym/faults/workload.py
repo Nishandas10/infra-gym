@@ -27,7 +27,7 @@ def recreate_pods(obj, namespace=kube.APP_NS):
     kube.kubectl("delete", "pod", "-l", selector_of(obj), "--wait=false", namespace=namespace)
 
 
-@mechanism("workload_patch", "workload",
+@mechanism("k8s.workload_patch", "workload",
            "Patch a workload (pod template, replicas, paused...) and optionally replace its pods")
 def workload_patch(fault, undo, ctx):
     kind = fault.get("kind", "deployment")
@@ -45,7 +45,7 @@ def workload_patch(fault, undo, ctx):
         recreate_pods(obj, namespace=ns)
 
 
-@mechanism("memory_limit_misconfig", "resource-limits",
+@mechanism("k8s.memory_limit", "resource-limits",
            "Memory request/limit set far below what the service needs -> OOMKilled / CrashLoopBackOff")
 def memory_limit_misconfig(fault, undo, ctx):
     name = fault["target_deployment"]

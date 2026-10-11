@@ -1,0 +1,63 @@
+spec_version: 2
+id: http-replace-059
+version: 1
+title: HTTP responses from a service replaced with garbage
+mechanism: chaos/http-response-corruption
+family: chaos
+split: train
+seed: 1059
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: Orders fail at the shipping step with parse errors, yet the quote service returns HTTP 200. Find the cause
+      and fix it.
+tags:
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest:
+    - apiVersion: chaos-mesh.org/v1alpha1
+      kind: HTTPChaos
+      metadata:
+        name: quote-http-garbage
+        namespace: default
+      spec:
+        mode: all
+        target: Response
+        port: 8080
+        path: '*'
+        replace:
+          body: bm90LWEtbnVtYmVy
+          code: 200
+        selector:
+          namespaces:
+          - default
+          labelSelectors:
+            opentelemetry.io/name: quote
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  root_cause:
+  - quote
+reference:
+  commands:
+  - kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
+  cause: An HTTPChaos experiment rewrites every response from the quote service to the body `not-a-number` with
+    status 200. Shipping cannot parse the quote, so checkout fails, though every HTTP status is OK.
+  diagnose:
+  - 'shipping logs: failed to parse the quote response.'
+  - Calling quote directly from a debug pod returns `not-a-number` instead of a price.
+  - '`kubectl get httpchaos -A`: `quote-http-garbage`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

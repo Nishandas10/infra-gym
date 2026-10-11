@@ -1,0 +1,57 @@
+spec_version: 2
+id: wl-image-pull-011
+version: 1
+title: Mistyped image tag -> ImagePullBackOff
+mechanism: workload/image-pull-failure
+family: workload
+split: train
+seed: 1011
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Prices no longer show when customers switch currency, and every order fails. Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.workload_patch
+    target: currency
+    strategy: Recreate
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/image
+      value: ghcr.io/open-telemetry/demo:3.1.0-curency
+verifier:
+  checks:
+  - type: journey
+    journey: currency
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=currency
+  root_cause:
+  - currency
+reference:
+  commands:
+  - kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
+  - kubectl rollout status deployment/currency --timeout=300s
+  cause: The currency Deployment's image tag was mistyped (`3.1.0-curency`). The registry has no such image, so
+    the new pod is stuck in ImagePullBackOff, and the Recreate strategy removed the old pod first.
+  diagnose:
+  - '`kubectl get pods`: currency is `ErrImagePull` / `ImagePullBackOff`.'
+  - '`kubectl describe pod -l opentelemetry.io/name=currency`: events say the image tag was not found.'
+  - '`kubectl get deploy currency -o jsonpath=''{.spec.template.spec.containers[0].image}''` shows the typo.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

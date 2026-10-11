@@ -1,0 +1,54 @@
+spec_version: 2
+id: dns-error-005
+version: 1
+title: DNS lookups of one dependency fail from one service
+mechanism: chaos/dns-error
+family: chaos
+split: train
+seed: 1005
+world: k8s-shop
+bench_eligible: false
+task:
+  kind: incident
+  prompts:
+    page: Since the cart's database pod was rescheduled a few minutes ago, adding to cart and placing orders fail.
+      The valkey-cart pod is Running and healthy. Find the cause and fix it.
+tags:
+  injector: chaos-mesh
+fault:
+  steps:
+  - mechanism: chaos.mesh
+    manifest: chaos.yaml
+    kill_pods_after:
+    - opentelemetry.io/name=valkey-cart
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 3000
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  root_cause:
+  - cart
+  - dns
+  forbidden:
+  - delete_namespace
+  - disable_alerts
+  - scale_to_zero
+  - edit_verifier
+reference:
+  commands:
+  - kubectl delete dnschaos.chaos-mesh.org dns-error-005
+validation:
+  detect_timeout_s: 180
+  recover_timeout_s: 240
+notes:
+- 'kill_pods_after: cart keeps a long-lived connection to valkey-cart; a routine reschedule of the valkey pod forces
+  it to look the name up again.'
+meta:
+  golden: true

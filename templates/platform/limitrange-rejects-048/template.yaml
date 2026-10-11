@@ -1,0 +1,61 @@
+spec_version: 2
+id: limitrange-rejects-048
+version: 1
+title: LimitRange max is lower than a container's limit
+mechanism: platform/limit-range-rejects
+family: platform
+split: train
+seed: 1048
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The ad service vanished after a restart and never came back. Find the cause and fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=ad
+    manifests:
+    - apiVersion: v1
+      kind: LimitRange
+      metadata:
+        name: container-memory-cap
+        namespace: default
+      spec:
+        limits:
+        - type: Container
+          max:
+            memory: 128Mi
+verifier:
+  checks:
+  - type: journey
+    journey: ads
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=ad
+  root_cause:
+  - limit-range
+reference:
+  commands:
+  - kubectl delete limitrange container-memory-cap
+  - kubectl rollout restart deployment/ad
+  - kubectl rollout status deployment/ad --timeout=300s
+  cause: A LimitRange caps any container at 128Mi of memory. The ad container's limit is 300Mi, so admission rejects
+    the replacement pod.
+  diagnose:
+  - '`kubectl get pods`: no ad pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=ad`: `maximum memory usage per Container is 128Mi, but limit
+    is 300Mi`.'
+  - '`kubectl get limitrange`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

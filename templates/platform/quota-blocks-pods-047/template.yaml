@@ -1,0 +1,59 @@
+spec_version: 2
+id: quota-blocks-pods-047
+version: 1
+title: ResourceQuota lower than the namespace's pod count
+mechanism: platform/resource-quota-exhausted
+family: platform
+split: train
+seed: 1047
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Shipping disappeared after a routine pod restart and has not come back; orders fail. Find the cause and
+      fix it.
+tags:
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    recreate_pods_after:
+    - opentelemetry.io/name=shipping
+    manifests:
+    - apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: namespace-pod-quota
+        namespace: default
+      spec:
+        hard:
+          pods: '10'
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=shipping
+  root_cause:
+  - resource-quota
+reference:
+  commands:
+  - kubectl delete resourcequota namespace-pod-quota
+  - kubectl rollout restart deployment/shipping
+  - kubectl rollout status deployment/shipping --timeout=300s
+  cause: A ResourceQuota caps the namespace at 10 pods while about 25 already run. When the shipping pod was replaced,
+    the ReplicaSet could not create the new one.
+  diagnose:
+  - '`kubectl get pods`: no shipping pod at all (not even Pending).'
+  - '`kubectl describe rs -l opentelemetry.io/name=shipping`: `FailedCreate ... exceeded quota: namespace-pod-quota`.'
+  - '`kubectl get resourcequota`.'
+validation:
+  detect_timeout_s: 240
+  recover_timeout_s: 300
+  hold_s: 30
+  poll_s: 10
+  baseline_timeout_s: 120

@@ -38,7 +38,7 @@ def _after(fault, undo, namespace):
         kube.kubectl("delete", "pod", "-l", selector, "--wait=false", namespace=kube.APP_NS)
 
 
-@mechanism("object_patch", "k8s-object", "Patch any object (JSON patch), restoring the touched fields on revert")
+@mechanism("k8s.object_patch", "k8s-object", "Patch any object (JSON patch), restoring the touched fields on revert")
 def object_patch(fault, undo, ctx):
     ns = _ns(fault)
     kind, name = fault["kind"], fault["name"]
@@ -52,7 +52,7 @@ def object_patch(fault, undo, ctx):
     _after(fault, undo, ns)
 
 
-@mechanism("configmap_edit", "k8s-object",
+@mechanism("k8s.configmap_edit", "k8s-object",
            "Edit text inside a ConfigMap key (CoreDNS Corefile, collector config...) and restart its readers")
 def configmap_edit(fault, undo, ctx):
     ns = _ns(fault)
@@ -76,7 +76,7 @@ def _manifests(fault, ctx):
     return [d for d in yaml.safe_load_all(path.read_text()) if d]
 
 
-@mechanism("create_objects", "k8s-object", "Create objects (policies, quotas, webhooks, rogue workloads...)")
+@mechanism("k8s.create_objects", "k8s-object", "Create objects (policies, quotas, webhooks, rogue workloads...)")
 def create_objects(fault, undo, ctx):
     for doc in _manifests(fault, ctx):
         ns = doc.get("metadata", {}).get("namespace", _ns(fault))
@@ -85,7 +85,7 @@ def create_objects(fault, undo, ctx):
     _after(fault, undo, _ns(fault))
 
 
-@mechanism("delete_object", "k8s-object", "Delete an object; revert recreates it from its snapshot")
+@mechanism("k8s.delete_object", "k8s-object", "Delete an object; revert recreates it from its snapshot")
 def delete_object(fault, undo, ctx):
     ns = _ns(fault)
     obj = kube.get(fault["kind"], fault["name"], namespace=ns)
@@ -117,7 +117,7 @@ def _numeric_target_ports(svc, namespace):
     return out
 
 
-@mechanism("pin_endpoints", "k8s-object",
+@mechanism("k8s.pin_endpoints", "k8s-object",
            "Make a Service selector-less and point it at fixed IPs with a hand-made EndpointSlice "
            "(the classic 'pinned during an incident, never unpinned')")
 def pin_endpoints(fault, undo, ctx):
