@@ -1,0 +1,6101 @@
+{
+ "cache-leak-009": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1800
+  },
+  "checks": [
+   {
+    "max_mib": 150,
+    "selector": "opentelemetry.io/name=recommendation",
+    "type": "memory_usage"
+   },
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 300,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "min_age_s": 600,
+    "selector": "opentelemetry.io/name=recommendation",
+    "type": "pods_stable"
+   }
+  ],
+  "fault": {
+   "flag": "recommendationCacheFailure",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "The 'You may also like' recommendations get slower and slower over a few minutes, and the recommendation service restarts now and then. Find the cause and fix it for good.",
+  "solution": [
+   "python injectors/toggle_flag.py recommendationCacheFailure --off",
+   "kubectl rollout restart deployment/recommendation",
+   "kubectl rollout status deployment/recommendation --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 700,
+   "detect_timeout_s": 1200,
+   "hold_s": 60,
+   "poll_s": 15,
+   "recover_timeout_s": 900
+  }
+ },
+ "catalog-fail-008": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "expect_status": 200,
+    "max_ms": 3000,
+    "type": "http",
+    "url": "http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 34,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "productCatalogFailure",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "A customer reports that one product page (the 'National Park Foundation Explorascope') always shows an error, while every other product works. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py productCatalogFailure --off"
+  ],
+  "validation": {
+   "detect_timeout_s": 120,
+   "recover_timeout_s": 120
+  }
+ },
+ "compound-quota-blocks-fix-090": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:QUOTE_ADDR/value",
+       "value": "http://quote-svc:8080"
+      }
+     ],
+     "pause_s": 25,
+     "recreate_pods": false,
+     "target": "shipping",
+     "type": "workload_patch"
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "kind": "ResourceQuota",
+       "metadata": {
+        "name": "namespace-pod-quota",
+        "namespace": "default"
+       },
+       "spec": {
+        "hard": {
+         "pods": "10"
+        }
+       }
+      }
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders fail at shipping. The obvious config fix was applied, but the rollout never completes. Find the cause and fix it for real.",
+  "solution": [
+   "kubectl delete resourcequota namespace-pod-quota",
+   "kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080",
+   "kubectl rollout status deployment/shipping --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "compound-red-herring-092": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
+       "metadata": {
+        "labels": {
+         "app": "legacy-report-generator"
+        },
+        "name": "legacy-report-generator",
+        "namespace": "default"
+       },
+       "spec": {
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "legacy-report-generator"
+         }
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "legacy-report-generator"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo 'FATAL: cannot connect to reporting-db:5432 (connection refused)'; exit 1"
+            ],
+            "image": "busybox:latest",
+            "name": "report",
+            "resources": {
+             "limits": {
+              "memory": "16Mi"
+             }
+            }
+           }
+          ]
+         }
+        }
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/replicas",
+       "value": 0
+      }
+     ],
+     "recreate_pods": false,
+     "target": "quote",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders are failing. The on-call channel is full of alerts about a crash-looping pod that keeps logging database connection errors. Find the real cause and fix it.",
+  "solution": [
+   "kubectl scale deployment quote --replicas=1",
+   "kubectl rollout status deployment/quote --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "compound-two-faults-091": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 30,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:PRODUCT_CATALOG_ADDR/value",
+       "value": "product-catalog:8081"
+      }
+     ],
+     "recreate_pods": false,
+     "target": "recommendation",
+     "type": "workload_patch"
+    },
+    {
+     "flag": "adFailure",
+     "type": "feature_flag",
+     "variant": "on"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Two complaints came in within minutes: recommendations are missing, and the ad banner keeps disappearing. Find the cause(s) and fix everything.",
+  "solution": [
+   "kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080",
+   "kubectl rollout status deployment/recommendation --timeout=300s",
+   "python injectors/toggle_flag.py adFailure --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "coredns-down-043": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "home",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "namespace": "kube-system",
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/replicas",
+     "value": 0
+    }
+   ],
+   "recreate_pods": false,
+   "target": "coredns",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "New connections across the cluster fail with name-resolution errors; some existing traffic still works. Find the cause and fix it.",
+  "solution": [
+   "kubectl -n kube-system scale deployment coredns --replicas=2",
+   "kubectl -n kube-system rollout status deployment/coredns --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "coredns-rewrite-poison-044": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "key": "Corefile",
+   "name": "coredns",
+   "namespace": "kube-system",
+   "recreate_pods_after": [
+    "opentelemetry.io/name=checkout"
+   ],
+   "replace": [
+    [
+     "    ready\n",
+     "    ready\n    rewrite name payment.default.svc.cluster.local shipping.default.svc.cluster.local\n"
+    ]
+   ],
+   "restart_after": [
+    "deployment/coredns"
+   ],
+   "restart_on_revert": [
+    "deployment/checkout"
+   ],
+   "settle_s": 25,
+   "type": "configmap_edit"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Payments fail with protocol errors, as if checkout were talking to the wrong service. The payment pod is healthy. Find the cause and fix it.",
+  "solution": [
+   "kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -",
+   "kubectl -n kube-system rollout restart deployment/coredns",
+   "kubectl -n kube-system rollout status deployment/coredns --timeout=300s",
+   "kubectl rollout restart deployment/checkout",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "cpu-stress-004": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "max_cores": 0.8,
+    "selector": "opentelemetry.io/name=frontend",
+    "type": "cpu_usage"
+   },
+   {
+    "journey": "home",
+    "max_avg_ms": 3000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": "chaos.yaml",
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "A CPU alert fired: the frontend container is burning about two full cores while traffic is normal, and the cloud bill is climbing. Find what is using the CPU and stop it.",
+  "solution": [
+   "kubectl delete stresschaos.chaos-mesh.org cpu-stress-004"
+  ],
+  "validation": {
+   "detect_timeout_s": 150,
+   "recover_timeout_s": 180
+  }
+ },
+ "dns-error-005": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 3000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "kill_pods_after": [
+    "opentelemetry.io/name=valkey-cart"
+   ],
+   "manifest": "chaos.yaml",
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Since the cart's database pod was rescheduled a few minutes ago, adding to cart and placing orders fail. The valkey-cart pod is Running and healthy. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete dnschaos.chaos-mesh.org dns-error-005"
+  ],
+  "validation": {
+   "detect_timeout_s": 180,
+   "recover_timeout_s": 240
+  }
+ },
+ "dns-random-057": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 6,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "kill_pods_after": [
+    "opentelemetry.io/name=product-catalog"
+   ],
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "DNSChaos",
+     "metadata": {
+      "name": "catalog-dns-random",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "random",
+      "mode": "all",
+      "patterns": [
+       "product-catalog",
+       "product-catalog.*"
+      ],
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "recommendation"
+       },
+       "namespaces": [
+        "default"
+       ]
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Recommendations have failed since the product-catalog pod was rescheduled; the catalog itself serves product pages fine. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete dnschaos.chaos-mesh.org catalog-dns-random"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-ad-failure-064": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 30,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "adFailure",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The ad banner is missing on some page views, and the frontend logs occasional errors from the ad service. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py adFailure --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-ad-high-cpu-065": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "max_cores": 0.5,
+    "selector": "opentelemetry.io/name=ad",
+    "type": "cpu_usage"
+   },
+   {
+    "journey": "ads",
+    "max_avg_ms": 1000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "adHighCpu",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The ad service's CPU usage has spiked far above normal and ad responses are slow. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py adHighCpu --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-ad-manual-gc-066": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 700,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "adManualGc",
+   "restart_on_revert": [
+    "deployment/ad"
+   ],
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Ad requests show long, irregular latency spikes. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py adManualGc --off",
+   "kubectl rollout restart deployment/ad",
+   "kubectl rollout status deployment/ad --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-cart-failure-067": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "cartFailure",
+   "type": "feature_flag",
+   "variant": "100%"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers report errors around their cart and when placing orders. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py cartFailure --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-email-memory-leak-068": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_age_s": 300,
+    "selector": "opentelemetry.io/name=email",
+    "type": "pods_stable"
+   },
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "emailMemoryLeak",
+   "type": "feature_flag",
+   "variant": "10000x"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The email service restarts every few minutes and some confirmations are lost. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py emailMemoryLeak --off",
+   "kubectl rollout restart deployment/email",
+   "kubectl rollout status deployment/email --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 400,
+   "detect_timeout_s": 900,
+   "hold_s": 45,
+   "poll_s": 15,
+   "recover_timeout_s": 600
+  }
+ },
+ "flag-flood-homepage-073": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "match": "^/$",
+    "max_avg_ms": 100000,
+    "max_error_pct": 100,
+    "max_rps": 2.0,
+    "min_requests": 0,
+    "type": "traffic",
+    "window_s": 30
+   }
+  ],
+  "fault": {
+   "flag": "loadGeneratorFloodHomepage",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Homepage traffic jumped far above normal and the frontend's CPU went with it, yet there were no releases or marketing campaigns. Find the source and stop it.",
+  "solution": [
+   "python injectors/toggle_flag.py loadGeneratorFloodHomepage --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 180,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-image-slow-load-071": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "images_browser",
+    "max_avg_ms": 3000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 15,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "imageSlowLoad",
+   "type": "feature_flag",
+   "variant": "10sec"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product images take about 10 seconds to appear. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py imageSlowLoad --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "flag-intl-shipping-slow-072": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout_intl",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "timeout_s": 20,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "intlShippingSlowdown",
+   "type": "feature_flag",
+   "variant": "10sec"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers outside the US say placing an order takes forever; US customers are fine. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py intlShippingSlowdown --off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "grafana-datasource-089": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "contains": "\"status\":\"OK\"",
+    "expect_status": 200,
+    "max_ms": 10000,
+    "type": "http",
+    "url": "http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health"
+   }
+  ],
+  "fault": {
+   "key": "default.yaml",
+   "name": "grafana-datasources",
+   "replace": [
+    [
+     "url: http://prometheus:9090",
+     "url: http://prometheus:9099"
+    ]
+   ],
+   "type": "configmap_edit"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every Grafana dashboard shows 'No data', while Prometheus itself answers queries fine. Find the cause and fix it.",
+  "solution": [
+   "kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "hard-allowlist-forgets-checkout-106": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "kind": "deployment",
+     "name": "payment",
+     "noise": true,
+     "ops": [
+      {
+       "op": "set",
+       "path": "/metadata/annotations/kubernetes.io~1change-cause",
+       "value": "payment: bump payment-sdk 4.1.7 -> 4.2.0 (CHG-3317)"
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "noise": true,
+     "ops": [
+      {
+       "op": "set",
+       "path": "/spec/template/metadata/annotations/deploy.example.com~1release",
+       "value": "2026.10.08-1"
+      }
+     ],
+     "pause_s": 20,
+     "recreate_pods": false,
+     "target": "payment",
+     "type": "workload_patch"
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "networking.k8s.io/v1",
+       "kind": "NetworkPolicy",
+       "metadata": {
+        "annotations": {
+         "security.example.com/summary": "Zero-trust: only known clients may call product-catalog"
+        },
+        "labels": {
+         "security.example.com/ticket": "ZT-104"
+        },
+        "name": "product-catalog-allow-clients",
+        "namespace": "default"
+       },
+       "spec": {
+        "ingress": [
+         {
+          "from": [
+           {
+            "podSelector": {
+             "matchExpressions": [
+              {
+               "key": "opentelemetry.io/name",
+               "operator": "In",
+               "values": [
+                "frontend",
+                "recommendation"
+               ]
+              }
+             ]
+            }
+           }
+          ],
+          "ports": [
+           {
+            "port": 8080,
+            "protocol": "TCP"
+           }
+          ]
+         }
+        ],
+        "podSelector": {
+         "matchLabels": {
+          "opentelemetry.io/name": "product-catalog"
+         }
+        },
+        "policyTypes": [
+         "Ingress"
+        ]
+       }
+      }
+     ],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=product-catalog"
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout started failing right after this morning's deploys. Browsing the shop still works. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-\",\"value\":\"checkout\"}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-cart-chained-addr-auth-103": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "restart_on_revert": [
+    "deployment/cart"
+   ],
+   "steps": [
+    {
+     "commands": [
+      [
+       "valkey-cli",
+       "CONFIG",
+       "SET",
+       "requirepass",
+       "rotated-Xk92-2026"
+      ]
+     ],
+     "target": "deploy/valkey-cart",
+     "type": "exec_commands",
+     "undo_commands": [
+      [
+       "sh",
+       "-c",
+       "valkey-cli -a rotated-Xk92-2026 --no-auth-warning CONFIG SET requirepass '' || valkey-cli CONFIG SET requirepass ''"
+      ]
+     ]
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "kind": "Secret",
+       "metadata": {
+        "annotations": {
+         "rotation.example.com/consumers": "cart",
+         "rotation.example.com/rotated-at": "2026-10-08T06:00:00Z"
+        },
+        "name": "valkey-cart-credentials",
+        "namespace": "default"
+       },
+       "stringData": {
+        "password": "rotated-Xk92-2026"
+       },
+       "type": "Opaque"
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:VALKEY_ADDR/value",
+       "value": "valkey-cart:6380"
+      }
+     ],
+     "recreate_pods": true,
+     "target": "cart",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Adding items to the cart fails for every customer since this morning's change window. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379",
+   "kubectl exec deploy/valkey-cart -- valkey-cli -a \"$(kubectl get secret valkey-cart-credentials -o jsonpath='{.data.password}' | base64 -d)\" --no-auth-warning CONFIG SET requirepass ''",
+   "kubectl rollout restart deployment/cart",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-duplicate-env-override-109": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "data": {
+        "PRODUCT_CATALOG_ADDR": "product-catalog:8080",
+        "RECOMMENDATION_CACHE_TTL": "300"
+       },
+       "kind": "ConfigMap",
+       "metadata": {
+        "labels": {
+         "team": "personalization"
+        },
+        "name": "recommendation-settings",
+        "namespace": "default"
+       }
+      }
+     ],
+     "noise": true,
+     "type": "create_objects"
+    },
+    {
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/template/spec/containers/$c/envFrom",
+       "value": {
+        "configMapRef": {
+         "name": "recommendation-settings",
+         "optional": true
+        }
+       }
+      },
+      {
+       "op": "append",
+       "path": "/spec/template/spec/containers/$c/env",
+       "value": {
+        "name": "PRODUCT_CATALOG_ADDR",
+        "value": "product-catalog:3550"
+       }
+      }
+     ],
+     "recreate_pods": false,
+     "target": "recommendation",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product recommendations have disappeared from the shop. A teammate checked the recommendation service's configuration and says it looks correct. Find the cause and fix it.",
+  "solution": [
+   "kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d[\"spec\"][\"template\"][\"spec\"][\"containers\"][0]; seen=set(); env=[]; [env.append(e) or seen.add(e[\"name\"]) for e in c[\"env\"] if e[\"name\"] not in seen]; c[\"env\"]=env; print(json.dumps(d))' | kubectl replace -f -",
+   "kubectl rollout status deployment/recommendation --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-egress-policy-blocks-db-102": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "restart_on_revert": [
+    "deployment/product-catalog"
+   ],
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "batch/v1",
+       "kind": "Job",
+       "metadata": {
+        "labels": {
+         "app": "astronomy-db-backup-nightly",
+         "team": "data-platform"
+        },
+        "name": "astronomy-db-backup-nightly",
+        "namespace": "default"
+       },
+       "spec": {
+        "backoffLimit": 0,
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "astronomy-db-backup-nightly",
+           "team": "data-platform"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo \"pg_dump: error: connection to server at \"astronomy-db\" port 5432 failed: FATAL:  password authentication failed for user \"backup\"\" >&2; exit 1"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi"
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi"
+             }
+            }
+           }
+          ],
+          "restartPolicy": "Never"
+         }
+        }
+       }
+      },
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
+       "metadata": {
+        "labels": {
+         "app": "catalog-search-indexer",
+         "team": "search"
+        },
+        "name": "catalog-search-indexer",
+        "namespace": "default"
+       },
+       "spec": {
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "catalog-search-indexer"
+         }
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "catalog-search-indexer",
+           "team": "search"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo \"ERROR indexer: could not connect to astronomy-db:5432 (timeout after 5s); search index is stale\" >&2; sleep 5; exit 1"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi"
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi"
+             }
+            }
+           }
+          ]
+         }
+        }
+       }
+      }
+     ],
+     "noise": true,
+     "type": "create_objects"
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "networking.k8s.io/v1",
+       "kind": "NetworkPolicy",
+       "metadata": {
+        "annotations": {
+         "security.example.com/summary": "Restrict product-catalog egress to known service ports"
+        },
+        "labels": {
+         "security.example.com/ticket": "SEC-2291"
+        },
+        "name": "product-catalog-egress-hardening",
+        "namespace": "default"
+       },
+       "spec": {
+        "egress": [
+         {
+          "ports": [
+           {
+            "port": 53,
+            "protocol": "UDP"
+           },
+           {
+            "port": 53,
+            "protocol": "TCP"
+           }
+          ],
+          "to": [
+           {
+            "namespaceSelector": {
+             "matchLabels": {
+              "kubernetes.io/metadata.name": "kube-system"
+             }
+            }
+           }
+          ]
+         },
+         {
+          "ports": [
+           {
+            "port": 8080,
+            "protocol": "TCP"
+           },
+           {
+            "port": 4317,
+            "protocol": "TCP"
+           },
+           {
+            "port": 4318,
+            "protocol": "TCP"
+           },
+           {
+            "port": 8013,
+            "protocol": "TCP"
+           },
+           {
+            "port": 8016,
+            "protocol": "TCP"
+           },
+           {
+            "port": 443,
+            "protocol": "TCP"
+           }
+          ]
+         }
+        ],
+        "podSelector": {
+         "matchLabels": {
+          "opentelemetry.io/name": "product-catalog"
+         }
+        },
+        "policyTypes": [
+         "Egress"
+        ]
+       }
+      }
+     ],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=product-catalog"
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages and the product list have been failing for about ten minutes. Alerts show database connection errors. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch networkpolicy product-catalog-egress-hardening --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/egress/1/ports/-\",\"value\":{\"protocol\":\"TCP\",\"port\":5432}}]'",
+   "kubectl rollout restart deployment/product-catalog",
+   "kubectl rollout status deployment/product-catalog --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-fix-reverted-by-cronjob-101": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "min_age_s": 150,
+    "selector": "opentelemetry.io/name=payment",
+    "type": "pods_stable"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:PAYMENT_PORT/value",
+       "value": "8081"
+      }
+     ],
+     "pause_s": 20,
+     "recreate_pods": false,
+     "target": "payment",
+     "type": "workload_patch"
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "kind": "ServiceAccount",
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "config-sync"
+        },
+        "name": "config-sync",
+        "namespace": "default"
+       }
+      },
+      {
+       "apiVersion": "rbac.authorization.k8s.io/v1",
+       "kind": "Role",
+       "metadata": {
+        "name": "config-sync",
+        "namespace": "default"
+       },
+       "rules": [
+        {
+         "apiGroups": [
+          "apps"
+         ],
+         "resources": [
+          "deployments"
+         ],
+         "verbs": [
+          "get",
+          "patch"
+         ]
+        }
+       ]
+      },
+      {
+       "apiVersion": "rbac.authorization.k8s.io/v1",
+       "kind": "RoleBinding",
+       "metadata": {
+        "name": "config-sync",
+        "namespace": "default"
+       },
+       "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "config-sync"
+       },
+       "subjects": [
+        {
+         "kind": "ServiceAccount",
+         "name": "config-sync",
+         "namespace": "default"
+        }
+       ]
+      },
+      {
+       "apiVersion": "batch/v1",
+       "kind": "CronJob",
+       "metadata": {
+        "annotations": {
+         "platform.example.com/description": "Re-applies payment runtime settings from the release manifest"
+        },
+        "labels": {
+         "app.kubernetes.io/managed-by": "platform-release",
+         "app.kubernetes.io/name": "config-sync"
+        },
+        "name": "payment-config-sync",
+        "namespace": "default"
+       },
+       "spec": {
+        "concurrencyPolicy": "Forbid",
+        "failedJobsHistoryLimit": 1,
+        "jobTemplate": {
+         "spec": {
+          "backoffLimit": 0,
+          "template": {
+           "metadata": {
+            "labels": {
+             "app.kubernetes.io/name": "config-sync"
+            }
+           },
+           "spec": {
+            "containers": [
+             {
+              "command": [
+               "sh",
+               "-c",
+               "TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); curl -sS --fail -o /dev/null -X PATCH --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H \"Authorization: Bearer $TOKEN\" -H 'Content-Type: application/strategic-merge-patch+json' --data '{\"spec\": {\"template\": {\"spec\": {\"containers\": [{\"name\": \"payment\", \"env\": [{\"name\": \"PAYMENT_PORT\", \"value\": \"8081\"}]}]}}}}' https://kubernetes.default.svc/apis/apps/v1/namespaces/default/deployments/payment && echo 'config-sync: payment runtime settings match release manifest r2026.10.08'"
+              ],
+              "image": "curlimages/curl:latest",
+              "name": "sync",
+              "resources": {
+               "limits": {
+                "memory": "32Mi"
+               }
+              }
+             }
+            ],
+            "restartPolicy": "Never",
+            "serviceAccountName": "config-sync"
+           }
+          },
+          "ttlSecondsAfterFinished": 300
+         }
+        },
+        "schedule": "* * * * *",
+        "startingDeadlineSeconds": 30,
+        "successfulJobsHistoryLimit": 2
+       }
+      }
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers cannot complete checkout: the payment step fails. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete cronjob payment-config-sync",
+   "kubectl set env deployment/payment PAYMENT_PORT=8080",
+   "kubectl rollout status deployment/payment --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 90,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-flag-in-source-of-truth-111": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 8,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "paymentFailure",
+   "type": "flag_in_source_config",
+   "variant": "50%"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "About half of all card payments are being declined since this morning's configuration release. Find the cause and fix it.",
+  "solution": [
+   "python injectors/source_flag.py paymentFailure off"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
+   "restart_after_fix": [
+    "deployment/flagd"
+   ],
+   "restart_settle_s": 45
+  }
+ },
+ "hard-ghost-legacy-email-pods-104": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 8,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "apps/v1",
+     "kind": "Deployment",
+     "metadata": {
+      "annotations": {
+       "deploy.example.com/note": "kept for rollback during the v2 migration"
+      },
+      "labels": {
+       "app.kubernetes.io/name": "email",
+       "app.kubernetes.io/version": "1.8.2",
+       "track": "legacy"
+      },
+      "name": "email-v1-legacy",
+      "namespace": "default"
+     },
+     "spec": {
+      "replicas": 1,
+      "selector": {
+       "matchLabels": {
+        "app.kubernetes.io/name": "email",
+        "track": "legacy"
+       }
+      },
+      "template": {
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "email",
+         "app.kubernetes.io/version": "1.8.2",
+         "opentelemetry.io/name": "email",
+         "track": "legacy"
+        }
+       },
+       "spec": {
+        "containers": [
+         {
+          "command": [
+           "sh",
+           "-c",
+           "mkdir -p /www && echo ok > /www/index.html && exec httpd -f -v -p 8080 -h /www"
+          ],
+          "image": "busybox:1.36",
+          "name": "email",
+          "ports": [
+           {
+            "containerPort": 8080,
+            "name": "service"
+           }
+          ],
+          "resources": {
+           "limits": {
+            "cpu": "50m",
+            "memory": "16Mi"
+           },
+           "requests": {
+            "cpu": "5m",
+            "memory": "8Mi"
+           }
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Some customers say they never received their order confirmation email, while others did. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete deployment email-v1-legacy"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-masked-second-fault-107": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
+       "metadata": {
+        "labels": {
+         "app": "recsys-embedding-backfill",
+         "team": "ml-platform"
+        },
+        "name": "recsys-embedding-backfill",
+        "namespace": "default"
+       },
+       "spec": {
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "recsys-embedding-backfill"
+         }
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "recsys-embedding-backfill",
+           "team": "ml-platform"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sleep",
+             "infinity"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi",
+              "nvidia.com/gpu": 1
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi",
+              "nvidia.com/gpu": 1
+             }
+            }
+           }
+          ]
+         }
+        }
+       }
+      }
+     ],
+     "noise": true,
+     "type": "create_objects"
+    },
+    {
+     "kind": "service",
+     "name": "shipping",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/ports/0/targetPort",
+       "value": 8888
+      }
+     ],
+     "restart_after": [
+      "deployment/shipping"
+     ],
+     "type": "object_patch"
+    },
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:PRODUCT_CATALOG_ADDR/value",
+       "value": "product-catalog:9090"
+      }
+     ],
+     "recreate_pods": false,
+     "target": "checkout",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout fails for every order. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080",
+   "kubectl rollout status deployment/checkout --timeout=300s",
+   "kubectl patch service shipping --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":8080}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-oom-fix-blocked-by-limitrange-110": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=ad",
+    "type": "pods_ready"
+   },
+   {
+    "min_age_s": 120,
+    "selector": "opentelemetry.io/name=ad",
+    "type": "pods_stable"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "bad_memory_limit": "48Mi",
+     "bad_memory_request": "48Mi",
+     "pause_s": 20,
+     "strategy": "Recreate",
+     "target_deployment": "ad",
+     "target_label": "app.kubernetes.io/name=ad",
+     "type": "memory_limit_misconfig"
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "kind": "LimitRange",
+       "metadata": {
+        "annotations": {
+         "platform.example.com/policy": "Containers in this namespace may not exceed 128Mi (FINOPS-88)"
+        },
+        "labels": {
+         "owner": "platform-team"
+        },
+        "name": "namespace-container-limits",
+        "namespace": "default"
+       },
+       "spec": {
+        "limits": [
+         {
+          "max": {
+           "memory": "128Mi"
+          },
+          "type": "Container"
+         }
+        ]
+       }
+      }
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The ad banner is missing from every page and the ad service keeps restarting. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete limitrange namespace-container-limits",
+   "kubectl rollout undo deployment/ad",
+   "kubectl rollout status deployment/ad --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-pinned-endpoints-108": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
+       "metadata": {
+        "labels": {
+         "app": "quote-cache-warmer",
+         "team": "pricing"
+        },
+        "name": "quote-cache-warmer",
+        "namespace": "default"
+       },
+       "spec": {
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "quote-cache-warmer"
+         }
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "quote-cache-warmer",
+           "team": "pricing"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo \"WARN quote-cache-warmer: refresh failed: GET http://quote-api.pricing.internal/v2/rates: context deadline exceeded\" >&2; sleep 5; exit 1"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi"
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi"
+             }
+            }
+           }
+          ]
+         }
+        }
+       }
+      }
+     ],
+     "noise": true,
+     "type": "create_objects"
+    },
+    {
+     "annotations": {
+      "ops.example.com/expires": "2026-09-30",
+      "ops.example.com/pinned-by": "INC-5521 quote migration"
+     },
+     "ips": [
+      "10.244.250.17"
+     ],
+     "service": "quote",
+     "type": "pin_endpoints"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout fails while calculating shipping costs. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch service quote --type=merge -p '{\"spec\":{\"selector\":{\"opentelemetry.io/name\":\"quote\"}}}'",
+   "kubectl delete endpointslice quote-pinned"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-silent-ledger-write-denied-105": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "timeout_s": 90,
+    "type": "orders_recorded"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "batch/v1",
+       "kind": "Job",
+       "metadata": {
+        "labels": {
+         "app": "orders-export-s3-nightly",
+         "team": "finance-data"
+        },
+        "name": "orders-export-s3-nightly",
+        "namespace": "default"
+       },
+       "spec": {
+        "backoffLimit": 0,
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "orders-export-s3-nightly",
+           "team": "finance-data"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo \"export failed: S3 PutObject AccessDenied (bucket finance-exports, key orders/2026-10-08.csv)\" >&2; exit 1"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi"
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi"
+             }
+            }
+           }
+          ],
+          "restartPolicy": "Never"
+         }
+        }
+       }
+      },
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
+       "metadata": {
+        "labels": {
+         "app": "fraud-model-retrain",
+         "team": "ml-platform"
+        },
+        "name": "fraud-model-retrain",
+        "namespace": "default"
+       },
+       "spec": {
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "fraud-model-retrain"
+         }
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "fraud-model-retrain",
+           "team": "ml-platform"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sleep",
+             "infinity"
+            ],
+            "image": "busybox:1.36",
+            "name": "main",
+            "resources": {
+             "limits": {
+              "cpu": "50m",
+              "memory": "16Mi",
+              "nvidia.com/gpu": 1
+             },
+             "requests": {
+              "cpu": "5m",
+              "memory": "8Mi",
+              "nvidia.com/gpu": 1
+             }
+            }
+           }
+          ]
+         }
+        }
+       }
+      }
+     ],
+     "noise": true,
+     "type": "create_objects"
+    },
+    {
+     "commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "REVOKE INSERT ON accounting.\"order\" FROM astronomy_user"
+      ]
+     ],
+     "target": "deploy/astronomy-db",
+     "type": "exec_commands",
+     "undo_commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "GRANT INSERT ON accounting.\"order\" TO astronomy_user"
+      ]
+     ]
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Finance says orders placed in the last half hour are missing from the accounting ledger, although customers can check out and receive confirmations. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT INSERT ON accounting.\"order\" TO astronomy_user'",
+   "kubectl rollout restart deployment/accounting",
+   "kubectl rollout status deployment/accounting --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "hard-telemetry-noise-hides-scheduling-112": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "currency",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=currency",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "key": "relay",
+     "name": "otel-collector-agent",
+     "pause_s": 30,
+     "replace": [
+      [
+       "endpoint: jaeger:4317",
+       "endpoint: jaeger:4999"
+      ]
+     ],
+     "restart_after": [
+      "daemonset/otel-collector-agent"
+     ],
+     "type": "configmap_edit"
+    },
+    {
+     "kind": "node",
+     "name": "ai-gym-worker",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/taints",
+       "value": {
+        "effect": "NoSchedule",
+        "key": "dedicated",
+        "value": "batch"
+       }
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "kind": "node",
+     "name": "ai-gym-worker2",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/taints",
+       "value": {
+        "effect": "NoSchedule",
+        "key": "dedicated",
+        "value": "batch"
+       }
+      }
+     ],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=currency"
+     ],
+     "type": "object_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "International customers report that prices fail to load in their currency. At the same time, traces stopped arriving in Jaeger and the collector logs are full of export errors. Find what is breaking customers and fix it.",
+  "solution": [
+   "kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-",
+   "kubectl rollout status deployment/currency --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "http-abort-058": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "HTTPChaos",
+     "metadata": {
+      "name": "email-http-abort",
+      "namespace": "default"
+     },
+     "spec": {
+      "abort": true,
+      "mode": "all",
+      "path": "*",
+      "port": 8080,
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "email"
+       },
+       "namespaces": [
+        "default"
+       ]
+      },
+      "target": "Request"
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Order confirmation emails are no longer being sent; the email pod is Running with no errors in its logs. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete httpchaos.chaos-mesh.org email-http-abort"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "http-replace-059": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "HTTPChaos",
+     "metadata": {
+      "name": "quote-http-garbage",
+      "namespace": "default"
+     },
+     "spec": {
+      "mode": "all",
+      "path": "*",
+      "port": 8080,
+      "replace": {
+       "body": "bm90LWEtbnVtYmVy",
+       "code": 200
+      },
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "quote"
+       },
+       "namespaces": [
+        "default"
+       ]
+      },
+      "target": "Response"
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders fail at the shipping step with parse errors, yet the quote service returns HTTP 200. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete httpchaos.chaos-mesh.org quote-http-garbage"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "jvm-exception-062": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "JVMChaos",
+     "metadata": {
+      "name": "ad-getads-exception",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "exception",
+      "class": "oteldemo.AdService$AdServiceImpl",
+      "exception": "java.lang.RuntimeException(\"ad inventory unavailable\")",
+      "method": "getAds",
+      "mode": "all",
+      "port": 9277,
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "ad"
+       },
+       "namespaces": [
+        "default"
+       ]
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The ad banner is gone and the ad service logs mention an inventory error, although no one deployed anything. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "k8s-oom-cascade-001": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "selector": "opentelemetry.io/name=cart",
+    "type": "pods_ready"
+   },
+   {
+    "min_age_s": 120,
+    "selector": "opentelemetry.io/name=cart",
+    "type": "pods_stable"
+   },
+   {
+    "journey": "cart",
+    "max_avg_ms": 3000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "bad_memory_limit": "3Mi",
+   "bad_memory_request": "3Mi",
+   "strategy": "Recreate",
+   "target_deployment": "cart",
+   "target_label": "app.kubernetes.io/name=cart",
+   "type": "memory_limit_misconfig"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix it.",
+  "solution": [
+   "kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi",
+   "kubectl rollout status deployment/cart --timeout=180s"
+  ],
+  "validation": {
+   "detect_timeout_s": 600,
+   "hold_s": 45,
+   "recover_timeout_s": 360
+  }
+ },
+ "kafka-backlog-010": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1800
+  },
+  "checks": [
+   {
+    "group": "fraud-detection",
+    "max_lag": 50,
+    "type": "kafka_lag"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "kafkaQueueProblems",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Checkout works and customers get order confirmations, but the fraud team says new orders reach their system minutes late or not at all. Investigate and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py kafkaQueueProblems --off"
+  ],
+  "validation": {
+   "detect_timeout_s": 600,
+   "hold_s": 60,
+   "poll_s": 15,
+   "recover_timeout_s": 900
+  }
+ },
+ "kafka-broker-down-083": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "timeout_s": 60,
+    "type": "orders_recorded"
+   },
+   {
+    "selector": "opentelemetry.io/name=kafka",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/replicas",
+     "value": 0
+    }
+   ],
+   "recreate_pods": false,
+   "restart_on_revert": [
+    "deployment/checkout",
+    "deployment/accounting",
+    "deployment/fraud-detection"
+   ],
+   "revert_hooks": [
+    {
+     "kafka_topic": "orders"
+    }
+   ],
+   "target": "kafka",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the cause and fix it.",
+  "solution": [
+   "kubectl scale deployment kafka --replicas=1",
+   "kubectl rollout status deployment/kafka --timeout=300s",
+   "for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done",
+   "kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection",
+   "kubectl rollout status deployment/checkout --timeout=300s",
+   "kubectl rollout status deployment/accounting --timeout=300s",
+   "kubectl rollout status deployment/fraud-detection --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 480
+  }
+ },
+ "kafka-message-too-large-082": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "timeout_s": 60,
+    "type": "orders_recorded"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "/opt/kafka/bin/kafka-configs.sh",
+     "--bootstrap-server",
+     "kafka.default.svc.cluster.local:9092",
+     "--alter",
+     "--entity-type",
+     "topics",
+     "--entity-name",
+     "orders",
+     "--add-config",
+     "max.message.bytes=128"
+    ]
+   ],
+   "namespace": "gym-system",
+   "restart_on_revert": [
+    "deployment/checkout",
+    "deployment/accounting",
+    "deployment/fraud-detection"
+   ],
+   "target": "deploy/gym-kafka-tools",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "/opt/kafka/bin/kafka-configs.sh",
+     "--bootstrap-server",
+     "kafka.default.svc.cluster.local:9092",
+     "--alter",
+     "--entity-type",
+     "topics",
+     "--entity-name",
+     "orders",
+     "--delete-config",
+     "max.message.bytes"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout works, but no new orders reach accounting or fraud detection. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "kube-proxy-stopped-051": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "kind": "daemonset",
+     "namespace": "kube-system",
+     "ops": [
+      {
+       "op": "set",
+       "path": "/spec/template/spec/nodeSelector/proxy-tier",
+       "value": "disabled"
+      }
+     ],
+     "pause_s": 20,
+     "recreate_pods": false,
+     "target": "kube-proxy",
+     "type": "workload_patch"
+    },
+    {
+     "manifests": [],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=payment"
+     ],
+     "type": "create_objects"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "After the payment pod was restarted, every order fails. The new payment pod is Running and Ready, and its endpoints look correct. Find the cause and fix it.",
+  "solution": [
+   "kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/nodeSelector/proxy-tier\"}]'",
+   "kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "limitrange-rejects-048": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=ad",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "v1",
+     "kind": "LimitRange",
+     "metadata": {
+      "name": "container-memory-cap",
+      "namespace": "default"
+     },
+     "spec": {
+      "limits": [
+       {
+        "max": {
+         "memory": "128Mi"
+        },
+        "type": "Container"
+       }
+      ]
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=ad"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The ad service vanished after a restart and never came back. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete limitrange container-memory-cap",
+   "kubectl rollout restart deployment/ad",
+   "kubectl rollout status deployment/ad --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "net-bandwidth-053": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "images",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 10,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "NetworkChaos",
+     "metadata": {
+      "name": "images-bandwidth",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "bandwidth",
+      "bandwidth": {
+       "buffer": 10000,
+       "limit": 20971520,
+       "rate": "2kbps"
+      },
+      "direction": "to",
+      "mode": "all",
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "image-provider"
+       },
+       "namespaces": [
+        "default"
+       ]
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Pages load quickly but product images take forever or never appear. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkchaos.chaos-mesh.org images-bandwidth"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "net-delay-002": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 12,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": "chaos.yaml",
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "The product recommendations panel ('You may also like') takes many seconds to appear, while the rest of the product page is fast. Find out why and mitigate it.",
+  "solution": [
+   "kubectl delete networkchaos.chaos-mesh.org net-delay-002"
+  ],
+  "validation": {
+   "detect_timeout_s": 120,
+   "recover_timeout_s": 120
+  }
+ },
+ "net-packet-loss-052": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "NetworkChaos",
+     "metadata": {
+      "name": "catalog-packet-loss",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "loss",
+      "direction": "to",
+      "loss": {
+       "correlation": "0",
+       "loss": "60"
+      },
+      "mode": "all",
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "product-catalog"
+       },
+       "namespaces": [
+        "default"
+       ]
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages load slowly and sometimes fail; retries sometimes help. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "net-partition-054": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "NetworkChaos",
+     "metadata": {
+      "name": "checkout-payment-partition",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "partition",
+      "direction": "both",
+      "mode": "all",
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "checkout"
+       },
+       "namespaces": [
+        "default"
+       ]
+      },
+      "target": {
+       "mode": "all",
+       "selector": {
+        "labelSelectors": {
+         "opentelemetry.io/name": "payment"
+        },
+        "namespaces": [
+         "default"
+        ]
+       }
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders hang and then fail at payment. Payment answers requests from everywhere else. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "netpol-default-deny-041": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "home",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "networking.k8s.io/v1",
+     "kind": "NetworkPolicy",
+     "metadata": {
+      "name": "default-deny-ingress",
+      "namespace": "default"
+     },
+     "spec": {
+      "podSelector": {},
+      "policyTypes": [
+       "Ingress"
+      ]
+     }
+    }
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The entire shop is unreachable and internal calls time out, right after the security team applied 'baseline' policies. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkpolicy default-deny-ingress"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "netpol-dns-blocked-040": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "networking.k8s.io/v1",
+     "kind": "NetworkPolicy",
+     "metadata": {
+      "name": "frontend-egress-app-ports",
+      "namespace": "default"
+     },
+     "spec": {
+      "egress": [
+       {
+        "ports": [
+         {
+          "port": 8080,
+          "protocol": "TCP"
+         }
+        ]
+       }
+      ],
+      "podSelector": {
+       "matchLabels": {
+        "opentelemetry.io/name": "frontend"
+       }
+      },
+      "policyTypes": [
+       "Egress"
+      ]
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=frontend"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every API call from the shop fails after a network-policy change, even though all backends are healthy and port 8080 is explicitly allowed. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkpolicy frontend-egress-app-ports",
+   "kubectl rollout restart deployment/frontend",
+   "kubectl rollout status deployment/frontend --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "netpol-egress-lockdown-039": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=checkout",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "networking.k8s.io/v1",
+     "kind": "NetworkPolicy",
+     "metadata": {
+      "name": "checkout-egress-lockdown",
+      "namespace": "default"
+     },
+     "spec": {
+      "egress": [
+       {
+        "ports": [
+         {
+          "port": 53,
+          "protocol": "UDP"
+         },
+         {
+          "port": 53,
+          "protocol": "TCP"
+         }
+        ],
+        "to": [
+         {
+          "namespaceSelector": {
+           "matchLabels": {
+            "kubernetes.io/metadata.name": "kube-system"
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "podSelector": {
+       "matchLabels": {
+        "opentelemetry.io/name": "checkout"
+       }
+      },
+      "policyTypes": [
+       "Egress"
+      ]
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=checkout"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout has been down since a security policy rollout; its new pod never becomes Ready. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkpolicy checkout-egress-lockdown",
+   "kubectl rollout restart deployment/checkout",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "netpol-ingress-deny-038": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "networking.k8s.io/v1",
+     "kind": "NetworkPolicy",
+     "metadata": {
+      "name": "payment-ingress-lockdown",
+      "namespace": "default"
+     },
+     "spec": {
+      "podSelector": {
+       "matchLabels": {
+        "opentelemetry.io/name": "payment"
+       }
+      },
+      "policyTypes": [
+       "Ingress"
+      ]
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=payment"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every order fails at payment with a timeout. The payment pod is healthy. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete networkpolicy payment-ingress-lockdown"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "node-cordoned-045": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=cart",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "kind": "node",
+     "name": "ai-gym-worker",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "set",
+       "path": "/spec/unschedulable",
+       "value": true
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "kind": "node",
+     "name": "ai-gym-worker2",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "set",
+       "path": "/spec/unschedulable",
+       "value": true
+      }
+     ],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=cart"
+     ],
+     "type": "object_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The cart went down after its pod was evicted during node maintenance, and it never came back. Find the cause and fix it.",
+  "solution": [
+   "kubectl uncordon ai-gym-worker ai-gym-worker2",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "node-taint-046": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "currency",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=currency",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "kind": "node",
+     "name": "ai-gym-worker",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/taints",
+       "value": {
+        "effect": "NoSchedule",
+        "key": "dedicated",
+        "value": "batch"
+       }
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "kind": "node",
+     "name": "ai-gym-worker2",
+     "namespace": null,
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/taints",
+       "value": {
+        "effect": "NoSchedule",
+        "key": "dedicated",
+        "value": "batch"
+       }
+      }
+     ],
+     "recreate_pods_after": [
+      "opentelemetry.io/name=currency"
+     ],
+     "type": "object_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Currency conversion (and with it checkout) stopped working after its pod was rescheduled. Find the cause and fix it.",
+  "solution": [
+   "kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-",
+   "kubectl rollout status deployment/currency --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "obs-pii-redaction-removed-069": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   },
+   {
+    "lookback": "2m",
+    "pattern": "@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b",
+    "service": "checkout",
+    "type": "jaeger_attr_absent"
+   },
+   {
+    "lookback": "2m",
+    "pattern": "@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b",
+    "service": "payment",
+    "type": "jaeger_attr_absent"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "flag": "emitRawPii",
+     "type": "feature_flag",
+     "variant": "on"
+    },
+    {
+     "key": "relay",
+     "name": "otel-collector-agent",
+     "replace": [
+      [
+       "      - transform/redact_sensitive_data\n",
+       ""
+      ],
+      [
+       "      - redaction\n",
+       ""
+      ]
+     ],
+     "restart_after": [
+      "daemonset/otel-collector-agent"
+     ],
+     "type": "configmap_edit"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Compliance alert: plain-text customer email addresses and full card numbers were found in trace data in Jaeger. Find how they got there and stop the leak.",
+  "solution": [
+   "kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c \"import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml')); c=yaml.safe_load(d['data']['relay']); p=c['service']['pipelines']['traces']['processors']; [p.append(x) for x in ('transform/redact_sensitive_data','redaction') if x not in p]; d['data']['relay']=yaml.safe_dump(c); [d['metadata'].pop(k,None) for k in ('resourceVersion','uid','creationTimestamp','managedFields')]; yaml.safe_dump(d, open('/tmp/relay.yaml','w'))\" && kubectl apply -f /tmp/relay.yaml",
+   "kubectl rollout restart daemonset/otel-collector-agent",
+   "kubectl rollout status daemonset/otel-collector-agent --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 360
+  }
+ },
+ "otel-collector-unscheduled-086": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "selector": "app.kubernetes.io/name=opentelemetry-collector",
+    "type": "pods_ready"
+   },
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "frontend",
+    "type": "jaeger_traces"
+   }
+  ],
+  "fault": {
+   "kind": "daemonset",
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/nodeSelector/telemetry-tier",
+     "value": "dedicated"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "otel-collector-agent",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "All telemetry stopped at once: no new traces, and metrics have gone flat. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch daemonset otel-collector-agent --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/nodeSelector/telemetry-tier\"}]'",
+   "kubectl rollout status daemonset/otel-collector-agent --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "otel-exporter-broken-085": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "checkout",
+    "type": "jaeger_traces"
+   },
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "frontend",
+    "type": "jaeger_traces"
+   }
+  ],
+  "fault": {
+   "key": "relay",
+   "name": "otel-collector-agent",
+   "replace": [
+    [
+     "endpoint: jaeger:4317",
+     "endpoint: jaeger:4999"
+    ]
+   ],
+   "restart_after": [
+    "daemonset/otel-collector-agent"
+   ],
+   "type": "configmap_edit"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "No new traces have appeared in Jaeger for any service since a telemetry config change. Find the cause and fix it.",
+  "solution": [
+   "kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -",
+   "kubectl rollout restart daemonset/otel-collector-agent",
+   "kubectl rollout status daemonset/otel-collector-agent --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "otel-service-endpoint-087": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "checkout",
+    "type": "jaeger_traces"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:OTEL_EXPORTER_OTLP_ENDPOINT/value",
+     "value": "http://otel-collector-gateway:4318"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "checkout",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Checkout's spans are missing from every trace (traces jump from the frontend straight to payment and shipping). Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pay-fail-006": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=payment",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "flag": "paymentFailure",
+   "type": "feature_flag",
+   "variant": "100%"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Customers can browse and fill their carts, but every order fails at the 'Place Order' step with a payment error. Find the cause and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py paymentFailure --off"
+  ],
+  "validation": {
+   "detect_timeout_s": 120,
+   "hold_s": 30,
+   "recover_timeout_s": 120
+  }
+ },
+ "pay-unreachable-007": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "flag": "paymentUnreachable",
+   "type": "feature_flag",
+   "variant": "on"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Orders cannot be placed: 'Place Order' spins and then errors. The payment provider's status page says they are fully operational. Find out why and fix it.",
+  "solution": [
+   "python injectors/toggle_flag.py paymentUnreachable --off"
+  ],
+  "validation": {
+   "detect_timeout_s": 120,
+   "recover_timeout_s": 120
+  }
+ },
+ "pg-connection-limit-080": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "ALTER ROLE astronomy_user CONNECTION LIMIT 0"
+    ],
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='astronomy_user'"
+    ]
+   ],
+   "target": "deploy/astronomy-db",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "ALTER ROLE astronomy_user CONNECTION LIMIT -1"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages fail with database errors, but the database is up and the password is correct. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pg-lock-held-081": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 6,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 6,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "apps/v1",
+     "kind": "Deployment",
+     "metadata": {
+      "labels": {
+       "app": "catalog-maintenance"
+      },
+      "name": "catalog-maintenance",
+      "namespace": "default"
+     },
+     "spec": {
+      "replicas": 1,
+      "selector": {
+       "matchLabels": {
+        "app": "catalog-maintenance"
+       }
+      },
+      "template": {
+       "metadata": {
+        "labels": {
+         "app": "catalog-maintenance"
+        }
+       },
+       "spec": {
+        "containers": [
+         {
+          "command": [
+           "psql",
+           "-h",
+           "astronomy-db",
+           "-U",
+           "postgres",
+           "-d",
+           "astronomy_db",
+           "-c",
+           "BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);"
+          ],
+          "env": [
+           {
+            "name": "PGPASSWORD",
+            "value": "changeit"
+           }
+          ],
+          "image": "postgres:18.4",
+          "name": "reindex",
+          "resources": {
+           "limits": {
+            "memory": "64Mi"
+           }
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages hang until they time out; the database is up and not busy. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete deployment catalog-maintenance"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pg-password-rotated-079": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "ALTER ROLE astronomy_user PASSWORD 'rotated-2026'"
+    ],
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='astronomy_user'"
+    ]
+   ],
+   "target": "deploy/astronomy-db",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-c",
+     "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "After a database maintenance window, product pages fail and new orders are not being recorded. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/astronomy-db -- psql -U postgres -c \"ALTER ROLE astronomy_user PASSWORD 'astronomy_password'\""
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pg-revoked-grant-078": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-d",
+     "astronomy_db",
+     "-c",
+     "REVOKE SELECT ON catalog.products FROM astronomy_user"
+    ]
+   ],
+   "target": "deploy/astronomy-db",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "psql",
+     "-U",
+     "postgres",
+     "-d",
+     "astronomy_db",
+     "-c",
+     "GRANT SELECT ON catalog.products TO astronomy_user"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The product catalog returns errors on every page, right after a database permissions audit. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pod-failure-055": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": [
+    {
+     "apiVersion": "chaos-mesh.org/v1alpha1",
+     "kind": "PodChaos",
+     "metadata": {
+      "name": "shipping-pod-failure",
+      "namespace": "default"
+     },
+     "spec": {
+      "action": "pod-failure",
+      "mode": "all",
+      "selector": {
+       "labelSelectors": {
+        "opentelemetry.io/name": "shipping"
+       },
+       "namespaces": [
+        "default"
+       ]
+      }
+     }
+    }
+   ],
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders fail at shipping. `kubectl get pods` claims shipping is Running. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete podchaos.chaos-mesh.org shipping-pod-failure"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "pod-kill-003": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_age_s": 90,
+    "selector": "opentelemetry.io/name=checkout",
+    "type": "pods_stable"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "manifest": "chaos.yaml",
+   "type": "chaos_mesh"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "scale_to_zero",
+   "edit_verifier"
+  ],
+  "prompt": "Checkout fails intermittently: some orders go through, others error out, and a retry usually works. Find out why and fix it.",
+  "solution": [
+   "kubectl delete schedule.chaos-mesh.org pod-kill-003"
+  ],
+  "validation": {
+   "detect_timeout_s": 150,
+   "hold_s": 45,
+   "recover_timeout_s": 240
+  }
+ },
+ "pod-security-restricted-049": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "images",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=image-provider",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "kind": "namespace",
+   "name": "default",
+   "namespace": null,
+   "ops": [
+    {
+     "op": "set",
+     "path": "/metadata/labels/pod-security.kubernetes.io~1enforce",
+     "value": "restricted"
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=image-provider"
+   ],
+   "type": "object_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it.",
+  "solution": [
+   "kubectl label namespace default pod-security.kubernetes.io/enforce-",
+   "kubectl rollout restart deployment/image-provider",
+   "kubectl rollout status deployment/image-provider --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "prometheus-otlp-disabled-088": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_value": 0.01,
+    "query": "sum(rate(http_server_request_duration_seconds_count[1m]))",
+    "type": "prometheus"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/args",
+     "value": [
+      "--storage.tsdb.retention.time=7d",
+      "--config.file=/etc/config/prometheus.yml",
+      "--storage.tsdb.path=/data",
+      "--web.console.libraries=/etc/prometheus/console_libraries",
+      "--web.console.templates=/etc/prometheus/consoles",
+      "--enable-feature=exemplar-storage"
+     ]
+    }
+   ],
+   "recreate_pods": false,
+   "target": "prometheus",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every metrics dashboard went flat after Prometheus was restarted with 'cleaned up' flags. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment prometheus --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/args/-\",\"value\":\"--web.enable-otlp-receiver\"}]'",
+   "kubectl rollout status deployment/prometheus --timeout=240s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 360
+  }
+ },
+ "proxy-upstream-misroute-042": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "home",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:FRONTEND_PORT/value",
+     "value": "8081"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "frontend-proxy",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The shop returns 503 for every page, while Grafana and Jaeger under the same address still work. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080",
+   "kubectl rollout status deployment/frontend-proxy --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "quota-blocks-pods-047": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=shipping",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "v1",
+     "kind": "ResourceQuota",
+     "metadata": {
+      "name": "namespace-pod-quota",
+      "namespace": "default"
+     },
+     "spec": {
+      "hard": {
+       "pods": "10"
+      }
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=shipping"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Shipping disappeared after a routine pod restart and has not come back; orders fail. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete resourcequota namespace-pod-quota",
+   "kubectl rollout restart deployment/shipping",
+   "kubectl rollout status deployment/shipping --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "svc-deleted-037": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "kind": "service",
+   "name": "email",
+   "type": "delete_object"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers stopped receiving order confirmation emails today. Orders go through. Find the cause and fix it.",
+  "solution": [
+   "bash scripts/reset_world.sh"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 480
+  }
+ },
+ "svc-selector-mismatch-035": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "service": "product-catalog",
+    "type": "endpoints"
+   }
+  ],
+  "fault": {
+   "kind": "service",
+   "name": "product-catalog",
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/selector",
+     "value": {
+      "opentelemetry.io/name": "product-catalog-v2"
+     }
+    }
+   ],
+   "restart_after": [
+    "deployment/product-catalog"
+   ],
+   "type": "object_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages, recommendations and checkout all fail. The product-catalog pod is Running and Ready. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch service product-catalog --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/selector\",\"value\":{\"opentelemetry.io/name\":\"product-catalog\"}}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "svc-targetport-mismatch-036": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "kind": "service",
+   "name": "shipping",
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/ports/0/targetPort",
+     "value": 8888
+    }
+   ],
+   "restart_after": [
+    "deployment/shipping"
+   ],
+   "type": "object_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Orders fail at the shipping step. Shipping's pod is healthy and its logs show no errors. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch service shipping --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":8080}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "valkey-client-pause-077": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 6,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "valkey-cli",
+     "CLIENT",
+     "PAUSE",
+     "86400000",
+     "WRITE"
+    ]
+   ],
+   "target": "deploy/valkey-cart",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "valkey-cli",
+     "CLIENT",
+     "UNPAUSE"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Adding to cart spins forever and then times out; viewing the cart still works. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "valkey-maxmemory-075": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "valkey-cli",
+     "CONFIG",
+     "SET",
+     "maxmemory",
+     "256kb"
+    ]
+   ],
+   "target": "deploy/valkey-cart",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "valkey-cli",
+     "CONFIG",
+     "SET",
+     "maxmemory",
+     "0"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers can view their carts but adding an item fails. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "valkey-requirepass-076": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "valkey-cli",
+     "CONFIG",
+     "SET",
+     "requirepass",
+     "rotated-s3cret"
+    ]
+   ],
+   "restart_after": [
+    "deployment/cart"
+   ],
+   "target": "deploy/valkey-cart",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "valkey-cli",
+     "-a",
+     "rotated-s3cret",
+     "--no-auth-warning",
+     "CONFIG",
+     "SET",
+     "requirepass",
+     ""
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Since the cart service restarted, every cart operation fails with an authentication error. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec deploy/valkey-cart -- valkey-cli -a rotated-s3cret --no-auth-warning CONFIG SET requirepass ''",
+   "kubectl rollout restart deployment/cart",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "webhook-blocks-pods-050": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=email",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "admissionregistration.k8s.io/v1",
+     "kind": "ValidatingWebhookConfiguration",
+     "metadata": {
+      "name": "pod-policy-guard"
+     },
+     "webhooks": [
+      {
+       "admissionReviewVersions": [
+        "v1"
+       ],
+       "clientConfig": {
+        "service": {
+         "name": "policy-guard",
+         "namespace": "gym-system",
+         "path": "/validate",
+         "port": 443
+        }
+       },
+       "failurePolicy": "Fail",
+       "name": "pods.policy-guard.gym.local",
+       "namespaceSelector": {
+        "matchLabels": {
+         "kubernetes.io/metadata.name": "default"
+        }
+       },
+       "rules": [
+        {
+         "apiGroups": [
+          ""
+         ],
+         "apiVersions": [
+          "v1"
+         ],
+         "operations": [
+          "CREATE"
+         ],
+         "resources": [
+          "pods"
+         ]
+        }
+       ],
+       "sideEffects": "None",
+       "timeoutSeconds": 5
+      }
+     ]
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=email"
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Order confirmation emails stopped after the email pod restarted, and no new email pod appears. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete validatingwebhookconfiguration pod-policy-guard",
+   "kubectl rollout restart deployment/email",
+   "kubectl rollout status deployment/email --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-bad-command-012": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=quote",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/command",
+     "value": [
+      "/usr/local/bin/quote-server"
+     ]
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "quote",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every order fails with a shipping error. The shipping service itself is Running. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment quote --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/command\"}]'",
+   "kubectl rollout status deployment/quote --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-client-dns-typo-015": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:CART_ADDR/value",
+     "value": "cart-service:8080"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "frontend",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers cannot add anything to their cart; the cart shows an error. Browsing products works. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/frontend CART_ADDR=cart:8080",
+   "kubectl rollout status deployment/frontend --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-client-wrong-port-016": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:PRODUCT_CATALOG_ADDR/value",
+     "value": "product-catalog:9090"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "checkout",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Browsing and the cart work, but placing an order always fails. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-cpu-throttle-032": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "home",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 1500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/resources/limits/cpu",
+     "value": "20m"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "frontend",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The whole shop has become very slow since yesterday's resource tuning, but nothing is failing and no pod is restarting. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment frontend --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/resources/limits/cpu\"}]'",
+   "kubectl rollout status deployment/frontend --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-crash-invalid-env-013": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=shipping",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:SHIPPING_PORT/value",
+     "value": "eighty-eighty"
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "shipping",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Since the last configuration change every order fails at the shipping step. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/shipping SHIPPING_PORT=8080",
+   "kubectl rollout status deployment/shipping --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-dns-policy-none-029": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/dnsPolicy",
+     "value": "None"
+    },
+    {
+     "op": "set",
+     "path": "/spec/template/spec/dnsConfig",
+     "value": {
+      "nameservers": [
+       "192.0.2.53"
+      ],
+      "searches": [
+       "default.svc.cluster.local"
+      ]
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "checkout",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Placing an order fails with errors about every dependency at once. Other services work. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment checkout --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/dnsPolicy\",\"value\":\"ClusterFirst\"},{\"op\":\"remove\",\"path\":\"/spec/template/spec/dnsConfig\"}]'",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-ephemeral-storage-evicted-027": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_age_s": 180,
+    "selector": "app.kubernetes.io/name=opentelemetry-collector",
+    "type": "pods_stable"
+   },
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "frontend",
+    "type": "jaeger_traces"
+   }
+  ],
+  "fault": {
+   "kind": "daemonset",
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/resources/limits/ephemeral-storage",
+     "value": "64Ki"
+    }
+   ],
+   "recreate_pods": false,
+   "revert_hooks": [
+    {
+     "delete_failed_pods": true
+    }
+   ],
+   "target": "otel-collector-agent",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Traces keep disappearing from Jaeger for minutes at a time, and the telemetry collector pods keep being replaced. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch daemonset otel-collector-agent --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/resources/limits/ephemeral-storage\"}]'",
+   "kubectl rollout status daemonset/otel-collector-agent --timeout=240s",
+   "kubectl delete pods --field-selector=status.phase=Failed"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 420
+  }
+ },
+ "wl-host-alias-poison-028": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/hostAliases",
+     "value": [
+      {
+       "hostnames": [
+        "product-catalog"
+       ],
+       "ip": "192.0.2.10"
+      }
+     ]
+    }
+   ],
+   "recreate_pods": false,
+   "target": "frontend",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product listings and product pages time out, but checkout (which also uses the catalog) works. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment frontend --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/hostAliases\"}]'",
+   "kubectl rollout status deployment/frontend --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-image-pull-011": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "currency",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=currency",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/image",
+     "value": "ghcr.io/open-telemetry/demo:3.1.0-curency"
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "currency",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Prices no longer show when customers switch currency, and every order fails. Find the cause and fix it.",
+  "solution": [
+   "kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency",
+   "kubectl rollout status deployment/currency --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-init-container-stuck-026": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=cart",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/initContainers/$name:wait-for-valkey-cart/command",
+     "value": [
+      "sh",
+      "-c",
+      "until nc -z -v -w30 valkey-cart-primary 6379; do echo waiting for valkey-cart; sleep 2; done;"
+     ]
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "cart",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The cart has been down since the last deploy. The new cart pod never becomes Ready. Find the cause and fix it.",
+  "solution": [
+   "kubectl rollout undo deployment/cart",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-jvm-heap-over-limit-031": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "selector": "opentelemetry.io/name=kafka",
+    "type": "pods_ready"
+   },
+   {
+    "min_age_s": 300,
+    "selector": "opentelemetry.io/name=kafka",
+    "type": "pods_stable"
+   },
+   {
+    "timeout_s": 60,
+    "type": "orders_recorded"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/resources/limits/memory",
+     "value": "128Mi"
+    }
+   ],
+   "restart_on_revert": [
+    "deployment/checkout",
+    "deployment/accounting",
+    "deployment/fraud-detection"
+   ],
+   "revert_hooks": [
+    {
+     "kafka_topic": "orders"
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "kafka",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Finance says no new orders are being recorded, the fraud team sees nothing new, and placing orders has become unreliable. Find the cause and fix it.",
+  "solution": [
+   "kubectl set resources deployment/kafka -c kafka --limits=memory=700Mi",
+   "kubectl rollout status deployment/kafka --timeout=300s",
+   "for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done",
+   "kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection",
+   "kubectl rollout status deployment/checkout --timeout=300s",
+   "kubectl rollout status deployment/accounting --timeout=300s",
+   "kubectl rollout status deployment/fraud-detection --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 600
+  }
+ },
+ "wl-listen-port-drift-014": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/env/$name:PAYMENT_PORT/value",
+     "value": "8081"
+    }
+   ],
+   "recreate_pods": false,
+   "target": "payment",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Every order fails at the payment step. The payment pod is Running with zero restarts and its logs look normal. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/payment PAYMENT_PORT=8080",
+   "kubectl rollout status deployment/payment --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-liveness-wrong-port-023": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_age_s": 120,
+    "selector": "opentelemetry.io/name=product-catalog",
+    "type": "pods_stable"
+   },
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/livenessProbe",
+     "value": {
+      "failureThreshold": 2,
+      "initialDelaySeconds": 5,
+      "periodSeconds": 5,
+      "tcpSocket": {
+       "port": 9999
+      }
+     }
+    }
+   ],
+   "recreate_pods": false,
+   "target": "product-catalog",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages fail every few seconds, and the product-catalog pod's restart count keeps rising. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment product-catalog --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/livenessProbe\"}]'",
+   "kubectl rollout status deployment/product-catalog --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 360
+  }
+ },
+ "wl-missing-configmap-volume-019": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "selector": "opentelemetry.io/name=fraud-detection",
+    "type": "pods_ready"
+   },
+   {
+    "group": "fraud-detection",
+    "max_lag": 50,
+    "type": "kafka_lag"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "append",
+     "path": "/spec/template/spec/volumes",
+     "value": {
+      "configMap": {
+       "name": "fraud-rules"
+      },
+      "name": "rules"
+     }
+    },
+    {
+     "op": "append",
+     "path": "/spec/template/spec/containers/$c/volumeMounts",
+     "value": {
+      "mountPath": "/etc/fraud-rules",
+      "name": "rules"
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "fraud-detection",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The fraud team says no new orders have reached their system for a while, although checkout works. Find the cause and fix it.",
+  "solution": [
+   "kubectl rollout undo deployment/fraud-detection",
+   "kubectl rollout status deployment/fraud-detection --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-missing-secret-020": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "email",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=email",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "append",
+     "path": "/spec/template/spec/containers/$c/env",
+     "value": {
+      "name": "SMTP_PASSWORD",
+      "valueFrom": {
+       "secretKeyRef": {
+        "key": "password",
+        "name": "email-smtp-credentials"
+       }
+      }
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "email",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Customers report they no longer receive order confirmation emails. Orders themselves succeed. Find the cause and fix it.",
+  "solution": [
+   "kubectl set env deployment/email SMTP_PASSWORD-",
+   "kubectl rollout status deployment/email --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-nodeselector-018": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "ads",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=ad",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/nodeSelector",
+     "value": {
+      "disktype": "ssd"
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "ad",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The advertisement banner has disappeared from the shop. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment ad --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/nodeSelector\"}]'",
+   "kubectl rollout status deployment/ad --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-paused-rollout-trap-030": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:VALKEY_ADDR/value",
+       "value": "valkey-cart-v2:6379"
+      }
+     ],
+     "pause_s": 25,
+     "recreate_pods": false,
+     "target": "cart",
+     "type": "workload_patch"
+    },
+    {
+     "ops": [
+      {
+       "op": "set",
+       "path": "/spec/paused",
+       "value": true
+      }
+     ],
+     "recreate_pods": false,
+     "target": "cart",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The cart is broken: adding items fails. A colleague says they already fixed the config, but nothing changed. Find the cause and fix it for real.",
+  "solution": [
+   "kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379",
+   "kubectl rollout resume deployment/cart",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-readiness-never-ready-024": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "service": "cart",
+    "type": "endpoints"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/readinessProbe",
+     "value": {
+      "httpGet": {
+       "path": "/healthz",
+       "port": 8080
+      },
+      "periodSeconds": 5
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "cart",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The cart is broken for everyone: adding items fails and orders fail. The cart pod is Running. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment cart --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/readinessProbe\"}]'",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-readonly-rootfs-022": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "images",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=image-provider",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/containers/$c/securityContext/readOnlyRootFilesystem",
+     "value": true
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "image-provider",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "All product images in the shop are broken, although the pages themselves load. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment image-provider --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem\"}]'",
+   "kubectl rollout status deployment/image-provider --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-run-as-non-root-021": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=astronomy-db",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "set",
+     "path": "/spec/template/spec/securityContext/runAsNonRoot",
+     "value": true
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "astronomy-db",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Product pages and the catalog fail to load after a security hardening change. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment astronomy-db --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/securityContext/runAsNonRoot\"}]'",
+   "kubectl rollout status deployment/astronomy-db --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-scaled-to-zero-025": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "service": "checkout",
+    "type": "endpoints"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/replicas",
+     "value": 0
+    }
+   ],
+   "recreate_pods": false,
+   "target": "checkout",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "Browsing and the cart work, but 'Place Order' always fails. Find the cause and fix it.",
+  "solution": [
+   "kubectl scale deployment checkout --replicas=1",
+   "kubectl rollout status deployment/checkout --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ },
+ "wl-unschedulable-request-017": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=recommendation",
+    "type": "pods_ready"
+   }
+  ],
+  "fault": {
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/resources",
+     "value": {
+      "limits": {
+       "memory": "64Gi"
+      },
+      "requests": {
+       "memory": "64Gi"
+      }
+     }
+    }
+   ],
+   "strategy": "Recreate",
+   "target": "recommendation",
+   "type": "workload_patch"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "disable_alerts",
+   "edit_verifier",
+   "delete_the_verifier_probe"
+  ],
+  "prompt": "The 'You may also like' panel is empty on every product page since this morning's resource tuning. Find the cause and fix it.",
+  "solution": [
+   "kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi",
+   "kubectl rollout status deployment/recommendation --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 30,
+   "poll_s": 10,
+   "recover_timeout_s": 300
+  }
+ }
+}

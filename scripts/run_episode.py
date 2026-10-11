@@ -60,7 +60,7 @@ def verify_baseline(spec_path: str) -> None:
     result = run_command(["python", VERIFIER_SCRIPT, spec_path], check=False)
 
     if result.returncode != 0:
-        print(f"\n✗ Baseline was not healthy", file=sys.stderr)
+        print("\n✗ Baseline was not healthy", file=sys.stderr)
         print("Fix your environment before injecting faults.", file=sys.stderr)
         sys.exit(1)
 

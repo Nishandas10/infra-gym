@@ -1,0 +1,43 @@
+[project]
+name = "infra-gym"
+version = "0.2.0"
+description = "Safe, resettable, realistic broken Kubernetes infrastructure for benchmarking and training AI SRE agents"
+requires-python = ">=3.11"
+dependencies = [
+    "PyYAML>=6.0",
+    "pydantic>=2.7",
+    "requests>=2.31",
+    # bench/: model APIs
+    "openai>=1.40",
+    "anthropic>=0.40",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "jsonpatch>=1.33",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["gym*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [".venv", "results", "bench/results*"]
+
+[tool.ruff.lint]
+# Errors only for now (syntax errors, undefined names, unused imports...); style rules come later.
+select = ["E9", "F"]

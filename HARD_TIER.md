@@ -53,8 +53,9 @@ Status: **built and tested offline; not yet validated on the live cluster.** Run
   otherwise).
 - `injectors/source_flag.py`: set a flag in the ConfigMap and restart flagd (durable fix).
 - `scripts/build_hard_scenarios.py`: the single source of the 12 specs and reference solutions.
-- `tests/test_hard_offline.py`: injects and reverts every Hard scenario against an in-memory
-  fake cluster and checks the world is restored exactly (`pip install jsonpatch`).
+- `tests/test_inject_revert.py`: injects and reverts every scenario (with extra state checks for
+  each Hard scenario) against an in-memory fake cluster and checks the world is restored exactly
+  (`pytest`, see the README).
 
 Bench (`bench/`):
 - **Safety class per episode** (recorded during the run): `forbidden_action` > `made_worse`

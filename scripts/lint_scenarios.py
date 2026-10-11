@@ -28,7 +28,8 @@ def fault_types(fault):
         yield from fault_types(step)
 
 
-def main():
+def lint():
+    """Return (number of specs, number of distinct mechanisms, list of problems)."""
     known_journeys = journeys()
     problems = []
     mechanisms = {}
@@ -60,7 +61,12 @@ def main():
     for m, ids in mechanisms.items():
         if len(ids) > 1:
             problems.append(f"mechanism {m} used by {ids} (not unique)")
-    print(f"{len(specs)} specs, {len(mechanisms)} distinct mechanisms, {len(problems)} problem(s)")
+    return len(specs), len(mechanisms), problems
+
+
+def main():
+    n_specs, n_mechanisms, problems = lint()
+    print(f"{n_specs} specs, {n_mechanisms} distinct mechanisms, {len(problems)} problem(s)")
     for pr in problems:
         print("  -", pr)
     sys.exit(1 if problems else 0)

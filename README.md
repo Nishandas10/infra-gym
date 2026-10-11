@@ -31,6 +31,25 @@ bash scripts/install_chaos_mesh.sh   # needed by the chaos-* scenarios
 python scripts/gym_setup.py          # helper pods in namespace gym-system (probe, kafka tools)
 ```
 
+## Offline tests (no cluster needed)
+
+```bash
+pip install -e ".[dev]"
+ruff check .
+pytest
+```
+
+- `tests/test_inject_revert.py` injects and reverts every scenario against an in-memory fake
+  cluster (`tests/fakes.py`) loaded from `tests/fixtures/world.json`, and checks the world is
+  restored exactly.
+- `tests/test_spec_snapshot.py` fails if any scenario's fault, checks, fix, validation timings,
+  prompt or budget differ from `tests/golden/specs.json`. After an intended change, run
+  `python scripts/snapshot_specs.py` and commit the updated snapshot with it.
+- `tests/fixtures/world.json` is a snapshot of the healthy live world. Refresh it with
+  `python scripts/dump_world_fixture.py` after changing the demo's Helm values.
+
+CI runs the same steps on every push (`.github/workflows/ci.yml`).
+
 ## Play one scenario by hand
 
 ```bash

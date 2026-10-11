@@ -1,7 +1,10 @@
 __pycache__/
 *.pyc
-.venv/
+.venv
 .env
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 *.log
 # ...except the scenario validation logs, which are the evidence behind results/validation.jsonl
 !results/**/*.log
