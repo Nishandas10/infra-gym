@@ -7,8 +7,8 @@ instance_of:
   template: wl-init-container-stuck-026
   version: 1
   params: {}
-content_hash: sha256:a25a78e3d7c5f9f08f960ff1ecac00865ebdbea550bb86cf0dfb6cfa14e353a6
-validation_hash: sha256:f5738b9a1ef972ceefd49300ebf5b3f07d93ee12edb8bcf7041050a2e20005d7
+content_hash: sha256:ef8b93cf6bcf7e5b70c5e5c3feb443bdd4f25b9e67cdb2aba03cce4b23c2c808
+validation_hash: sha256:83927a8e21b2b5e2215e86be1d99e1faca1e0e373db9255c4ee9976baa2e6a50
 title: Init container waits for a dependency name that never resolves
 mechanism: workload/init-container-blocked
 split: train
@@ -54,11 +54,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=cart
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/cart
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/cart
@@ -76,8 +81,9 @@ reference:
   - kubectl rollout undo deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

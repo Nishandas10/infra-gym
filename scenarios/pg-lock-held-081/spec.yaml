@@ -7,8 +7,8 @@ instance_of:
   template: pg-lock-held-081
   version: 1
   params: {}
-content_hash: sha256:ad074d114ccf8b2ae461b29cb756ae1e8e2c6270e54d71f2a23610846b28f5b1
-validation_hash: sha256:5d17a9a004b7d6ebc83d058a15ce3c4bc6c4a4f0d117324124dcc3f80ba308bd
+content_hash: sha256:d6b5b9572443d0018d7ed09061eea0277af867bc1cd8b081c35598e30167483a
+validation_hash: sha256:7f155883180efb010fe63b139f6b9d484bcc6250cd98a96406992c73c286bf05
 title: A stuck maintenance job holds an exclusive table lock
 mechanism: datastore/db-lock-held
 split: train
@@ -87,11 +87,15 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 2500
     timeout_s: 6
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/catalog-maintenance
@@ -108,8 +112,9 @@ reference:
   commands:
   - kubectl delete deployment catalog-maintenance
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

@@ -49,7 +49,3 @@ reference:
   - python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
 validation:
   detect_timeout_s: 180
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

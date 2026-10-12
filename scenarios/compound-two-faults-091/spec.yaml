@@ -7,8 +7,8 @@ instance_of:
   template: compound-two-faults-091
   version: 1
   params: {}
-content_hash: sha256:f2853bcd016cb20ac8016f1b36cc5c5f4a8f94a9993c48309277ae3d6f4bd55d
-validation_hash: sha256:c21fc700d14ceb64815d6b9df653542621cdd7bc2d0640a2300588a9b0223bcc
+content_hash: sha256:c272ce44befd99a4d3431f3623b52dd0dcbabd11b84dd3df51e00aa8e869b15d
+validation_hash: sha256:bd8b8c98d3c948fda3e352392d72baeb22af6cffda7dc69f5b88ed2b6c9b0c70
 title: Two unrelated faults at the same time
 mechanism: compound/independent-simultaneous-faults
 split: train
@@ -60,11 +60,16 @@ verifier:
     repeat: 30
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/recommendation
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/recommendation
@@ -85,8 +90,9 @@ reference:
   - kubectl rollout status deployment/recommendation --timeout=300s
   - python injectors/toggle_flag.py adFailure --off
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

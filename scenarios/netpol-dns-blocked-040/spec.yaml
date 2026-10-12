@@ -7,8 +7,8 @@ instance_of:
   template: netpol-dns-blocked-040
   version: 1
   params: {}
-content_hash: sha256:717b2c6c9a73becfdcff61913fa4367a69430af7b1cd0fb45d37d9dc88751b48
-validation_hash: sha256:093b8321b74b9517d82775407998353aec2203f6e808c2e6de92ee3fb3df8d60
+content_hash: sha256:b585882aaf6aed247370e82a91f86a612958df1da42949f415c051cffd04443c
+validation_hash: sha256:3f945d556b9ab6860c6ce0c0b2dbf9e5c70f63b5db8913eefbb90634f64dd43a
 title: Egress policy allows app ports but blocks DNS
 mechanism: network-policy/dns-egress-blocked
 split: train
@@ -70,11 +70,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=frontend
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkpolicy/frontend-egress-app-ports
@@ -92,8 +97,9 @@ reference:
   - kubectl rollout restart deployment/frontend
   - kubectl rollout status deployment/frontend --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

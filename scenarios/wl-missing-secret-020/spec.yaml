@@ -7,8 +7,8 @@ instance_of:
   template: wl-missing-secret-020
   version: 1
   params: {}
-content_hash: sha256:2009c88df2ead34b47a580f73b113ac10123d12b6dce72d9c953db9ecd547a90
-validation_hash: sha256:0a9fd410ff3c6a1ada9899ce5b18a1555946300e11facdbcd916424ae02f42b6
+content_hash: sha256:b405b742e8d658d427b6a65af06d46dfd76ec0294ae5623b685d9b824cfc64c8
+validation_hash: sha256:9c1c0b48447c3bcc3450f9239d8716681dfa5becb2c51cbe0f579dfd25ad8339
 title: Env var references a Secret that does not exist -> CreateContainerConfigError
 mechanism: workload/missing-secret-reference
 split: train
@@ -58,11 +58,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=email
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/email
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/email
@@ -80,8 +85,9 @@ reference:
   - kubectl set env deployment/email SMTP_PASSWORD-
   - kubectl rollout status deployment/email --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

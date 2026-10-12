@@ -7,8 +7,8 @@ instance_of:
   template: valkey-client-pause-077
   version: 1
   params: {}
-content_hash: sha256:f70cec369a3b4f4e4c762c5d6275ab9ae5c2433f26145999c3a0868295503b38
-validation_hash: sha256:15f7c336536d0896d7b2d0f4a1c6e3168de41fc7a621e8df19e9a8df25d0bf27
+content_hash: sha256:4fa89754e998a1e90fba54fe51bc23f3e73da91bc83abc86164a8752bf347013
+validation_hash: sha256:567b65af34e94b57915173e773cd7277977f26d24e27e08bfc6ba37e7d790448
 title: Valkey clients paused -> writes hang
 mechanism: datastore/kv-clients-paused
 split: train
@@ -57,11 +57,15 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 2500
     timeout_s: 6
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/valkey-cart
@@ -77,8 +81,9 @@ reference:
   commands:
   - kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

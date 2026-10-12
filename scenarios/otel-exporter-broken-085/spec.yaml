@@ -7,8 +7,8 @@ instance_of:
   template: otel-exporter-broken-085
   version: 1
   params: {}
-content_hash: sha256:b647a6b50ea5d503cfe6e5dc7c4d4f52c31cc2e8f194416b6bb754d0f0211b3c
-validation_hash: sha256:d35e1f2bca705db99ea49a2724749c91be1f2ae77890379daeb34b5ca3dd3d56
+content_hash: sha256:4126b8c67acbb04c649fcecbf4b63554346b483ce37eb7ca75bfcc5b53073a2b
+validation_hash: sha256:42d8820fa30606efdbeee9f4189d512511a9b134d2e851d6fc283470038b0ddf
 title: Collector exports traces to the wrong port
 mechanism: observability/collector-exporter-misconfigured
 split: train
@@ -55,11 +55,16 @@ verifier:
     service: frontend
     lookback: 1m
     min_traces: 1
+  invariants:
+  - shop_health
+  durability:
+  - restart: daemonset/otel-collector-agent
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: configmap/otel-collector-agent
@@ -77,8 +82,9 @@ reference:
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

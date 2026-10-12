@@ -7,8 +7,8 @@ instance_of:
   template: wl-ephemeral-storage-evicted-027
   version: 1
   params: {}
-content_hash: sha256:a56ebd51cc2fcca67a7cc505e5a2a0dfcf82521fc0e178ee0cf6a51ab7f3d3c4
-validation_hash: sha256:718a76b78de5226d76b43062baa1aa23a1a62f2b10a86c05c25e6f6f3d479ae2
+content_hash: sha256:4875671285a8bc45f80441873a2ec272eac71252094e7bd879f04bf8c2a373e9
+validation_hash: sha256:e1d3afe25c14693a0938f04a3504b6f0ff3a17f25ff0f5187797424b0836b5b5
 title: Tiny ephemeral-storage limit -> pods evicted over and over
 mechanism: workload/ephemeral-storage-eviction
 split: train
@@ -54,11 +54,16 @@ verifier:
     service: frontend
     lookback: 1m
     min_traces: 1
+  invariants:
+  - shop_health
+  durability:
+  - restart: daemonset/otel-collector-agent
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: daemonset/otel-collector-agent
@@ -78,8 +83,9 @@ reference:
   - kubectl rollout status daemonset/otel-collector-agent --timeout=240s
   - kubectl delete pods --field-selector=status.phase=Failed
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45

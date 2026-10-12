@@ -33,6 +33,18 @@ WORLD_HEALTHY = [
     {"type": "kafka_lag", "group": "fraud-detection", "max_lag": 200},
 ]
 
+# Checks every fix must leave passing, besides the scenario's own (spec verifier.invariants).
+# shop_health = every user journey of WORLD_HEALTHY: a fix that repairs the faulted journey but
+# breaks another one fails. Namespace-wide pod readiness is left out on purpose: some scenarios
+# leave broken decoy workloads in place, and those are not the fix's job.
+INVARIANTS = {
+    "shop_health": [c for c in WORLD_HEALTHY if c["type"] == "journey"],
+}
+
+
+def invariant_checks(spec):
+    return [c for name in spec["verifier"]["invariants"] for c in INVARIANTS[name]]
+
 
 # ------------------------------------------------------------------ pod state
 def _pod_problem(p):
@@ -148,7 +160,7 @@ def _eval_journey(res, max_error_pct=0, max_avg_ms=2500, **_):
 
 # ------------------------------------------------- load generator (Locust)
 def _locust_stats():
-    r = toolbox.http("http://load-generator.default.svc.cluster.local:8089/stats/requests", timeout=10)
+    r = toolbox.http(kube.svc_url("load-generator", 8089, "/stats/requests"), timeout=10)
     if r["status"] != 200:
         raise kube.KubeError(f"load generator stats unavailable (HTTP {r['status']})")
     return {(s["method"], s["name"]): s for s in json.loads(r["body"])["stats"] if s["name"] != "Aggregated"}
@@ -259,8 +271,8 @@ def _jaeger_window(lookback):
 
 
 def c_jaeger_traces(service, lookback="2m", min_traces=1, **_):
-    url = (f"http://jaeger.default.svc.cluster.local:16686/jaeger/ui/api/traces"
-           f"?service={service}&{_jaeger_window(lookback)}&limit={min_traces}")
+    url = kube.svc_url("jaeger", 16686, f"/jaeger/ui/api/traces?service={service}&{_jaeger_window(lookback)}"
+                                        f"&limit={min_traces}")
     r = toolbox.http(url, timeout=15)
     if r["status"] != 200:
         return UNKNOWN, f"jaeger query failed: HTTP {r['status']} {r['body'][:120]!r}"
@@ -274,8 +286,8 @@ def c_jaeger_traces(service, lookback="2m", min_traces=1, **_):
 
 def c_jaeger_attr_absent(service, pattern, lookback="2m", limit=5, **_):
     """FAIL if recent traces of `service` contain text matching `pattern` (e.g. raw PII)."""
-    url = (f"http://jaeger.default.svc.cluster.local:16686/jaeger/ui/api/traces"
-           f"?service={service}&{_jaeger_window(lookback)}&limit={limit}")
+    url = kube.svc_url("jaeger", 16686, f"/jaeger/ui/api/traces?service={service}&{_jaeger_window(lookback)}"
+                                        f"&limit={limit}")
     r = toolbox.http(url, timeout=20)
     if r["status"] != 200:
         return UNKNOWN, f"jaeger query failed: HTTP {r['status']}"
@@ -293,7 +305,7 @@ def c_jaeger_attr_absent(service, pattern, lookback="2m", limit=5, **_):
 
 def c_prometheus(query, min_value=None, max_value=None, **_):
     import urllib.parse
-    url = "http://prometheus.default.svc.cluster.local:9090/api/v1/query?query=" + urllib.parse.quote(query)
+    url = kube.svc_url("prometheus", 9090, "/api/v1/query?query=" + urllib.parse.quote(query))
     r = toolbox.http(url, timeout=15)
     if r["status"] != 200:
         return UNKNOWN, f"prometheus query failed: HTTP {r['status']}"

@@ -7,8 +7,8 @@ instance_of:
   template: cache-leak-009
   version: 1
   params: {}
-content_hash: sha256:7d80d53f73c35ddccaa4157de51a89c8cf9347629ac1b0f94a907fee238bee64
-validation_hash: sha256:925bc77bf7c81deccdd4b7a8310cc98c5f71b91dcad77cb83db935fa305fc2aa
+content_hash: sha256:31ea5c58d3ce6d3e0193c4b746a352265b1141a659f3593bac0388e4ff59253b
+validation_hash: sha256:81d0bb94f65f2a6a3acc8c87a9b26a5be68b0d60d64e405c5a194d873abfc0ca
 title: Recommendation cache leaks memory until OOM (recommendationCacheFailure)
 mechanism: app-flag/recommendation-cache-leak
 split: train
@@ -55,11 +55,15 @@ verifier:
   - type: pods_stable
     selector: opentelemetry.io/name=recommendation
     min_age_s: 600
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/recommendationCacheFailure
@@ -83,9 +87,10 @@ reference:
 validation:
   baseline_timeout_s: 700
   detect_timeout_s: 1200
-  recover_timeout_s: 900
   hold_s: 60
+  recover_timeout_s: 900
   poll_s: 15
+  restart_settle_s: 45
 notes:
 - 'Memory check: baseline is ~50Mi and ~90ms. Leaked memory never shrinks without a restart, which makes it a steadier
   signal than latency (which depends on how much traffic arrives).'

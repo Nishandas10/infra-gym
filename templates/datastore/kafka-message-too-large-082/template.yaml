@@ -76,9 +76,3 @@ reference:
   commands:
   - kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092
     --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

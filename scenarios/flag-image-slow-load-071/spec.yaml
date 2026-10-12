@@ -7,8 +7,8 @@ instance_of:
   template: flag-image-slow-load-071
   version: 1
   params: {}
-content_hash: sha256:1f103ee6af59c846b5764fe4983f1f652af04c2031bc7a2ec43601c366feb748
-validation_hash: sha256:b7784dfb3cd2406bb8b86bf7580827ed52aa580898e8c9f3dcc2744254bbe86a
+content_hash: sha256:1c9f0b2a38158c89170f2a9837d359e4c2dc2231ac2ba2fc3926e53ec62b8a04
+validation_hash: sha256:d75050bf117455de751a693ca78c0ad64e1a58f96f2257d21d4b814bbd06e701
 title: Images served with an artificial delay (imageSlowLoad)
 mechanism: app-flag/image-slow-load
 split: train
@@ -47,11 +47,15 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 3000
     timeout_s: 15
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/imageSlowLoad
@@ -70,8 +74,9 @@ reference:
   commands:
   - python injectors/toggle_flag.py imageSlowLoad --off
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

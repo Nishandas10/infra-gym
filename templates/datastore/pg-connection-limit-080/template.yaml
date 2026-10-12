@@ -66,9 +66,3 @@ ground_truth:
 reference:
   commands:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

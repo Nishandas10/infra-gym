@@ -7,8 +7,8 @@ instance_of:
   template: kafka-backlog-010
   version: 1
   params: {}
-content_hash: sha256:02fd9da37e3e9850a18eb76374e19996bde128278e53774b0f512832d5f99b52
-validation_hash: sha256:0ad7abe8f618c6718ddd39a4065698d240d1c15d7ee7841b19e0b4800150f24b
+content_hash: sha256:643e220368ede11100fb638cbf5ddb6757eb5cdec225c9f7ab489a3dfb9855e8
+validation_hash: sha256:550eafc6ba3b8b84cc2b12f6fd72578445143e22d62c74d70c68ff708df5712d
 title: Kafka flooded and consumers slowed (kafkaQueueProblems)
 mechanism: app-flag/kafka-queue-overload
 split: train
@@ -51,11 +51,15 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/kafkaQueueProblems
@@ -72,9 +76,11 @@ reference:
   commands:
   - python injectors/toggle_flag.py kafkaQueueProblems --off
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 600
-  recover_timeout_s: 900
   hold_s: 60
+  recover_timeout_s: 900
   poll_s: 15
+  restart_settle_s: 45
 meta:
   golden: true

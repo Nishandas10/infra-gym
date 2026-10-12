@@ -7,8 +7,8 @@ instance_of:
   template: net-packet-loss-052
   version: 1
   params: {}
-content_hash: sha256:ea5115095d44a01a04d16123a5c72e86a78f1b25810753bcd03d09f1ae9d077f
-validation_hash: sha256:b87fb5f8ac7eea016696be216ec06cae3ce3e04ef4b0dd3f9347db90e496d8a0
+content_hash: sha256:70a32e54ba463363a38eb16036276ffdc9dc42e2eb319a20f63b2f981c4577f9
+validation_hash: sha256:94a911f881430b80134470c9ec83f5326c0f8e0bff9e4a4b59d4a8a71a7897b2
 title: Heavy packet loss on a service's network interface
 mechanism: chaos/network-packet-loss
 split: train
@@ -67,11 +67,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 1500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkchaos/catalog-packet-loss
@@ -87,8 +91,9 @@ reference:
   commands:
   - kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

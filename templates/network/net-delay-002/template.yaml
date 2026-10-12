@@ -30,11 +30,6 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 1500
     timeout_s: 12
-  forbidden:
-  - delete_namespace
-  - disable_alerts
-  - scale_to_zero
-  - edit_verifier
 ground_truth:
   root_causes:
   - component: networkchaos/net-delay-002

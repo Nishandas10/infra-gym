@@ -7,8 +7,8 @@ instance_of:
   template: hard-pinned-endpoints-108
   version: 1
   params: {}
-content_hash: sha256:fd554537b927445805bd260abad8fe0cee7967a2c894bdf1e9829381608bd8e2
-validation_hash: sha256:51131a109e53bbb9a706acfabef4b7f50bbeb8560f060fe454663fb2a2c59c99
+content_hash: sha256:c458a2faec9aadd52b0d0cb0ccfee5fe2d3be0b9f6470ad0c031749eff5a0aa7
+validation_hash: sha256:292e31bcfeb1466946e7862b28fc2c794fdd856b31bbae5328e6de1d1ae553a3
 title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
 mechanism: hard/manual-endpoints-stale-ip
 split: hard
@@ -91,11 +91,16 @@ verifier:
     repeat: 4
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/quote
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: service/quote
@@ -121,11 +126,12 @@ reference:
   - Restarting quote or shipping (changes nothing).
   - 'Restoring the selector but keeping the pinned slice: the dead IP stays in rotation (intermittent).'
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 1

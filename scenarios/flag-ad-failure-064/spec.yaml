@@ -7,8 +7,8 @@ instance_of:
   template: flag-ad-failure-064
   version: 1
   params: {}
-content_hash: sha256:50c6085f74e664f2e8789fba0a90b2df0f7b763c926fb669195be5a07671809a
-validation_hash: sha256:3e3598f3f5f8deacdc753b920c8af1591dc3ecd324ce6be0c505fc50782eda86
+content_hash: sha256:f4a1011b694c89288470a10f0887d984af36fc9fe149653fb3ffb6139b84884b
+validation_hash: sha256:eea58d4afa622df6ff8b0647d835a716e465f50e67e56113c5338196cdf1ea75
 title: Ad service fails every request (feature flag adFailure)
 mechanism: app-flag/ad-failure
 split: train
@@ -48,11 +48,15 @@ verifier:
     repeat: 30
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/adFailure
@@ -69,10 +73,11 @@ reference:
   commands:
   - python injectors/toggle_flag.py adFailure --off
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'adFailure fails ~1 in 10 requests: 30 probes catch it ~96% of the time.'

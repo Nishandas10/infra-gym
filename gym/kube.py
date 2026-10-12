@@ -6,8 +6,11 @@ import json
 import subprocess
 import time
 
-APP_NS = "default"      # where the OpenTelemetry demo runs
-GYM_NS = "gym-system"   # the gym's own helper pods
+from .settings import WORLD
+
+APP_NS = WORLD["app_namespace"]      # where the OpenTelemetry demo runs
+GYM_NS = WORLD["gym_namespace"]      # the gym's own helper pods
+WORKER_SELECTOR = WORLD["worker_selector"]
 
 
 class KubeError(RuntimeError):
@@ -104,6 +107,19 @@ def wait_until(fn, timeout, interval=5):
         if value or time.time() >= deadline:
             return value
         time.sleep(interval)
+
+
+def worker_nodes():
+    """Names of the worker nodes (what a fault step's `name: $workers` stands for)."""
+    names = [n["metadata"]["name"] for n in items("nodes", namespace=None, selector=WORKER_SELECTOR)]
+    if not names:
+        raise KubeError(f"no worker nodes match {WORKER_SELECTOR!r} (worlds/*.yaml worker_selector)")
+    return names
+
+
+def svc_url(service, port, path=""):
+    """In-cluster URL of a service in the app namespace."""
+    return f"http://{service}.{APP_NS}.svc.cluster.local:{port}{path}"
 
 
 def rollout_restart(kind, name, namespace=APP_NS):

@@ -7,8 +7,8 @@ instance_of:
   template: valkey-requirepass-076
   version: 1
   params: {}
-content_hash: sha256:5d363026ae5d07e3625270dc933494b0f1054e9405f361bd7912861e8aac2578
-validation_hash: sha256:8c6be890a0013389dffde6b2a5c3a3dae086425a94b5dafc5b823081884cec15
+content_hash: sha256:6d3a78cb894e9badf68463927e021462fc3eec4bc77ee0ab9cd0fd21f04797a3
+validation_hash: sha256:6c3585fe9b241e05e6e9b62e219ecd359ad6b930f352b688ea8e0ff112961c50
 title: Valkey password set; the client does not know it
 mechanism: datastore/kv-credential-mismatch
 split: train
@@ -63,11 +63,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/valkey-cart
@@ -85,8 +89,9 @@ reference:
   - kubectl rollout restart deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

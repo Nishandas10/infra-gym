@@ -48,9 +48,10 @@ The templates have `split: hard` and live under their layer: `templates/<layer>/
 - `gym/faults/k8s_objects.py`: mechanism `k8s.pin_endpoints` (selector removed, hand-made
   EndpointSlice with the Service's port names and numeric target ports; revert restores the
   selector, then deletes the slice).
-- `gym/harness.py`: optional `validation.restart_after_fix`. After the reference fix passes, the
-  listed workloads are restarted and the verifier must pass again (verdict `FIX_NOT_DURABLE`
-  otherwise).
+- `gym/harness.py`: durability step. After the reference fix passes, the workloads in
+  `verifier.durability` are restarted and the verifier must pass again (verdict
+  `FIX_NOT_DURABLE` otherwise). Since Phase 3 every scenario has it by default (see README);
+  this scenario restarts flagd.
 - `injectors/source_flag.py`: set a flag in the ConfigMap and restart flagd (durable fix).
 - `templates/<layer>/hard-*/template.yaml`: the 12 scenarios (their noise workloads came from
   `gym/modifiers/noise.py`; the noise is listed in `ground_truth.red_herrings`);
@@ -68,7 +69,7 @@ Bench (`bench/`):
 - **Diagnosis text** for every episode: the model's final summary, or, when it runs out of
   budget, one extra no-tools call asking for root cause and changes. Lets a judge score diagnosis
   later without re-running anything.
-- `restart_after_fix` durability step after the hold; cached-token accounting for OpenRouter.
+- `verifier.durability` step after the hold; cached-token accounting for OpenRouter.
 - `pick --tier standard|hard|all` (default standard, so Hard scenarios never leak into set30).
 - `quality_card.py`: per-scenario validation runs, flake rate, detect/recover/reset times.
 - `report.py`: one table per model with Standard and Hard pass rates, clean fixes,

@@ -7,8 +7,8 @@ instance_of:
   template: wl-readiness-never-ready-024
   version: 1
   params: {}
-content_hash: sha256:54612bbceb703aee94f1320543cc9864f63da1c42c970f32794488b13c128120
-validation_hash: sha256:e8d05f5983c353535c8148a9af5ebf4eda133d48f952f4616b46479c912efa4c
+content_hash: sha256:5f12d5f2d6997edb6a14a8e309fcba9c23da0bec720c0864f2cb4903e8a6a780
+validation_hash: sha256:4c627735f6722bc54c58caec624d19c8462260e06b79b164226903539b430ce6
 title: Readiness probe can never succeed -> no endpoints
 mechanism: workload/readiness-probe-misconfigured
 split: train
@@ -58,11 +58,16 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: cart
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/cart
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/cart
@@ -80,8 +85,9 @@ reference:
   - kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
   - kubectl rollout status deployment/cart --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

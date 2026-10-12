@@ -84,6 +84,7 @@ def _pod(app):
 
 def probe(plan, timeout=240):
     """Run the probe script with a plan dict; returns its JSON result."""
+    plan = {"namespace": kube.APP_NS, **plan}
     r = kube.exec_in(_pod("gym-probe"), ["python3", "/probe/probe.py", json.dumps(plan)],
                      namespace=kube.GYM_NS, timeout=timeout)
     if r.returncode != 0:
@@ -99,5 +100,5 @@ def http(url, method="GET", body=None, timeout=10):
 
 def kafka(tool, *args, timeout=150):
     """Run a Kafka CLI (e.g. kafka('kafka-topics.sh', '--list')) against kafka:9092."""
-    cmd = [f"/opt/kafka/bin/{tool}", "--bootstrap-server", "kafka.default.svc.cluster.local:9092", *args]
+    cmd = [f"/opt/kafka/bin/{tool}", "--bootstrap-server", f"kafka.{kube.APP_NS}.svc.cluster.local:9092", *args]
     return kube.exec_in(_pod("gym-kafka-tools"), cmd, namespace=kube.GYM_NS, timeout=timeout)

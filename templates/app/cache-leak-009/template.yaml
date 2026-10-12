@@ -40,11 +40,6 @@ verifier:
   - type: pods_stable
     selector: opentelemetry.io/name=recommendation
     min_age_s: 600
-  forbidden:
-  - delete_namespace
-  - disable_alerts
-  - scale_to_zero
-  - edit_verifier
 ground_truth:
   root_causes:
   - component: flag/recommendationCacheFailure

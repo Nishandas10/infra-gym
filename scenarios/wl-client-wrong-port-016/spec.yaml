@@ -7,8 +7,8 @@ instance_of:
   template: wl-client-wrong-port-016
   version: 1
   params: {}
-content_hash: sha256:707ecd3fcc2287dbf2bb80951326f131f51b732375bd65210f26513571e179f8
-validation_hash: sha256:abff444e6c78a5128315d3c42f8bc5ea78ba1fa1f193d1d0b4d178d9fb04bad0
+content_hash: sha256:868112e67c1975d2aba8128517854347a5995db733adabfdcd338cdef930584b
+validation_hash: sha256:4160e88fd3cdfc44e84fe9ff4710b193a089fa1ad1a64c20ff543e7e6590700d
 title: Client configured with the wrong port for a dependency
 mechanism: workload/client-dependency-port
 split: train
@@ -50,11 +50,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/checkout
@@ -71,8 +76,9 @@ reference:
   - kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

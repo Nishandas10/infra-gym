@@ -57,12 +57,6 @@ reference:
   commands:
   - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
   - kubectl rollout status deployment/checkout --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
 notes:
 - 'Recreate: checkout''s init container also needs DNS, so a rolling update would leave the old pod serving and
   never cause an outage.'

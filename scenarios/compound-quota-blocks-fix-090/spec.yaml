@@ -7,8 +7,8 @@ instance_of:
   template: compound-quota-blocks-fix-090
   version: 1
   params: {}
-content_hash: sha256:ad59b73884d737bf291757e3c5942c3623e015f7bd118bf557d3f42792f6fd75
-validation_hash: sha256:94cf17b3eda79de311d3423a4a076de1e21ab94024a90dc61a922d866d8cc8a5
+content_hash: sha256:cc30d3c5298a3de21e2cf535e7161911d6e057bd727e99b11ed5ce05615b0e15
+validation_hash: sha256:8ea721e5f8e6489ec1e1d8c0362a3406c64088d47f19fb51b1cbf08e77eedd60
 title: Broken config plus a quota that blocks the rollout of the fix
 mechanism: compound/fix-blocked-by-quota
 split: train
@@ -65,11 +65,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/shipping
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/shipping
@@ -92,8 +97,9 @@ reference:
   - kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
   - kubectl rollout status deployment/shipping --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

@@ -7,8 +7,8 @@ instance_of:
   template: flag-cart-failure-067
   version: 1
   params: {}
-content_hash: sha256:75001da5558001a602171ff8cbdec270ccb964d9b784fd94db0a75a06ea7c9aa
-validation_hash: sha256:c899131deef9efeda9f02364c4a4630f677ee0278c094eb5f47dce3bc17dadd6
+content_hash: sha256:651679d0b94b047c5089688649987a007a4cf91ae89d2779aa3c8bd41dae7418
+validation_hash: sha256:cbb7128afa52d8740d85e886793208821fbb9b578de0a38e5b0a0e6e60d123a0
 title: Cart service errors (cartFailure)
 mechanism: app-flag/cart-failure
 split: train
@@ -49,11 +49,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/cartFailure
@@ -68,8 +72,9 @@ reference:
   commands:
   - python injectors/toggle_flag.py cartFailure --off
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

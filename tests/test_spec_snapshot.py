@@ -18,5 +18,6 @@ def test_same_scenarios():
 @pytest.mark.parametrize("sid", sorted(GOLDEN))
 def test_behaviour_unchanged(sid):
     assert sid in CURRENT, f"{sid} disappeared"
+    assert set(CURRENT[sid]) == set(GOLDEN[sid]), f"{sid}: recorded fields differ (re-run scripts/snapshot_specs.py)"
     for field, want in GOLDEN[sid].items():
         assert CURRENT[sid][field] == want, f"{sid}: {field} changed"

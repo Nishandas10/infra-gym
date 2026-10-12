@@ -7,8 +7,8 @@ instance_of:
   template: node-taint-046
   version: 1
   params: {}
-content_hash: sha256:c8943e4a729bd5c9575931879d4f635feb39dd458e5daffef63b7217df09259f
-validation_hash: sha256:2cc3bbf812035e50af7b1e599d6585e406a062c8acf0432298c7c5301c74cbf0
+content_hash: sha256:253930333593ba78ed70b1a34ce5632c99ec65dea21e2d82a3ecd23cdfa06bae
+validation_hash: sha256:84b49001c453852295dacbaeb79e07bcd661a44fe127f96c29062beabc010faf
 title: Worker nodes tainted; the replacement pod has no toleration
 mechanism: platform/nodes-tainted
 split: train
@@ -37,18 +37,7 @@ fault:
   steps:
   - mechanism: k8s.object_patch
     kind: node
-    name: ai-gym-worker
-    namespace: null
-    ops:
-    - op: append
-      path: /spec/taints
-      value:
-        key: dedicated
-        value: batch
-        effect: NoSchedule
-  - mechanism: k8s.object_patch
-    kind: node
-    name: ai-gym-worker2
+    name: $workers
     namespace: null
     ops:
     - op: append
@@ -68,29 +57,35 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=currency
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=currency
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
-  - component: node/ai-gym-worker,ai-gym-worker2
+  - component: node/$workers
     namespace: null
-    what: both workers carry the NoSchedule taint dedicated=batch and the currency pod has no toleration
-  explanation: Both workers were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new currency
-    pod has no matching toleration and cannot be scheduled anywhere.
+    what: every worker node carries the NoSchedule taint dedicated=batch and the currency pod has no toleration
+  explanation: All worker nodes were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new
+    currency pod has no matching toleration and cannot be scheduled anywhere.
   evidence:
   - '`kubectl get pods`: currency `Pending`.'
   - '`kubectl describe pod -l opentelemetry.io/name=currency`: `untolerated taint {dedicated: batch}`.'
   - '`kubectl describe nodes | grep Taints`.'
 reference:
   commands:
-  - kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+  - kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
   - kubectl rollout status deployment/currency --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

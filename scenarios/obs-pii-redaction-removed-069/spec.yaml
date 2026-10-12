@@ -7,8 +7,8 @@ instance_of:
   template: obs-pii-redaction-removed-069
   version: 1
   params: {}
-content_hash: sha256:150b206ba23917926cbd013ef7a1de84aae5a165806203a9d0ee5b70aba61dfe
-validation_hash: sha256:cfd5434722ef8edae11fb31b93a34855b9867eaf954f95dcc9c1d3acc162c224
+content_hash: sha256:f9c6d5724da7aabe137bfd6b8a9bb72729baa1d6e58ffb3c667b4403c75955a2
+validation_hash: sha256:b54e565d06a14cdf84ee226968c1e017a2f60478b928623c0e36ac96466f80f6
 title: PII reaches the tracing backend after the redaction step was removed from the pipeline
 mechanism: observability/telemetry-redaction-removed
 split: train
@@ -65,11 +65,16 @@ verifier:
     service: payment
     lookback: 2m
     pattern: '@example\.com|\b\d{4}-\d{4}-\d{4}-\d{4}\b'
+  invariants:
+  - shop_health
+  durability:
+  - restart: daemonset/otel-collector-agent
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: configmap/otel-collector-agent
@@ -94,11 +99,12 @@ reference:
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 360
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 360
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'Background: the services emit raw personal data in span attributes (emitRawPii). The actual incident: the collector
   pipeline no longer scrubs it.'

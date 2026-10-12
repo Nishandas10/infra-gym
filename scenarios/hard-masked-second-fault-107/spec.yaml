@@ -7,8 +7,8 @@ instance_of:
   template: hard-masked-second-fault-107
   version: 1
   params: {}
-content_hash: sha256:989f5f304cfa55fe23ea1d21bd68e5c249838dba2c0c016a6fb503e4b3dc3a02
-validation_hash: sha256:e9694f2ae31e3925ada7baa426d38ef6269b49562f7ce6c431fa6e9210da46ac
+content_hash: sha256:4ab748ad2ed8df8f564bef5c89fafa375329cf097daccc732201e9fd557f4b2c
+validation_hash: sha256:af344162498b7af59f8a99e1822209d3b6f463af10f7ff16ead7078215c2d3a4
 title: 'Two faults on the checkout path: fixing the first one reveals the second'
 mechanism: hard/sequential-masked-faults
 split: hard
@@ -98,11 +98,17 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/shipping
+  - restart: deployment/checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/checkout
@@ -129,11 +135,12 @@ reference:
   traps:
   - Stopping after the first fix without re-testing end to end.
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 3

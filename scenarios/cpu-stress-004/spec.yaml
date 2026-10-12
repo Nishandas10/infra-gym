@@ -7,8 +7,8 @@ instance_of:
   template: cpu-stress-004
   version: 1
   params: {}
-content_hash: sha256:d4f4fff0ae6c17fc46cbe3505f6b165dea82e3f29e33264da4bbe2222e89f97b
-validation_hash: sha256:fc6b32c33855f7b9d44e70f46b12e55f4e9c4ecaae7d27c5306a8bb1484a87d2
+content_hash: sha256:e0203a66aa415d6fc60902c71ce8dfe109698e2ed72347270568d3e6081458f4
+validation_hash: sha256:434b60f44ae75e596ebb66aa1288efa20df2442a8e52c4553d17808102f1c265
 title: CPU stressor running inside a container
 mechanism: chaos/cpu-stress
 split: train
@@ -47,11 +47,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 3000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: stresschaos/cpu-stress-004
@@ -69,8 +73,12 @@ reference:
   commands:
   - kubectl delete stresschaos.chaos-mesh.org cpu-stress-004
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 150
+  hold_s: 60
   recover_timeout_s: 180
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - The frontend has no CPU limit and the VM has idle cores, so pages barely slow down; the observable symptom is
   CPU saturation, not latency.

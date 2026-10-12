@@ -7,8 +7,8 @@ instance_of:
   template: net-delay-002
   version: 1
   params: {}
-content_hash: sha256:bd6906b566a5f91b9800971e76f4c8973abecb22d1c75b865f498cfc17d222e4
-validation_hash: sha256:e54d05e235efa1759cd119ed78ddeb87443b74d13772c77cb1a77e49b4631fe9
+content_hash: sha256:294ac2c87c668bcb241f8df5f5a86c5c7d12e674bed10355cab0e342273e99a9
+validation_hash: sha256:5576f8ddf57dbe1692b4414612b2419d7dc4654bfc4886d699c9fa16a5d71367
 title: Network latency injected on one service
 mechanism: chaos/network-latency
 split: train
@@ -45,11 +45,15 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 1500
     timeout_s: 12
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkchaos/net-delay-002
@@ -66,7 +70,11 @@ reference:
   commands:
   - kubectl delete networkchaos.chaos-mesh.org net-delay-002
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 120
+  hold_s: 60
   recover_timeout_s: 120
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   golden: true

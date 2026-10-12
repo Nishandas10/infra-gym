@@ -53,10 +53,6 @@ reference:
   - kubectl rollout status deployment/ad --timeout=300s
 validation:
   detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
 notes:
 - 'The JVM can stay wedged after the flag is off (run 5: ads still timing out 5 min later), so both the fix and
   the revert restart it.'

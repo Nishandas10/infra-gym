@@ -7,8 +7,8 @@ instance_of:
   template: wl-image-pull-011
   version: 1
   params: {}
-content_hash: sha256:db5c8da1959156b213fc10e0732f356bbc2db3c36e983ef728fc412195e9db50
-validation_hash: sha256:d235619a9fbbdaf9a2477f055f32bd80f2bd97412eee55d9016ba01c91cadad4
+content_hash: sha256:0f2e10164e0fcc88919827c3a3cb94ebce7c07484a3d1225c6c9768d553bedf9
+validation_hash: sha256:f5a2d8731a84350953fac034b43ff01df080f97f5633f3e53bb2af85dcf448d4
 title: Mistyped image tag -> ImagePullBackOff
 mechanism: workload/image-pull-failure
 split: train
@@ -55,11 +55,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=currency
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/currency
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/currency
@@ -76,8 +81,9 @@ reference:
   - kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
   - kubectl rollout status deployment/currency --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

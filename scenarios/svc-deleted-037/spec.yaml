@@ -7,8 +7,8 @@ instance_of:
   template: svc-deleted-037
   version: 1
   params: {}
-content_hash: sha256:247ab02c7e3aa735927f53c2d2d17a1249ce93765ce9a67c4d3278e3688eb501
-validation_hash: sha256:4664a5e86795f82981248d63e662198121d68251b5c9f19f48367410c1b561a5
+content_hash: sha256:04daa2ca6c7753a73ae85fac208be68f1e25132c73f884c234fe7b9a8585ad65
+validation_hash: sha256:7c839f9f400e520744cd2c076d72a7aa287b347fef644bcab4866d9a80ba898f
 title: Service object deleted
 mechanism: service/deleted
 split: train
@@ -47,11 +47,17 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  - type: endpoints
+    service: email
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: service/email
@@ -69,8 +75,9 @@ reference:
   commands:
   - bash scripts/reset_world.sh
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 480
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 480
+  poll_s: 10
+  restart_settle_s: 45

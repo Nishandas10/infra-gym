@@ -3,8 +3,9 @@
 usage:
   python scripts/snapshot_specs.py          # write the snapshot (only when a change is intended)
 
-tests/test_spec_snapshot.py fails whenever a scenario's fault, checks, forbidden actions,
-reference fix, validation timings, page prompt or budget differ from this snapshot.
+tests/test_spec_snapshot.py fails whenever a scenario's fault, checks, invariants, durability
+restarts, forbidden actions, reference fix, validation timings, page prompt or budget differ from
+this snapshot.
 Restructuring must leave it passing; a deliberate behaviour change updates the snapshot in the
 same commit, so the diff shows exactly which scenarios changed.
 
@@ -41,9 +42,11 @@ def contract(spec):
     return {
         "fault": v1_fault(spec["fault"]),
         "checks": spec["verifier"]["checks"],
+        "invariants": spec["verifier"]["invariants"],
+        "durability": spec["verifier"]["durability"],
         "forbidden": spec["verifier"]["forbidden"],
         "solution": spec["reference"]["commands"],
-        "validation": spec.get("validation") or {},
+        "validation": spec["validation"],
         "prompt": spec["task"]["prompts"]["page"],
         "budget": spec["budget"],
     }

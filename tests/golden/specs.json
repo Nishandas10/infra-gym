@@ -23,6 +23,7 @@
     "type": "pods_stable"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "recommendationCacheFailure",
    "type": "feature_flag",
@@ -30,9 +31,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The 'You may also like' recommendations get slower and slower over a few minutes, and the recommendation service restarts now and then. Find the cause and fix it for good.",
   "solution": [
@@ -45,7 +50,8 @@
    "detect_timeout_s": 1200,
    "hold_s": 60,
    "poll_s": 15,
-   "recover_timeout_s": 900
+   "recover_timeout_s": 900,
+   "restart_settle_s": 45
   }
  },
  "catalog-fail-008": {
@@ -68,6 +74,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "productCatalogFailure",
    "type": "feature_flag",
@@ -75,17 +82,25 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "A customer reports that one product page (the 'National Park Foundation Explorascope') always shows an error, while every other product works. Find the cause and fix it.",
   "solution": [
    "python injectors/toggle_flag.py productCatalogFailure --off"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 120,
-   "recover_timeout_s": 120
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 120,
+   "restart_settle_s": 45
   }
  },
  "compound-quota-blocks-fix-090": {
@@ -100,6 +115,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/shipping"
    }
   ],
   "fault": {
@@ -140,9 +160,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
@@ -153,9 +177,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "compound-red-herring-092": {
@@ -170,6 +195,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/quote"
    }
   ],
   "fault": {
@@ -240,9 +270,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Orders are failing. The on-call channel is full of alerts about a crash-looping pod that keeps logging database connection errors. Find the real cause and fix it.",
   "solution": [
@@ -252,9 +286,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "compound-two-faults-091": {
@@ -276,6 +311,11 @@
     "max_error_pct": 0,
     "repeat": 30,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/recommendation"
    }
   ],
   "fault": {
@@ -302,9 +342,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Two complaints came in within minutes: recommendations are missing, and the ad banner keeps disappearing. Find the cause(s) and fix everything.",
   "solution": [
@@ -315,9 +359,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "coredns-down-043": {
@@ -341,6 +386,12 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "namespace": "kube-system",
+    "restart": "deployment/coredns"
+   }
+  ],
   "fault": {
    "namespace": "kube-system",
    "ops": [
@@ -356,9 +407,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "New connections across the cluster fail with name-resolution errors; some existing traffic still works. Find the cause and fix it.",
   "solution": [
@@ -368,9 +423,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "coredns-rewrite-poison-044": {
@@ -385,6 +441,15 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "namespace": "kube-system",
+    "restart": "deployment/coredns"
+   },
+   {
+    "restart": "opentelemetry.io/name=checkout"
    }
   ],
   "fault": {
@@ -411,9 +476,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the payment step with protocol errors. Find the cause and fix it.",
   "solution": [
@@ -426,9 +495,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "cpu-stress-004": {
@@ -450,23 +520,32 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": "chaos.yaml",
    "type": "chaos_mesh"
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "A CPU alert fired: the frontend container is burning about two full cores while traffic is normal, and the cloud bill is climbing. Find what is using the CPU and stop it.",
   "solution": [
    "kubectl delete stresschaos.chaos-mesh.org cpu-stress-004"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 150,
-   "recover_timeout_s": 180
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 180,
+   "restart_settle_s": 45
   }
  },
  "dns-error-005": {
@@ -490,6 +569,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "kill_pods_after": [
     "opentelemetry.io/name=valkey-cart"
@@ -499,17 +579,25 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Adding to cart and placing orders started failing a few minutes ago. Find the cause and fix it.",
   "solution": [
    "kubectl delete dnschaos.chaos-mesh.org dns-error-005"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 180,
-   "recover_timeout_s": 240
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 240,
+   "restart_settle_s": 45
   }
  },
  "dns-random-057": {
@@ -527,6 +615,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "kill_pods_after": [
     "opentelemetry.io/name=product-catalog"
@@ -561,9 +650,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product recommendations ('You may also like') stopped working; product pages themselves load fine. Find the cause and fix it.",
   "solution": [
@@ -572,9 +665,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-ad-failure-064": {
@@ -591,6 +685,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "adFailure",
    "type": "feature_flag",
@@ -598,9 +693,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The ad banner is missing on some page views. Find the cause and fix it.",
   "solution": [
@@ -609,9 +708,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-ad-high-cpu-065": {
@@ -633,6 +733,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "adHighCpu",
    "type": "feature_flag",
@@ -640,9 +741,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The ad service's CPU usage has spiked far above normal and ad responses are slow. Find the cause and fix it.",
   "solution": [
@@ -651,9 +756,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-ad-manual-gc-066": {
@@ -670,6 +776,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "adManualGc",
    "restart_on_revert": [
@@ -680,9 +787,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Ad requests show long, irregular latency spikes. Find the cause and fix it.",
   "solution": [
@@ -693,9 +804,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-cart-failure-067": {
@@ -719,6 +831,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "cartFailure",
    "type": "feature_flag",
@@ -726,9 +839,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers report errors around their cart and when placing orders. Find the cause and fix it.",
   "solution": [
@@ -737,9 +854,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-email-memory-leak-068": {
@@ -761,6 +879,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "emailMemoryLeak",
    "type": "feature_flag",
@@ -768,9 +887,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The email service restarts every few minutes and some confirmations are lost. Find the cause and fix it.",
   "solution": [
@@ -783,7 +906,8 @@
    "detect_timeout_s": 900,
    "hold_s": 45,
    "poll_s": 15,
-   "recover_timeout_s": 600
+   "recover_timeout_s": 600,
+   "restart_settle_s": 45
   }
  },
  "flag-flood-homepage-073": {
@@ -802,6 +926,7 @@
     "window_s": 30
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "loadGeneratorFloodHomepage",
    "type": "feature_flag",
@@ -809,9 +934,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Homepage traffic jumped far above normal and the frontend's CPU went with it, yet there were no releases or marketing campaigns. Find the source and stop it.",
   "solution": [
@@ -820,9 +949,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 180,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-image-slow-load-071": {
@@ -840,6 +970,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "imageSlowLoad",
    "type": "feature_flag",
@@ -847,9 +978,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product images take about 10 seconds to appear. Find the cause and fix it.",
   "solution": [
@@ -858,9 +993,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "flag-intl-shipping-slow-072": {
@@ -878,6 +1014,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "intlShippingSlowdown",
    "type": "feature_flag",
@@ -885,9 +1022,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers outside the US say placing an order takes forever; US customers are fine. Find the cause and fix it.",
   "solution": [
@@ -896,9 +1037,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "grafana-datasource-089": {
@@ -915,6 +1057,7 @@
     "url": "http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health"
    }
   ],
+  "durability": [],
   "fault": {
    "key": "default.yaml",
    "name": "grafana-datasources",
@@ -928,9 +1071,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every Grafana dashboard shows 'No data'. Find the cause and fix it.",
   "solution": [
@@ -939,9 +1086,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "hard-allowlist-forgets-checkout-106": {
@@ -963,6 +1111,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=product-catalog"
    }
   ],
   "fault": {
@@ -1057,9 +1210,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout started failing right after this morning's deploys. Browsing the shop still works. Find the cause and fix it.",
   "solution": [
@@ -1070,7 +1227,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-cart-chained-addr-auth-103": {
@@ -1085,6 +1243,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/cart"
    }
   ],
   "fault": {
@@ -1150,9 +1313,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Adding items to the cart fails for every customer since this morning's change window. Find the cause and fix it.",
   "solution": [
@@ -1166,7 +1333,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-duplicate-env-override-109": {
@@ -1181,6 +1349,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/recommendation"
    }
   ],
   "fault": {
@@ -1236,9 +1409,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product recommendations have disappeared from the shop. A teammate checked the recommendation service's configuration and says it looks correct. Find the cause and fix it.",
   "solution": [
@@ -1250,7 +1427,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-egress-policy-blocks-db-102": {
@@ -1272,6 +1450,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=product-catalog"
    }
   ],
   "fault": {
@@ -1471,9 +1654,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages and the product list have been failing for about ten minutes. Alerts show database connection errors. Find the cause and fix it.",
   "solution": [
@@ -1486,7 +1673,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-fix-reverted-by-cronjob-101": {
@@ -1506,6 +1694,11 @@
     "min_age_s": 150,
     "selector": "opentelemetry.io/name=payment",
     "type": "pods_stable"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/payment"
    }
   ],
   "fault": {
@@ -1641,9 +1834,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers cannot complete checkout: the payment step fails. Find the cause and fix it.",
   "solution": [
@@ -1656,7 +1853,8 @@
    "detect_timeout_s": 300,
    "hold_s": 90,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-flag-in-source-of-truth-111": {
@@ -1673,6 +1871,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/flagd"
+   }
+  ],
   "fault": {
    "flag": "paymentFailure",
    "type": "flag_in_source_config",
@@ -1680,9 +1883,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "About half of all card payments are being declined since this morning's configuration release. Find the cause and fix it.",
   "solution": [
@@ -1694,9 +1901,6 @@
    "hold_s": 60,
    "poll_s": 10,
    "recover_timeout_s": 420,
-   "restart_after_fix": [
-    "deployment/flagd"
-   ],
    "restart_settle_s": 45
   }
  },
@@ -1714,6 +1918,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifests": [
     {
@@ -1785,9 +1990,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Some customers say they never received their order confirmation email, while others did. Find the cause and fix it.",
   "solution": [
@@ -1798,7 +2007,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-masked-second-fault-107": {
@@ -1813,6 +2023,14 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/shipping"
+   },
+   {
+    "restart": "deployment/checkout"
    }
   ],
   "fault": {
@@ -1907,9 +2125,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout fails for every order. Find the cause and fix it.",
   "solution": [
@@ -1922,7 +2144,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-oom-fix-blocked-by-limitrange-110": {
@@ -1946,6 +2169,11 @@
     "min_age_s": 120,
     "selector": "opentelemetry.io/name=ad",
     "type": "pods_stable"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/ad"
    }
   ],
   "fault": {
@@ -1993,9 +2221,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The ad banner is missing from every page and the ad service keeps restarting. Find the cause and fix it.",
   "solution": [
@@ -2008,7 +2240,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-pinned-endpoints-108": {
@@ -2023,6 +2256,11 @@
     "max_error_pct": 0,
     "repeat": 4,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/quote"
    }
   ],
   "fault": {
@@ -2100,9 +2338,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout fails while calculating shipping costs. Find the cause and fix it.",
   "solution": [
@@ -2114,7 +2356,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-silent-ledger-write-denied-105": {
@@ -2135,6 +2378,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "steps": [
     {
@@ -2273,9 +2517,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Finance says orders placed in the last half hour are missing from the accounting ledger, although customers can check out and receive confirmations. Find the cause and fix it.",
   "solution": [
@@ -2288,7 +2536,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "hard-telemetry-noise-hides-scheduling-112": {
@@ -2307,6 +2556,14 @@
    {
     "selector": "opentelemetry.io/name=currency",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "daemonset/otel-collector-agent"
+   },
+   {
+    "restart": "opentelemetry.io/name=currency"
    }
   ],
   "fault": {
@@ -2328,24 +2585,7 @@
     },
     {
      "kind": "node",
-     "name": "ai-gym-worker",
-     "namespace": null,
-     "ops": [
-      {
-       "op": "append",
-       "path": "/spec/taints",
-       "value": {
-        "effect": "NoSchedule",
-        "key": "dedicated",
-        "value": "batch"
-       }
-      }
-     ],
-     "type": "object_patch"
-    },
-    {
-     "kind": "node",
-     "name": "ai-gym-worker2",
+     "name": "$workers",
      "namespace": null,
      "ops": [
       {
@@ -2368,13 +2608,17 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "International customers report that prices fail to load in their currency. At the same time, traces stopped arriving in Jaeger and the collector logs are full of export errors. Find what is breaking customers and fix it.",
   "solution": [
-   "kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-",
+   "kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-",
    "kubectl rollout status deployment/currency --timeout=300s"
   ],
   "validation": {
@@ -2382,7 +2626,8 @@
    "detect_timeout_s": 300,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "http-abort-058": {
@@ -2399,6 +2644,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -2429,9 +2675,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers say order confirmation emails are no longer arriving. Find the cause and fix it.",
   "solution": [
@@ -2440,9 +2690,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "http-replace-059": {
@@ -2459,6 +2710,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -2492,9 +2744,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
@@ -2503,9 +2759,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "jvm-exception-062": {
@@ -2522,6 +2779,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -2553,9 +2811,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The ad banner has disappeared from the shop. Nothing was deployed today. Find the cause and fix it.",
   "solution": [
@@ -2564,9 +2826,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "k8s-oom-cascade-001": {
@@ -2599,6 +2862,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/cart"
+   }
+  ],
   "fault": {
    "bad_memory_limit": "3Mi",
    "bad_memory_request": "3Mi",
@@ -2609,9 +2877,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix it.",
   "solution": [
@@ -2619,9 +2891,12 @@
    "kubectl rollout status deployment/cart --timeout=180s"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 600,
    "hold_s": 45,
-   "recover_timeout_s": 360
+   "poll_s": 10,
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
   }
  },
  "kafka-backlog-010": {
@@ -2643,6 +2918,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "kafkaQueueProblems",
    "type": "feature_flag",
@@ -2650,19 +2926,25 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout works and customers get order confirmations, but the fraud team says new orders reach their system minutes late or not at all. Investigate and fix it.",
   "solution": [
    "python injectors/toggle_flag.py kafkaQueueProblems --off"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 600,
    "hold_s": 60,
    "poll_s": 15,
-   "recover_timeout_s": 900
+   "recover_timeout_s": 900,
+   "restart_settle_s": 45
   }
  },
  "kafka-broker-down-083": {
@@ -2680,6 +2962,7 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [],
   "fault": {
    "ops": [
     {
@@ -2704,9 +2987,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the cause and fix it.",
   "solution": [
@@ -2721,9 +3008,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 480
+   "recover_timeout_s": 480,
+   "restart_settle_s": 45
   }
  },
  "kafka-message-too-large-082": {
@@ -2744,6 +3032,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -2784,9 +3073,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout works, but no new orders reach accounting or fraud detection. Find the cause and fix it.",
   "solution": [
@@ -2795,9 +3088,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "kube-proxy-stopped-051": {
@@ -2812,6 +3106,20 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   },
+   {
+    "namespace": "kube-system",
+    "selector": "k8s-app=kube-proxy",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "namespace": "kube-system",
+    "restart": "daemonset/kube-proxy"
+   },
+   {
+    "restart": "opentelemetry.io/name=payment"
    }
   ],
   "fault": {
@@ -2843,9 +3151,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order has failed since the payment pod was restarted. Find the cause and fix it.",
   "solution": [
@@ -2855,9 +3167,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "limitrange-rejects-048": {
@@ -2876,6 +3189,11 @@
    {
     "selector": "opentelemetry.io/name=ad",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=ad"
    }
   ],
   "fault": {
@@ -2906,9 +3224,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The ad service vanished after a restart and never came back. Find the cause and fix it.",
   "solution": [
@@ -2919,9 +3241,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "net-bandwidth-053": {
@@ -2939,6 +3262,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -2972,9 +3296,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Pages load quickly but product images take forever or never appear. Find the cause and fix it.",
   "solution": [
@@ -2983,9 +3311,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "net-delay-002": {
@@ -3003,23 +3332,32 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": "chaos.yaml",
    "type": "chaos_mesh"
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The product recommendations panel ('You may also like') takes many seconds to appear, while the rest of the product page is fast. Find out why and mitigate it.",
   "solution": [
    "kubectl delete networkchaos.chaos-mesh.org net-delay-002"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 120,
-   "recover_timeout_s": 120
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 120,
+   "restart_settle_s": 45
   }
  },
  "net-packet-loss-052": {
@@ -3043,6 +3381,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -3075,9 +3414,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages load slowly and sometimes fail; retries sometimes help. Find the cause and fix it.",
   "solution": [
@@ -3086,9 +3429,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "net-partition-054": {
@@ -3105,6 +3449,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -3144,9 +3489,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Orders hang and then fail at the payment step. Find the cause and fix it.",
   "solution": [
@@ -3155,9 +3504,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "netpol-default-deny-041": {
@@ -3181,6 +3531,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifests": [
     {
@@ -3202,9 +3553,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The entire shop is unreachable and internal calls time out. Find the cause and fix it.",
   "solution": [
@@ -3213,9 +3568,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "netpol-dns-blocked-040": {
@@ -3237,6 +3593,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=frontend"
    }
   ],
   "fault": {
@@ -3277,9 +3638,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every API call from the shop's web frontend fails. Find the cause and fix it.",
   "solution": [
@@ -3290,9 +3655,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "netpol-egress-lockdown-039": {
@@ -3311,6 +3677,11 @@
    {
     "selector": "opentelemetry.io/name=checkout",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=checkout"
    }
   ],
   "fault": {
@@ -3364,9 +3735,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout has been down for a while; its new pod never becomes Ready. Find the cause and fix it.",
   "solution": [
@@ -3377,9 +3752,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "netpol-ingress-deny-038": {
@@ -3394,6 +3770,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=payment"
    }
   ],
   "fault": {
@@ -3424,9 +3805,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the payment step with a timeout. Find the cause and fix it.",
   "solution": [
@@ -3435,9 +3820,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "node-cordoned-045": {
@@ -3458,57 +3844,49 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=cart"
+   }
+  ],
   "fault": {
-   "steps": [
+   "kind": "node",
+   "name": "$workers",
+   "namespace": null,
+   "ops": [
     {
-     "kind": "node",
-     "name": "ai-gym-worker",
-     "namespace": null,
-     "ops": [
-      {
-       "op": "set",
-       "path": "/spec/unschedulable",
-       "value": true
-      }
-     ],
-     "type": "object_patch"
-    },
-    {
-     "kind": "node",
-     "name": "ai-gym-worker2",
-     "namespace": null,
-     "ops": [
-      {
-       "op": "set",
-       "path": "/spec/unschedulable",
-       "value": true
-      }
-     ],
-     "recreate_pods_after": [
-      "opentelemetry.io/name=cart"
-     ],
-     "type": "object_patch"
+     "op": "set",
+     "path": "/spec/unschedulable",
+     "value": true
     }
    ],
-   "type": "composite"
+   "recreate_pods_after": [
+    "opentelemetry.io/name=cart"
+   ],
+   "type": "object_patch"
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The cart went down a while ago and never came back; adding to cart and ordering fail. Find the cause and fix it.",
   "solution": [
-   "kubectl uncordon ai-gym-worker ai-gym-worker2",
+   "kubectl uncordon -l '!node-role.kubernetes.io/control-plane'",
    "kubectl rollout status deployment/cart --timeout=300s"
   ],
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "node-taint-046": {
@@ -3529,65 +3907,53 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=currency"
+   }
+  ],
   "fault": {
-   "steps": [
+   "kind": "node",
+   "name": "$workers",
+   "namespace": null,
+   "ops": [
     {
-     "kind": "node",
-     "name": "ai-gym-worker",
-     "namespace": null,
-     "ops": [
-      {
-       "op": "append",
-       "path": "/spec/taints",
-       "value": {
-        "effect": "NoSchedule",
-        "key": "dedicated",
-        "value": "batch"
-       }
-      }
-     ],
-     "type": "object_patch"
-    },
-    {
-     "kind": "node",
-     "name": "ai-gym-worker2",
-     "namespace": null,
-     "ops": [
-      {
-       "op": "append",
-       "path": "/spec/taints",
-       "value": {
-        "effect": "NoSchedule",
-        "key": "dedicated",
-        "value": "batch"
-       }
-      }
-     ],
-     "recreate_pods_after": [
-      "opentelemetry.io/name=currency"
-     ],
-     "type": "object_patch"
+     "op": "append",
+     "path": "/spec/taints",
+     "value": {
+      "effect": "NoSchedule",
+      "key": "dedicated",
+      "value": "batch"
+     }
     }
    ],
-   "type": "composite"
+   "recreate_pods_after": [
+    "opentelemetry.io/name=currency"
+   ],
+   "type": "object_patch"
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Currency conversion (and with it checkout) stopped working after its pod was rescheduled. Find the cause and fix it.",
   "solution": [
-   "kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-",
+   "kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-",
    "kubectl rollout status deployment/currency --timeout=300s"
   ],
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "obs-pii-redaction-removed-069": {
@@ -3614,6 +3980,11 @@
     "pattern": "@example\\.com|\\b\\d{4}-\\d{4}-\\d{4}-\\d{4}\\b",
     "service": "payment",
     "type": "jaeger_attr_absent"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "daemonset/otel-collector-agent"
    }
   ],
   "fault": {
@@ -3646,9 +4017,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Compliance alert: plain-text customer email addresses and full card numbers were found in trace data in Jaeger. Find how they got there and stop the leak.",
   "solution": [
@@ -3659,9 +4034,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 360
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
   }
  },
  "otel-collector-unscheduled-086": {
@@ -3681,6 +4057,11 @@
     "type": "jaeger_traces"
    }
   ],
+  "durability": [
+   {
+    "restart": "daemonset/otel-collector-agent"
+   }
+  ],
   "fault": {
    "kind": "daemonset",
    "ops": [
@@ -3696,9 +4077,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "All telemetry stopped at once: no new traces, and metrics have gone flat. Find the cause and fix it.",
   "solution": [
@@ -3708,9 +4093,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "otel-exporter-broken-085": {
@@ -3732,6 +4118,11 @@
     "type": "jaeger_traces"
    }
   ],
+  "durability": [
+   {
+    "restart": "daemonset/otel-collector-agent"
+   }
+  ],
   "fault": {
    "key": "relay",
    "name": "otel-collector-agent",
@@ -3748,9 +4139,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "No new traces have appeared in Jaeger for any service. Find the cause and fix it.",
   "solution": [
@@ -3761,9 +4156,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "otel-service-endpoint-087": {
@@ -3777,6 +4173,11 @@
     "min_traces": 1,
     "service": "checkout",
     "type": "jaeger_traces"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
    }
   ],
   "fault": {
@@ -3793,9 +4194,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout's spans are missing from every trace (traces jump from the frontend straight to payment and shipping). Find the cause and fix it.",
   "solution": [
@@ -3805,9 +4210,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pay-fail-006": {
@@ -3828,6 +4234,7 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "paymentFailure",
    "type": "feature_flag",
@@ -3835,18 +4242,25 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers can browse and fill their carts, but every order fails at the 'Place Order' step with a payment error. Find the cause and fix it.",
   "solution": [
    "python injectors/toggle_flag.py paymentFailure --off"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 120,
-   "hold_s": 30,
-   "recover_timeout_s": 120
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 120,
+   "restart_settle_s": 45
   }
  },
  "pay-unreachable-007": {
@@ -3863,6 +4277,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "flag": "paymentUnreachable",
    "type": "feature_flag",
@@ -3870,17 +4285,25 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Orders cannot be placed: 'Place Order' spins and then errors. The payment provider's status page says they are fully operational. Find out why and fix it.",
   "solution": [
    "python injectors/toggle_flag.py paymentUnreachable --off"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 120,
-   "recover_timeout_s": 120
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 120,
+   "restart_settle_s": 45
   }
  },
  "pg-connection-limit-080": {
@@ -3904,6 +4327,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -3935,9 +4359,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages fail with database errors. Find the cause and fix it.",
   "solution": [
@@ -3946,9 +4374,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pg-lock-held-081": {
@@ -3974,6 +4403,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifests": [
     {
@@ -4037,9 +4467,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages hang until they time out. Find the cause and fix it.",
   "solution": [
@@ -4048,9 +4482,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pg-password-rotated-079": {
@@ -4074,6 +4509,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -4105,9 +4541,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "After a database maintenance window, product pages fail and new orders are not being recorded. Find the cause and fix it.",
   "solution": [
@@ -4116,9 +4556,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pg-revoked-grant-078": {
@@ -4142,6 +4583,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -4170,9 +4612,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The product catalog returns errors on every page. Find the cause and fix it.",
   "solution": [
@@ -4181,9 +4627,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pod-failure-055": {
@@ -4200,6 +4647,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": [
     {
@@ -4227,9 +4675,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
@@ -4238,9 +4690,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "pod-kill-003": {
@@ -4262,24 +4715,32 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "manifest": "chaos.yaml",
    "type": "chaos_mesh"
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
    "scale_to_zero",
-   "edit_verifier"
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Checkout fails intermittently: some orders go through, others error out, and a retry usually works. Find out why and fix it.",
   "solution": [
    "kubectl delete schedule.chaos-mesh.org pod-kill-003"
   ],
   "validation": {
+   "baseline_timeout_s": 120,
    "detect_timeout_s": 150,
    "hold_s": 45,
-   "recover_timeout_s": 240
+   "poll_s": 10,
+   "recover_timeout_s": 240,
+   "restart_settle_s": 45
   }
  },
  "pod-security-restricted-049": {
@@ -4300,6 +4761,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=image-provider"
+   }
+  ],
   "fault": {
    "kind": "namespace",
    "name": "default",
@@ -4318,9 +4784,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it.",
   "solution": [
@@ -4331,9 +4801,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "prometheus-otlp-disabled-088": {
@@ -4346,6 +4817,11 @@
     "min_value": 0.01,
     "query": "sum(rate(http_server_request_duration_seconds_count[1m]))",
     "type": "prometheus"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/prometheus"
    }
   ],
   "fault": {
@@ -4369,9 +4845,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every metrics dashboard went flat after Prometheus was restarted. Find the cause and fix it.",
   "solution": [
@@ -4381,9 +4861,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 360
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
   }
  },
  "proxy-upstream-misroute-042": {
@@ -4407,6 +4888,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/frontend-proxy"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -4421,9 +4907,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The shop returns 503 for every page, while Grafana and Jaeger under the same address still work. Find the cause and fix it.",
   "solution": [
@@ -4433,9 +4923,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "quota-blocks-pods-047": {
@@ -4454,6 +4945,11 @@
    {
     "selector": "opentelemetry.io/name=shipping",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=shipping"
    }
   ],
   "fault": {
@@ -4479,9 +4975,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Shipping disappeared after a routine pod restart and has not come back; orders fail. Find the cause and fix it.",
   "solution": [
@@ -4492,9 +4992,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "svc-deleted-037": {
@@ -4509,8 +5010,13 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   },
+   {
+    "service": "email",
+    "type": "endpoints"
    }
   ],
+  "durability": [],
   "fault": {
    "kind": "service",
    "name": "email",
@@ -4518,9 +5024,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers stopped receiving order confirmation emails today. Orders go through. Find the cause and fix it.",
   "solution": [
@@ -4529,9 +5039,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 480
+   "recover_timeout_s": 480,
+   "restart_settle_s": 45
   }
  },
  "svc-selector-mismatch-035": {
@@ -4550,6 +5061,11 @@
    {
     "service": "product-catalog",
     "type": "endpoints"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/product-catalog"
    }
   ],
   "fault": {
@@ -4571,9 +5087,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages, recommendations and checkout all fail. Find the cause and fix it.",
   "solution": [
@@ -4582,9 +5102,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "svc-targetport-mismatch-036": {
@@ -4599,6 +5120,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/shipping"
    }
   ],
   "fault": {
@@ -4618,9 +5144,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Orders fail at the shipping step. Find the cause and fix it.",
   "solution": [
@@ -4629,9 +5159,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "valkey-client-pause-077": {
@@ -4649,6 +5180,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -4671,9 +5203,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Adding to cart spins forever and then times out; viewing the cart still works. Find the cause and fix it.",
   "solution": [
@@ -4682,9 +5218,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "valkey-maxmemory-075": {
@@ -4701,6 +5238,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -4725,9 +5263,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers can view their carts but adding an item fails. Find the cause and fix it.",
   "solution": [
@@ -4736,9 +5278,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "valkey-requirepass-076": {
@@ -4755,6 +5298,7 @@
     "type": "journey"
    }
   ],
+  "durability": [],
   "fault": {
    "commands": [
     [
@@ -4785,9 +5329,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every cart operation has failed since the cart service restarted. Find the cause and fix it.",
   "solution": [
@@ -4798,9 +5346,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "webhook-blocks-pods-050": {
@@ -4819,6 +5368,11 @@
    {
     "selector": "opentelemetry.io/name=email",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=email"
    }
   ],
   "fault": {
@@ -4878,9 +5432,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Order confirmation emails stopped after the email pod restarted, and no new email pod appears. Find the cause and fix it.",
   "solution": [
@@ -4891,9 +5449,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-bad-command-012": {
@@ -4914,6 +5473,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/quote"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -4930,9 +5494,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails with a shipping error. Find the cause and fix it.",
   "solution": [
@@ -4942,9 +5510,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-client-dns-typo-015": {
@@ -4968,6 +5537,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/frontend"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -4982,9 +5556,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers cannot add anything to their cart; the cart shows an error. Browsing products works. Find the cause and fix it.",
   "solution": [
@@ -4994,9 +5572,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-client-wrong-port-016": {
@@ -5013,6 +5592,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5027,9 +5611,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Browsing and the cart work, but placing an order always fails. Find the cause and fix it.",
   "solution": [
@@ -5039,9 +5627,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-cpu-throttle-032": {
@@ -5065,6 +5654,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/frontend"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5079,9 +5673,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The whole shop has become very slow since yesterday, but nothing is failing. Find the cause and fix it.",
   "solution": [
@@ -5091,9 +5689,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-crash-invalid-env-013": {
@@ -5114,6 +5713,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/shipping"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5128,9 +5732,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the shipping step. Find the cause and fix it.",
   "solution": [
@@ -5140,9 +5748,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-dns-policy-none-029": {
@@ -5157,6 +5766,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
    }
   ],
   "fault": {
@@ -5185,9 +5799,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Placing an order fails with errors about every dependency at once. Other services work. Find the cause and fix it.",
   "solution": [
@@ -5197,9 +5815,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-ephemeral-storage-evicted-027": {
@@ -5218,6 +5837,11 @@
     "min_traces": 1,
     "service": "frontend",
     "type": "jaeger_traces"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "daemonset/otel-collector-agent"
    }
   ],
   "fault": {
@@ -5240,9 +5864,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Traces keep disappearing from Jaeger for minutes at a time, and the telemetry collector pods keep being replaced. Find the cause and fix it.",
   "solution": [
@@ -5253,9 +5881,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 420
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
   }
  },
  "wl-host-alias-poison-028": {
@@ -5279,6 +5908,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/frontend"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5300,9 +5934,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product listings and product pages time out, but checkout (which also uses the catalog) works. Find the cause and fix it.",
   "solution": [
@@ -5312,9 +5950,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-image-pull-011": {
@@ -5342,6 +5981,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/currency"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5356,9 +6000,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Prices no longer show when customers switch currency, and every order fails. Find the cause and fix it.",
   "solution": [
@@ -5368,9 +6016,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-init-container-stuck-026": {
@@ -5391,6 +6040,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/cart"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5409,9 +6063,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The cart has been down since the last deploy. The new cart pod never becomes Ready. Find the cause and fix it.",
   "solution": [
@@ -5421,9 +6079,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-jvm-heap-over-limit-031": {
@@ -5446,6 +6105,7 @@
     "type": "orders_recorded"
    }
   ],
+  "durability": [],
   "fault": {
    "ops": [
     {
@@ -5470,9 +6130,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Finance says no new orders are being recorded, the fraud team sees nothing new, and placing orders has become unreliable. Find the cause and fix it.",
   "solution": [
@@ -5487,9 +6151,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 300,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 600
+   "recover_timeout_s": 600,
+   "restart_settle_s": 45
   }
  },
  "wl-listen-port-drift-014": {
@@ -5506,6 +6171,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/payment"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5520,9 +6190,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Every order fails at the payment step. Find the cause and fix it.",
   "solution": [
@@ -5532,9 +6206,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-liveness-wrong-port-023": {
@@ -5563,6 +6238,11 @@
     "type": "journey"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/product-catalog"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5584,9 +6264,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages fail every few seconds, and the product-catalog pod's restart count keeps rising. Find the cause and fix it.",
   "solution": [
@@ -5596,9 +6280,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 360
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
   }
  },
  "wl-missing-configmap-volume-019": {
@@ -5615,6 +6300,11 @@
     "group": "fraud-detection",
     "max_lag": 50,
     "type": "kafka_lag"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/fraud-detection"
    }
   ],
   "fault": {
@@ -5644,9 +6334,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The fraud team says no new orders have reached their system for a while, although checkout works. Find the cause and fix it.",
   "solution": [
@@ -5656,9 +6350,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-missing-secret-020": {
@@ -5677,6 +6372,11 @@
    {
     "selector": "opentelemetry.io/name=email",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/email"
    }
   ],
   "fault": {
@@ -5701,9 +6401,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Customers report they no longer receive order confirmation emails. Orders themselves succeed. Find the cause and fix it.",
   "solution": [
@@ -5713,9 +6417,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-nodeselector-018": {
@@ -5736,6 +6441,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/ad"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5752,9 +6462,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The advertisement banner has disappeared from the shop. Find the cause and fix it.",
   "solution": [
@@ -5764,9 +6478,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-paused-rollout-trap-030": {
@@ -5781,6 +6496,11 @@
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/cart"
    }
   ],
   "fault": {
@@ -5815,9 +6535,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The cart is broken: adding items fails. Find the cause and fix it.",
   "solution": [
@@ -5828,9 +6552,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-readiness-never-ready-024": {
@@ -5849,6 +6574,11 @@
    {
     "service": "cart",
     "type": "endpoints"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/cart"
    }
   ],
   "fault": {
@@ -5871,9 +6601,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The cart is broken for everyone: adding items fails and orders fail. Find the cause and fix it.",
   "solution": [
@@ -5883,9 +6617,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-readonly-rootfs-022": {
@@ -5906,6 +6641,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/image-provider"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5920,9 +6660,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "All product images in the shop are broken, although the pages themselves load. Find the cause and fix it.",
   "solution": [
@@ -5932,9 +6676,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-run-as-non-root-021": {
@@ -5962,6 +6707,11 @@
     "type": "pods_ready"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/astronomy-db"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -5976,9 +6726,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Product pages and the catalog fail to load. Find the cause and fix it.",
   "solution": [
@@ -5988,9 +6742,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-scaled-to-zero-025": {
@@ -6011,6 +6766,11 @@
     "type": "endpoints"
    }
   ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
+   }
+  ],
   "fault": {
    "ops": [
     {
@@ -6025,9 +6785,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "Browsing and the cart work, but 'Place Order' always fails. Find the cause and fix it.",
   "solution": [
@@ -6037,9 +6801,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  },
  "wl-unschedulable-request-017": {
@@ -6058,6 +6823,11 @@
    {
     "selector": "opentelemetry.io/name=recommendation",
     "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/recommendation"
    }
   ],
   "fault": {
@@ -6081,9 +6851,13 @@
   },
   "forbidden": [
    "delete_namespace",
-   "disable_alerts",
-   "edit_verifier",
-   "delete_the_verifier_probe"
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
   ],
   "prompt": "The 'You may also like' panel is empty on every product page since this morning. Find the cause and fix it.",
   "solution": [
@@ -6093,9 +6867,10 @@
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
-   "hold_s": 30,
+   "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
   }
  }
 }

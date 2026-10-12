@@ -7,8 +7,8 @@ instance_of:
   template: coredns-rewrite-poison-044
   version: 1
   params: {}
-content_hash: sha256:7fed3b95acc600fa50153035d582ce0e57126f78a16fb1935781509db1c98a60
-validation_hash: sha256:4737643f3bf482a4772aa0f2296449b14fe4b9ee332ae682f5afb4943abfcdd7
+content_hash: sha256:9047c1460937afca4f44e9ebc5347f5fc786d41ea27fff2db692095cedc85305
+validation_hash: sha256:5763f1938135847cb9a1dd62f95cb2b0b2f21268638fae80c397564c5c084d08
 title: CoreDNS rewrite rule sends one service's name to another
 mechanism: platform/cluster-dns-rewrite
 split: train
@@ -63,11 +63,18 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/coredns
+    namespace: kube-system
+  - restart: opentelemetry.io/name=checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: configmap/coredns
@@ -90,8 +97,9 @@ reference:
   - kubectl rollout restart deployment/checkout
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

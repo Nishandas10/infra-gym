@@ -2,7 +2,7 @@
 
 **Worker nodes tainted; the replacement pod has no toleration**
 
-**Root cause:** Both workers were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new currency pod has no matching toleration and cannot be scheduled anywhere.
+**Root cause:** All worker nodes were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new currency pod has no matching toleration and cannot be scheduled anywhere.
 
 ## How to find it
 
@@ -13,7 +13,7 @@
 ## Fix
 
 ```bash
-kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
 kubectl rollout status deployment/currency --timeout=300s
 ```
 

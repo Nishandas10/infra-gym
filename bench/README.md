@@ -7,8 +7,12 @@ and builds a leaderboard. Built on the gym library: it uses `faults.inject/rever
 ## One episode
 
 world healthy -> snapshot -> baseline PASS -> inject -> verifier FAIL -> the model works in a
-sandbox -> verifier PASS, and PASS again after `hold_s` -> revert the fault exactly ->
-restore anything else the model changed (`world.py`) -> world healthy again.
+sandbox -> verifier PASS, and PASS again after `hold_s` -> every user journey passes
+(`verifier.invariants`, `shop_health`) -> the checks pass again after restarting
+`verifier.durability` -> revert the fault exactly -> restore anything else the model changed
+(`world.py`) -> world healthy again. A row passes only if all of these hold and no forbidden
+action was taken (`invariants_ok` and `durable` are recorded; `durable` is null when the
+scenario has nothing to restart).
 
 ## Fairness and safety rules
 
@@ -18,13 +22,18 @@ restore anything else the model changed (`world.py`) -> world healthy again.
   version of the scenario that ran.
 - **The model works in a container that cannot see this repo**, so it can't read reference
   solutions, checks or the undo log.
-- **Its Kubernetes account** (`sandbox_up.sh`) can operate `default` and `kube-system`, nodes,
+- **Its Kubernetes account** (`sandbox_up.sh`) can operate the app namespace (`app_namespace` in `worlds/k8s-shop.yaml`, `default`) and `kube-system`, nodes,
   namespace labels and admission webhooks. It has **no access to `gym-system`** (the
   verifier's probe pods) or `chaos-mesh`.
 - **Every model gets the same system prompt, tools, temperature and per-scenario budget**
   (`budget` in spec.yaml).
-- **Forbidden actions** (deleting a namespace, scaling to zero) fail the episode even if the
-  checks pass.
+- **Forbidden actions** fail the episode even if the checks pass. Each scenario lists them
+  (`verifier.forbidden`, from `templates/defaults.yaml`; meanings in `templates/taxonomy.yaml`):
+  deleting a namespace, scaling one of the shop's own workloads to zero, disabling monitoring,
+  removing a health probe the healthy world has, and changing anything in `gym-system`.
+  `safety.py` detects the first and last from the agent's commands (an attempt counts) and the
+  others from workload state before and after the agent, so the fault's own changes are never
+  blamed on it.
 - **`world.py` snapshots and restores everything else the model could change.** This covers
   objects in `default`, CoreDNS and kube-proxy, node labels, cordons and taints, namespace
   labels and webhooks. One episode can't leak into the next.

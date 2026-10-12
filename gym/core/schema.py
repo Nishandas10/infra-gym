@@ -15,12 +15,12 @@ import re
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$")
 MECHANISM_RE = re.compile(r"^[a-z0-9-]+/[a-z0-9-]+$")
 HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-COMPONENT_RE = re.compile(r"^[a-z]+/[A-Za-z0-9._,-]+$")
+COMPONENT_RE = re.compile(r"^[a-z]+/(?:[A-Za-z0-9._,-]+|\$workers)$")   # node/$workers: every worker node
 TAXONOMY_FILE = pathlib.Path(__file__).resolve().parents[2] / "templates" / "taxonomy.yaml"
 
 
@@ -129,9 +129,62 @@ class Check(BaseModel):
         return v
 
 
+class Restart(Strict):
+    """A workload the fix must survive a restart of: its pods are deleted after recovery."""
+    restart: str = Field(description="'deployment/x', 'daemonset/x', 'statefulset/x' or a pod label selector")
+    namespace: str | None = Field(None, description="None = the world's app namespace")
+
+
+def _forbidden_names(v):
+    allowed = taxonomy()["forbidden_actions"]
+    for name in v:
+        if name not in allowed:
+            raise ValueError(f"unknown forbidden action {name!r}; allowed: {', '.join(allowed)}")
+    return v
+
+
+def _invariant_names(v):
+    from gym import checks
+    for name in v:
+        if name not in checks.INVARIANTS:
+            raise ValueError(f"unknown invariant {name!r}; known: {', '.join(checks.INVARIANTS)}")
+    return v
+
+
 class Verifier(Strict):
+    """The verifier as a template writes it; scripts/generate.py fills in what is left out."""
     checks: list[Check] = Field(min_length=1)
-    forbidden: list[str] | None = None   # None in a template = templates/defaults.yaml
+    invariants: list[str] | None = None      # None = templates/defaults.yaml
+    durability: list[Restart] | None = None  # None = derived from the fault (gym/core/generate.py)
+    forbidden_extra: list[str] = []          # added to the defaults.yaml forbidden list
+
+    @field_validator("invariants")
+    @classmethod
+    def known_invariants(cls, v):
+        return v if v is None else _invariant_names(v)
+
+    @field_validator("forbidden_extra")
+    @classmethod
+    def known_forbidden(cls, v):
+        return _forbidden_names(v)
+
+
+class ResolvedVerifier(Strict):
+    """The verifier of an instance: everything explicit."""
+    checks: list[Check] = Field(min_length=1)
+    invariants: list[str]
+    durability: list[Restart]
+    forbidden: list[str]
+
+    @field_validator("invariants")
+    @classmethod
+    def known_invariants(cls, v):
+        return _invariant_names(v)
+
+    @field_validator("forbidden")
+    @classmethod
+    def known_forbidden(cls, v):
+        return _forbidden_names(v)
 
 
 class Reference(Strict):
@@ -140,13 +193,22 @@ class Reference(Strict):
 
 
 class Validation(Strict):
-    baseline_timeout_s: int | None = None
-    detect_timeout_s: int | None = None
-    recover_timeout_s: int | None = None
-    hold_s: int | None = None
-    poll_s: int | None = None
-    restart_after_fix: list[str] | None = None
-    restart_settle_s: int | None = None
+    """Overrides of the defaults.yaml timings (seconds)."""
+    baseline_timeout_s: int | None = Field(None, gt=0)
+    detect_timeout_s: int | None = Field(None, gt=0)
+    hold_s: int | None = Field(None, gt=0)
+    recover_timeout_s: int | None = Field(None, gt=0)
+    poll_s: int | None = Field(None, gt=0)
+    restart_settle_s: int | None = Field(None, ge=0)
+
+
+class ResolvedValidation(Strict):
+    baseline_timeout_s: int = Field(gt=0)
+    detect_timeout_s: int = Field(gt=0)
+    hold_s: int = Field(gt=0)
+    recover_timeout_s: int = Field(gt=0)
+    poll_s: int = Field(gt=0)
+    restart_settle_s: int = Field(ge=0)
 
 
 class Budget(Strict):
@@ -205,7 +267,8 @@ class Instance(Template):
     validation_hash: str   # only what a live validation run depends on (validation status)
     tools: list[str]
     budget: Budget
-    verifier: Verifier
+    verifier: ResolvedVerifier
+    validation: ResolvedValidation
 
     @field_validator("content_hash", "validation_hash")
     @classmethod
@@ -214,14 +277,20 @@ class Instance(Template):
             raise ValueError("hashes must be 'sha256:<64 hex>'")
         return v
 
-    @model_validator(mode="after")
-    def resolved(self):
-        if self.verifier.forbidden is None:
-            raise ValueError("an instance must list verifier.forbidden (defaults are resolved by the generator)")
-        return self
-
 
 class Defaults(Strict):
     forbidden: list[str]
+    invariants: list[str]
+    validation: ResolvedValidation
     tools: list[str]
     budget: Budget
+
+    @field_validator("invariants")
+    @classmethod
+    def known_invariants(cls, v):
+        return _invariant_names(v)
+
+    @field_validator("forbidden")
+    @classmethod
+    def known_forbidden(cls, v):
+        return _forbidden_names(v)

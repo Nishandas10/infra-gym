@@ -82,9 +82,3 @@ reference:
   - kubectl delete validatingwebhookconfiguration pod-policy-guard
   - kubectl rollout restart deployment/email
   - kubectl rollout status deployment/email --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

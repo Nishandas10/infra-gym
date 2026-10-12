@@ -7,8 +7,8 @@ instance_of:
   template: netpol-egress-lockdown-039
   version: 1
   params: {}
-content_hash: sha256:ffaa76ea74cdd7491e652d65eb5954c64fd3603f051a44da33801439f45e28ec
-validation_hash: sha256:5fac9c6d55d67ee66aa559bfb86da4f2ecdb2c47bc872e4768c8a0703ee7c784
+content_hash: sha256:1b31ebca2997d102883c36ca756691464a2a35876f3ba6afab4160fedb5e136c
+validation_hash: sha256:81ce05ae8dbe08a29dd22298d117152e1020f64ded0fb97a5bd9eb77ebce44bd
 title: Egress policy lets a service reach nothing but DNS
 mechanism: network-policy/egress-deny
 split: train
@@ -71,11 +71,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=checkout
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkpolicy/checkout-egress-lockdown
@@ -94,8 +99,9 @@ reference:
   - kubectl rollout restart deployment/checkout
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

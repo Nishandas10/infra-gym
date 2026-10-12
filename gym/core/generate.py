@@ -7,9 +7,12 @@
          scenarios/<id>/<other files>       copied unchanged
   and scenarios/CATALOG.md
 
+Resolving fills in templates/defaults.yaml (forbidden actions, invariants, validation timings,
+tools, budget) and derives verifier.durability from the fault when the template does not set it.
+
 Two hashes:
-  validation_hash  what a live validation run depends on: fault, checks, reference fix,
-                   validation timings, extra files. Validation status is keyed on it, so
+  validation_hash  what a live validation run depends on: fault, checks, invariants, durability,
+                   reference fix, validation timings, extra files. Validation status is keyed on it, so
                    rewording a prompt or an explanation does not throw away validation runs.
   content_hash     everything that decides how a scenario behaves and is graded: the above plus
                    prompts, ground truth, forbidden actions, budget and tools. Benchmark results
@@ -81,9 +84,10 @@ def _sha(payload):
 
 
 def validation_hash(inst, files):
+    v = inst["verifier"]
     return _sha({
-        "fault": inst["fault"], "checks": inst["verifier"]["checks"], "commands": inst["reference"]["commands"],
-        "validation": inst.get("validation") or {},
+        "fault": inst["fault"], "checks": v["checks"], "invariants": v["invariants"], "durability": v["durability"],
+        "commands": inst["reference"]["commands"], "validation": inst["validation"],
         "files": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in sorted(files.items())},
     })
 
@@ -96,11 +100,54 @@ def content_hash(inst, files):
     })
 
 
+# Durability: after the fix passes, these workloads are restarted and the checks must pass again,
+# so a fix that only patched live state (and is lost on the next restart) fails.
+NO_DURABILITY = ("runtime.exec", "app.flag", "chaos.mesh")   # a restart would clear the fault itself
+
+
+def derive_durability(fault):
+    """Restart targets for a fault, unless the template sets verifier.durability itself:
+    the workloads it patched, the readers it restarted and the pods it recreated. Decoy (noise)
+    steps and mechanisms whose fault a restart clears contribute nothing."""
+    out = []
+
+    def add(target, namespace=None):
+        entry = {"restart": target, **({"namespace": namespace} if namespace else {})}
+        if entry not in out:
+            out.append(entry)
+    for step in fault["steps"]:
+        mech = step["mechanism"]
+        if step.get("noise") or mech in NO_DURABILITY:
+            continue
+        ns = step.get("namespace")
+        if mech == "k8s.workload_patch":
+            add(f"{step.get('kind', 'deployment')}/{step['target']}", ns)
+        elif mech == "k8s.memory_limit":
+            add(f"deployment/{step['target_deployment']}")
+        elif mech == "app.flag_source_config":
+            add("deployment/flagd")
+        for target in step.get("restart_after", []):
+            add(target, ns)
+        for selector in step.get("recreate_pods_after", []):
+            add(selector)
+    return out
+
+
+def resolve_verifier(verifier, fault, defaults):
+    extra = [f for f in verifier.get("forbidden_extra", []) if f not in defaults.forbidden]
+    durability = verifier.get("durability")
+    return {"checks": verifier["checks"],
+            "invariants": list(defaults.invariants if verifier.get("invariants") is None else verifier["invariants"]),
+            "durability": derive_durability(fault) if durability is None else durability,
+            "forbidden": list(defaults.forbidden) + extra}
+
+
 def resolve(raw, defaults, files):
     """The instance dict: the template's own keys in its order, defaults filled in, hash added."""
     inst = json.loads(json.dumps(raw))
-    if inst["verifier"].get("forbidden") is None:
-        inst["verifier"]["forbidden"] = list(defaults.forbidden)
+    inst["verifier"] = resolve_verifier(inst["verifier"], inst["fault"], defaults)
+    validation = {**defaults.validation.model_dump(),
+                  **{k: v for k, v in (inst.pop("validation", None) or {}).items() if v is not None}}
     resolved = {"tools": inst.get("tools") or list(defaults.tools),
                 "budget": inst.get("budget") or defaults.budget.model_dump()}
     out = {}
@@ -113,6 +160,8 @@ def resolve(raw, defaults, files):
             out["content_hash"] = out["validation_hash"] = None
         if key == "bench_eligible":   # keep the resolved defaults next to the other top-level settings
             out.update(resolved)
+        if key == "reference":
+            out["validation"] = validation
     out.update({k: v for k, v in resolved.items() if k not in out})
     out["validation_hash"] = validation_hash(out, files)
     out["content_hash"] = content_hash(out, files)
@@ -143,6 +192,8 @@ def answer_key(inst):
     lines = ["ROOT CAUSE(S). A correct report names every one of these:"]
     for i, rc in enumerate(gt["root_causes"], 1):
         where = f" (namespace {rc['namespace']})" if rc.get("namespace") else " (cluster-scoped)"
+        if rc["component"].endswith("/$workers"):
+            where = " (every worker node)"
         lines.append(f"{i}. {rc['component']}{where}: {rc['what']}")
     lines += ["", "HOW IT CAUSES THE SYMPTOM:", gt["explanation"], "", "EVIDENCE AN ENGINEER CAN SEE:"]
     lines += [f"- {e}" for e in gt["evidence"]]

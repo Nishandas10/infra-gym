@@ -7,8 +7,8 @@ instance_of:
   template: flag-ad-high-cpu-065
   version: 1
   params: {}
-content_hash: sha256:2ef95d774dee86f318ec604353189b038664d0fd5915e643a903e377b21f57e0
-validation_hash: sha256:079994290e53c4d92f885136815e1098588cc7d3e54863551a5da077e7e25ca8
+content_hash: sha256:28b2e0b46cb025716744e7f5918310026a7d1f9bbc0d959f21bbe0e7dd238eda
+validation_hash: sha256:7301c1a3b1571517ca6cc8e2587ce069224348a928ad225f79cc494683de51bf
 title: Ad service burns CPU on every request (adHighCpu)
 mechanism: app-flag/ad-high-cpu
 split: train
@@ -48,11 +48,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 1000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/adHighCpu
@@ -67,8 +71,9 @@ reference:
   commands:
   - python injectors/toggle_flag.py adHighCpu --off
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

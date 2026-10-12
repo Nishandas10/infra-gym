@@ -7,8 +7,8 @@ instance_of:
   template: wl-run-as-non-root-021
   version: 1
   params: {}
-content_hash: sha256:c1b913d804200b91259ba011df9e75338e7598f72eab3d9b2ea5583f3e1eeffd
-validation_hash: sha256:d8f965f5c3b348aeae2f81af9c0f188a7819332871e4d5f644c9b56fee5474a5
+content_hash: sha256:823d9a604611159b4046e1a8dc33cb87fd00c9de8fd445ecfac308f03a128316
+validation_hash: sha256:60f0f2e366b03f9df78d7c53c593ad6f0b7361d90140ba351fefd1908c55b1b6
 title: runAsNonRoot on an image that runs as root -> CreateContainerConfigError
 mechanism: workload/security-context-run-as-non-root
 split: train
@@ -59,11 +59,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=astronomy-db
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/astronomy-db
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/astronomy-db
@@ -82,8 +87,9 @@ reference:
   - kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
   - kubectl rollout status deployment/astronomy-db --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

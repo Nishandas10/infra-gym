@@ -7,8 +7,8 @@ instance_of:
   template: node-cordoned-045
   version: 1
   params: {}
-content_hash: sha256:f73c12ebb621fd458fdc4ca87f3599e0b2f98cfc4e21d06142ef826535a7f483
-validation_hash: sha256:32919b4c500874f42c763f380688b45afa2dd66c935aa2912446db8ac5382bd7
+content_hash: sha256:8162e6a6c178a91792a8f7cac774d60a2fa38b655cffa7eb654c206a745838ca
+validation_hash: sha256:abc8f7cbb56f737bf84e86823c6ced582f36d788481930f362060f5ec0c7a5c3
 title: All worker nodes cordoned; a pod cannot be rescheduled
 mechanism: platform/nodes-cordoned
 split: train
@@ -39,15 +39,7 @@ fault:
   steps:
   - mechanism: k8s.object_patch
     kind: node
-    name: ai-gym-worker
-    namespace: null
-    ops:
-    - op: set
-      path: /spec/unschedulable
-      value: true
-  - mechanism: k8s.object_patch
-    kind: node
-    name: ai-gym-worker2
+    name: $workers
     namespace: null
     ops:
     - op: set
@@ -64,29 +56,35 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=cart
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=cart
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
-  - component: node/ai-gym-worker,ai-gym-worker2
+  - component: node/$workers
     namespace: null
-    what: both worker nodes are cordoned, so the cart pod cannot be scheduled
-  explanation: Both worker nodes were cordoned for maintenance and never uncordoned. When the cart pod was removed,
+    what: every worker node is cordoned, so the cart pod cannot be scheduled
+  explanation: All worker nodes were cordoned for maintenance and never uncordoned. When the cart pod was removed,
     its replacement had nowhere to be scheduled (the control-plane node is tainted).
   evidence:
   - '`kubectl get pods`: cart `Pending`.'
   - '`kubectl describe pod -l opentelemetry.io/name=cart`: `node(s) were unschedulable`.'
-  - '`kubectl get nodes`: both workers `SchedulingDisabled`.'
+  - '`kubectl get nodes`: every worker `SchedulingDisabled`.'
 reference:
   commands:
-  - kubectl uncordon ai-gym-worker ai-gym-worker2
+  - kubectl uncordon -l '!node-role.kubernetes.io/control-plane'
   - kubectl rollout status deployment/cart --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

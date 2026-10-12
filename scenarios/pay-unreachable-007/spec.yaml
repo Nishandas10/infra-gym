@@ -7,8 +7,8 @@ instance_of:
   template: pay-unreachable-007
   version: 1
   params: {}
-content_hash: sha256:0acd7f5883d6da10d5f2e26419c5d71c6d18da112a01d49dd74b92f9c717f613
-validation_hash: sha256:ceef09e972749046d66fc310830ddcf81b096ccfc2a98d307e617c781649a67c
+content_hash: sha256:be4dd2adff2f3399924c3ee7db8cf750ba0615076ff86b7f53ee66f6c01a31d0
+validation_hash: sha256:6a78d5028042638605320fe604adebc6bfb0214ef97793b04d4cd0baec29dc31
 title: Checkout calls payment at a dead address (paymentUnreachable)
 mechanism: app-flag/payment-unreachable
 split: train
@@ -47,11 +47,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/paymentUnreachable
@@ -69,7 +73,11 @@ reference:
   commands:
   - python injectors/toggle_flag.py paymentUnreachable --off
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 120
+  hold_s: 60
   recover_timeout_s: 120
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   golden: true

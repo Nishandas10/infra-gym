@@ -7,8 +7,8 @@ instance_of:
   template: http-replace-059
   version: 1
   params: {}
-content_hash: sha256:72d0dd4564386137d8b43bf87c53694fc26c7cbc42b8f8001834ea3cc7095e7a
-validation_hash: sha256:dfa8a3fe1fa84385065b852a2fda70bc345b8844566ed9e0fa50504b50a38697
+content_hash: sha256:9ea6b7be09cc1b25b5c182c942e98d558a4fb869e4f991b9b4a0587bbdd65b1b
+validation_hash: sha256:2d0919dd5a1e3b76a5645a02ecf104d29dcee869a66d4809fbc783e016d0b759
 title: HTTP responses from a service replaced with garbage
 mechanism: chaos/http-response-corruption
 split: train
@@ -65,11 +65,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: httpchaos/quote-http-garbage
@@ -85,8 +89,9 @@ reference:
   commands:
   - kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

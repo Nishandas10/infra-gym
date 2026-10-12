@@ -7,8 +7,8 @@ instance_of:
   template: netpol-ingress-deny-038
   version: 1
   params: {}
-content_hash: sha256:118a4a4fc1c70d0159b8b81ac1cc32bb7cb6e22a0e76f9595a7b024822f30a91
-validation_hash: sha256:d2d1d035d89c759e865512fdb9aee9f1497726812d6068c9b9188b372f378856
+content_hash: sha256:b77625eaf99366f105c0ebf156eca4b2cadd5bac3b877133bc95acac4cbd0acd
+validation_hash: sha256:d56b7cedb7885abf78ec0c87a64e3b87a185d15558c89e8da9ef1d38be4a1b13
 title: NetworkPolicy blocks all traffic into a service
 mechanism: network-policy/ingress-deny
 split: train
@@ -59,11 +59,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=payment
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkpolicy/payment-ingress-lockdown
@@ -79,8 +84,9 @@ reference:
   commands:
   - kubectl delete networkpolicy payment-ingress-lockdown
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

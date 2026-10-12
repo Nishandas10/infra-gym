@@ -14,7 +14,8 @@ whether it was fixed. All scenarios are listed in [scenarios/CATALOG.md](scenari
 |---|---|
 | `templates/<layer>/<id>/template.yaml` | **Where scenarios are written**: tags, fault, prompts, verifier checks, ground truth, reference fix, notes (spec v2, `gym/core/schema.py`) |
 | `templates/taxonomy.yaml` | Allowed tag values (layer, symptom, fix type, difficulty drivers, injector) and the words a page prompt must not contain |
-| `templates/defaults.yaml` | Defaults for every template (forbidden actions, tools, budget) |
+| `templates/defaults.yaml` | Defaults for every template (forbidden actions, invariants, validation timings, tools, budget) |
+| `worlds/k8s-shop.yaml` | The live cluster the scenarios run on: app namespace, worker-node selector, monitoring workloads |
 | `scenarios/<id>/` | **Generated** from the template by `scripts/generate.py`: `spec.yaml` (resolved, content-hashed) and `reference_solution.md`. Do not edit. |
 | `gym/` | Library: fault mechanisms (with exact undo), verifier checks, validation harness |
 | `gym/core/` | Spec v2 schema and the template -> instance generator |
@@ -47,13 +48,22 @@ python scripts/gym_setup.py          # helper pods in namespace gym-system (prob
    - `ground_truth`: every root cause (`component` as kind/name, `namespace`, `what`), the
      `explanation`, the `evidence` an engineer can see, and any `red_herrings`. It is the
      judge's answer key.
+   - `verifier`: `checks` (outside evidence only; prefer two, the linter warns about one).
+     `invariants` defaults to `[shop_health]` (every user journey must pass after the fix).
+     `durability` defaults to restart targets derived from the fault (the workloads it patched,
+     the readers it restarted, the pods it recreated); set it to list targets yourself, or to
+     `[]` where a restart would clear the fault or break a correct fix. `forbidden_extra` adds to
+     the forbidden actions in `defaults.yaml`.
+   - `validation`: only the timings that differ from `defaults.yaml`.
+   - Node faults name `$workers` instead of node names; it stands for every node matching
+     `worker_selector` in `worlds/k8s-shop.yaml`.
 3. If the change affects behaviour (fault, checks, fix, prompts, ground truth, validation,
    budget), bump `version`.
 4. `python scripts/generate.py` writes `scenarios/<id>/` and `scenarios/CATALOG.md`.
 5. `python scripts/lint_scenarios.py` and `pytest`; then validate it on the cluster (below).
 
 Each instance has two hashes: `validation_hash` over what a live validation run depends on
-(fault, checks, reference fix, timings, extra files) and `content_hash` over everything that
+(fault, checks, invariants, durability, reference fix, timings, extra files) and `content_hash` over everything that
 decides behaviour and grading (also prompts, ground truth, forbidden actions, budget). Results
 are tied to the exact version of a scenario they ran. Fault steps name their mechanism:
 `k8s.*` (Kubernetes objects), `app.*` (the shop's feature flags), `runtime.*` (commands in
@@ -71,8 +81,8 @@ pytest
 - `tests/test_inject_revert.py` injects and reverts every scenario against an in-memory fake
   cluster (`tests/fakes.py`) loaded from `tests/fixtures/world.json`, and checks the world is
   restored exactly.
-- `tests/test_spec_snapshot.py` fails if any scenario's fault, checks, fix, validation timings,
-  prompt or budget differ from `tests/golden/specs.json`. After an intended change, run
+- `tests/test_spec_snapshot.py` fails if any scenario's fault, checks, invariants, durability,
+  forbidden actions, fix, validation timings, prompt or budget differ from `tests/golden/specs.json`. After an intended change, run
   `python scripts/snapshot_specs.py` and commit the updated snapshot with it.
 - `tests/fixtures/world.json` is a snapshot of the healthy live world. Refresh it with
   `python scripts/dump_world_fixture.py` after changing the demo's Helm values.
@@ -101,8 +111,10 @@ python scripts/generate.py --index                   # refresh scenarios/CATALOG
 ```
 
 Each run proves: baseline healthy -> inject -> verifier FAILs -> still FAILs for
-a do-nothing agent -> the reference solution fixes it -> verifier PASSes ->
-the world is restored exactly.
+a do-nothing agent (60 s by default) -> the reference solution fixes it -> verifier PASSes ->
+every user journey passes too (`shop_health`) -> the checks still pass after restarting the
+`durability` targets -> the world is restored exactly. Verdicts for the last two steps:
+`INVARIANT_FAILED`, `FIX_NOT_DURABLE`.
 
 ## What counts as a unique scenario
 

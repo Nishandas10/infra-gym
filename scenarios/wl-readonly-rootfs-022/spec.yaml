@@ -7,8 +7,8 @@ instance_of:
   template: wl-readonly-rootfs-022
   version: 1
   params: {}
-content_hash: sha256:b9d927fda0f3097937f5e39fc137d181136e718ea9ee8e20625c56e6887c9c7b
-validation_hash: sha256:5d8c3385c56a57c104358f760b1bcb451b9104588273420a8e2ff91acb9f0da4
+content_hash: sha256:147eefddb68c028d488cce1630f26968ee421bc787a7dcd07966bee7b7ad7023
+validation_hash: sha256:1608522660c2a852168b5741644f93360417ffa79b9bb60d72942479e2304aaa
 title: readOnlyRootFilesystem on a server that writes to disk -> crash
 mechanism: workload/read-only-root-filesystem
 split: train
@@ -51,11 +51,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=image-provider
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/image-provider
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/image-provider
@@ -72,8 +77,9 @@ reference:
   - kubectl patch deployment image-provider --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem"}]'
   - kubectl rollout status deployment/image-provider --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

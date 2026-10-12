@@ -17,7 +17,7 @@ from . import mechanism
 FLAGD = "deploy/flagd"
 UI_CONTAINER = "flagd-ui"
 LIVE_FILE = "/app/data/demo.flagd.json"
-OFREP = "http://flagd.default.svc.cluster.local:8016/ofrep/v1/evaluate/flags/"
+OFREP = kube.svc_url("flagd", 8016, "/ofrep/v1/evaluate/flags/")
 
 
 def read_config():

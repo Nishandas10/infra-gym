@@ -7,8 +7,8 @@ instance_of:
   template: pod-failure-055
   version: 1
   params: {}
-content_hash: sha256:6198bf7d6c96e110edd9adc86a8c3ead5045f353bb6a927d1fe71ef7957ec5c0
-validation_hash: sha256:25b069e7d0d1906a663af2f495abdbe2612c6d84ccb297919c99c8d729a9f827
+content_hash: sha256:d52686db028d4efe8b0a1c25b31da83bad1e484b5e070ee409562fe9f098ae2b
+validation_hash: sha256:6cf788b0ee086079724f815903ec30de5d7435a5a97e15d40cbd3d0e6cf92ddf
 title: Pod stays 'Running' but its process has been replaced by a pause container
 mechanism: chaos/pod-failure
 split: train
@@ -59,11 +59,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: podchaos/shipping-pod-failure
@@ -80,8 +84,9 @@ reference:
   commands:
   - kubectl delete podchaos.chaos-mesh.org shipping-pod-failure
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

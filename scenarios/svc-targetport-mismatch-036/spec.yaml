@@ -7,8 +7,8 @@ instance_of:
   template: svc-targetport-mismatch-036
   version: 1
   params: {}
-content_hash: sha256:a2ee4841bed67e4e55ec233fbed5873e6cd9320bddcca27ff3bee97f9adb3fd6
-validation_hash: sha256:cb245335e580dd73a5aea455f6f1c04da588c5fd45935e144e762f90cda3616e
+content_hash: sha256:4105b2cb9a6091b7c33b78aafc568bf93f69491c41278ce0bbd6e70fce0e574f
+validation_hash: sha256:b8e2d0eb7f02732b7037cf9608c04b52782581ecdd56538735344557d66665d6
 title: Service targetPort points at a port nothing listens on
 mechanism: service/target-port-mismatch
 split: train
@@ -54,11 +54,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/shipping
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: service/shipping
@@ -74,8 +79,9 @@ reference:
   commands:
   - kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

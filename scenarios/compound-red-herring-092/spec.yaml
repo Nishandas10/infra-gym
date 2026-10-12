@@ -7,8 +7,8 @@ instance_of:
   template: compound-red-herring-092
   version: 1
   params: {}
-content_hash: sha256:4ba4005d029bcab80ed08e264b88b00fee2cb2b6772953586f8ce83e697ddbe7
-validation_hash: sha256:b703202f247dd997eab2d09a5983dfc49cbee2ba2bcb9040ca8efa3eb73bddb0
+content_hash: sha256:0dc2bdbd641691c64d7bd1d47ed4bcd38c86974cc9b7f2894d67c98a36f8e0d0
+validation_hash: sha256:7faf7d88e8e2e862a867fb121d4b86672820858ce7fb1d9bbb244ecdbb28b21a
 title: A loud but irrelevant failing pod next to the real, quieter fault
 mechanism: compound/red-herring
 split: train
@@ -81,11 +81,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/quote
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/quote
@@ -104,8 +109,9 @@ reference:
   - kubectl scale deployment quote --replicas=1
   - kubectl rollout status deployment/quote --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

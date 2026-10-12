@@ -7,8 +7,8 @@ instance_of:
   template: proxy-upstream-misroute-042
   version: 1
   params: {}
-content_hash: sha256:433fdb7010adf39b847fc6df2a25391f686ad66adf122bc7c22a224cca0764ec
-validation_hash: sha256:f4295e72d75af46aa2b2e5fcc6ca10046107c9489123068274590db28551fd58
+content_hash: sha256:b176472daceddf18ac5c2a5b4af0f43908d797ed1516e25bdf190edf20765011
+validation_hash: sha256:7c56d449903bdbea24d27c1f48f00daf2803ac3a41fac6250f84149b85aa1f63
 title: Edge proxy routes shop traffic to the wrong upstream port
 mechanism: edge-proxy/upstream-misconfigured
 split: train
@@ -56,11 +56,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/frontend-proxy
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/frontend-proxy
@@ -77,8 +82,9 @@ reference:
   - kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080
   - kubectl rollout status deployment/frontend-proxy --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

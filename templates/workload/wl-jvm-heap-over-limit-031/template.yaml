@@ -44,6 +44,7 @@ verifier:
     min_age_s: 300
   - type: orders_recorded
     timeout_s: 60
+  durability: []
 ground_truth:
   root_causes:
   - component: deployment/kafka
@@ -73,9 +74,8 @@ reference:
 validation:
   detect_timeout_s: 300
   recover_timeout_s: 600
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
 notes:
+- 'verifier.durability is empty on purpose: restarting the broker after the fix drops its topics and can wedge the
+  consumers (see fault.revert_hooks and restart_on_revert), which would fail a correct fix.'
 - 'Measured: at 300Mi the JVM runs for minutes (heap pages are only touched as used), at 200Mi it OOMs twice then
   settles, at 150Mi it crash-loops with OOMKilled.'

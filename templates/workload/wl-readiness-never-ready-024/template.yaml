@@ -59,9 +59,3 @@ reference:
   commands:
   - kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
   - kubectl rollout status deployment/cart --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

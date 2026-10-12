@@ -7,8 +7,8 @@ instance_of:
   template: wl-bad-command-012
   version: 1
   params: {}
-content_hash: sha256:ca67062b2019bb57bae65e8c06b0f51d9da98cf61d31171ef11f04efe1a37b85
-validation_hash: sha256:a9f5d8efc4525910119cb2abf48ceaca79a54cba33d2ff1f7f3219271826908d
+content_hash: sha256:6baec4ae519d8c11c849df99cd8f0fd2faed6efad09c5f378e7e343d015cd7d6
+validation_hash: sha256:45a8f1eb52df18ed0f1a49b869c688cb708038a975ce798d974b4f7fb953aae3
 title: Container command points at a binary that does not exist
 mechanism: workload/bad-entrypoint
 split: train
@@ -55,11 +55,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=quote
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/quote
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/quote
@@ -79,8 +84,9 @@ reference:
   - kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
   - kubectl rollout status deployment/quote --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

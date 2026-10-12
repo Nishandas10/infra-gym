@@ -7,8 +7,8 @@ instance_of:
   template: wl-dns-policy-none-029
   version: 1
   params: {}
-content_hash: sha256:dab72bad4a7892d5f3d9ce33579116cc8c45eec9d9e8c07f7f47427c385fdbc1
-validation_hash: sha256:01b4c33bdb6bc26321344230e58a57dd485258ad3233578f95f19aa395586199
+content_hash: sha256:3fb7835c59ff499b69b103cbaa3b2926565dc254f81e24eaae402cb40c7cf92a
+validation_hash: sha256:894025bdc7efc7a7d2749d76ddb47f580c8c02172b67c4b114a14f93bb77e77d
 title: Pod DNS set to an unreachable nameserver
 mechanism: workload/pod-dns-config
 split: train
@@ -56,11 +56,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/checkout
@@ -78,11 +83,12 @@ reference:
   - kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'Recreate: checkout''s init container also needs DNS, so a rolling update would leave the old pod serving and
   never cause an outage.'

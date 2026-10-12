@@ -34,11 +34,6 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 5000
-  forbidden:
-  - delete_namespace
-  - disable_alerts
-  - scale_to_zero
-  - edit_verifier
 ground_truth:
   root_causes:
   - component: schedule/pod-kill-003

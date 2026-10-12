@@ -38,17 +38,24 @@ def _after(fault, undo, namespace):
         kube.kubectl("delete", "pod", "-l", selector, "--wait=false", namespace=kube.APP_NS)
 
 
-@mechanism("k8s.object_patch", "k8s-object", "Patch any object (JSON patch), restoring the touched fields on revert")
+WORKERS = "$workers"   # name placeholder: every worker node (worlds/*.yaml worker_selector)
+
+
+@mechanism("k8s.object_patch", "k8s-object",
+           "Patch any object (JSON patch), restoring the touched fields on revert; "
+           "name: $workers patches every worker node")
 def object_patch(fault, undo, ctx):
     ns = _ns(fault)
-    kind, name = fault["kind"], fault["name"]
+    kind = fault["kind"]
+    names = kube.worker_nodes() if fault["name"] == WORKERS else [fault["name"]]
     # Restarts recorded first run last on revert: restore the config, then restart its readers.
     for target in fault.get("restart_after", []):
         undo.on_revert_restart(target, ns)
-    live = kube.get(kind, name, namespace=ns)
-    ops = expand(live, fault["ops"])
-    undo.snapshot(kind, name, fault.get("snapshot") or _default_snapshot(ops), namespace=ns)
-    kube.patch(kind, name, ops, "json", namespace=ns)
+    for name in names:
+        live = kube.get(kind, name, namespace=ns)
+        ops = expand(live, fault["ops"])
+        undo.snapshot(kind, name, fault.get("snapshot") or _default_snapshot(ops), namespace=ns)
+        kube.patch(kind, name, ops, "json", namespace=ns)
     _after(fault, undo, ns)
 
 

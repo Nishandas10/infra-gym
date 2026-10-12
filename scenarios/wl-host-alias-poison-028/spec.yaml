@@ -7,8 +7,8 @@ instance_of:
   template: wl-host-alias-poison-028
   version: 1
   params: {}
-content_hash: sha256:58594003b67c82f8e882c1593076b80414dcc22848fafe7f3155960eea19141c
-validation_hash: sha256:e825f9f535b3becea174e66ff3e9fa2ebe470e5fdfa6ba0009a09d28a607655f
+content_hash: sha256:bbb93ff8801798ae2112d772bad3872caed25d23631baa414d06a7454545e663
+validation_hash: sha256:e220560b2192ad9286cacc1b4c0bd5f06b288b8161f07269249561689ffad459
 title: hostAliases entry sends a dependency to a dead IP
 mechanism: workload/hostaliases-override
 split: train
@@ -59,11 +59,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/frontend
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/frontend
@@ -82,8 +87,9 @@ reference:
   - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
   - kubectl rollout status deployment/frontend --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

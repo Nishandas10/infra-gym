@@ -7,8 +7,8 @@ instance_of:
   template: flag-email-memory-leak-068
   version: 1
   params: {}
-content_hash: sha256:39f9097bd0c4a70e31e1e5c6e68a846807478aed0ca17102c5d8c406b2b9f165
-validation_hash: sha256:90ca398678d7754d380ce53ea62899b53c171f7a4adafb63091bdc5df3b92931
+content_hash: sha256:831483f77c97f68912546535026d85bb684fdc2006ed14531acdcf389e1ed35f
+validation_hash: sha256:54e52d0f514d8b8a7cc1905adf6899273c9a9cf7ce7019f4b1326c2dcf1b089b
 title: Email service leaks memory until it is OOMKilled (emailMemoryLeak)
 mechanism: app-flag/email-memory-leak
 split: train
@@ -50,11 +50,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/emailMemoryLeak
@@ -72,8 +76,9 @@ reference:
   - kubectl rollout restart deployment/email
   - kubectl rollout status deployment/email --timeout=300s
 validation:
-  detect_timeout_s: 900
-  recover_timeout_s: 600
-  hold_s: 45
-  poll_s: 15
   baseline_timeout_s: 400
+  detect_timeout_s: 900
+  hold_s: 45
+  recover_timeout_s: 600
+  poll_s: 15
+  restart_settle_s: 45

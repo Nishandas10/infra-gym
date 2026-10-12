@@ -7,8 +7,8 @@ instance_of:
   template: grafana-datasource-089
   version: 1
   params: {}
-content_hash: sha256:4b9e91904c6f0cb76cb9311a591b566daf80d116996d832d9a84cba2456309b7
-validation_hash: sha256:13f9bea619a3c11495fabe6ca361fe913aa2886629e074ce27fea179eb571711
+content_hash: sha256:8ccfa3ebd7f30c2fae44aa0cef519fd59da59562be30963d95d1608d134f80d6
+validation_hash: sha256:b83e3a2b60b461b834b89012263f26368c525caa53bad500ff5489ceb2654d4f
 title: Grafana's Prometheus datasource points at the wrong port
 mechanism: observability/dashboard-datasource-misconfigured
 split: train
@@ -49,11 +49,15 @@ verifier:
     expect_status: 200
     contains: '"status":"OK"'
     max_ms: 10000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: configmap/grafana-datasources
@@ -72,11 +76,12 @@ reference:
   - kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace
     -f -
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'No restarts: the grafana-sc-datasources sidecar watches ConfigMaps labelled grafana_datasource and calls Grafana''s
   provisioning reload API, so edits apply live (~15s).'

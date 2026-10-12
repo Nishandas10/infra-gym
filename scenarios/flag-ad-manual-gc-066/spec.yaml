@@ -7,8 +7,8 @@ instance_of:
   template: flag-ad-manual-gc-066
   version: 1
   params: {}
-content_hash: sha256:b84c4769ef35036659b85c2f7a5e907b691bc5ad66054ce38af5beb2a62a30b3
-validation_hash: sha256:a3ca7474779777e87d6b070b2a43a65cc03b5dca73ef9a077b92f599f9c6b8a8
+content_hash: sha256:bfba409d4dea785bc2e3ffe14033a2a89ba6d80c512f308ff2b0a1a2f95df467
+validation_hash: sha256:2b8896efb7db542b2cb196b3f4bc5f11d904830020fc6732afb78e9b111d34e3
 title: Ad service triggers full garbage collections (adManualGc)
 mechanism: app-flag/ad-full-gc
 split: train
@@ -47,11 +47,15 @@ verifier:
     repeat: 4
     max_error_pct: 0
     max_avg_ms: 700
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/adManualGc
@@ -72,11 +76,12 @@ reference:
   - kubectl rollout restart deployment/ad
   - kubectl rollout status deployment/ad --timeout=300s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'The JVM can stay wedged after the flag is off (run 5: ads still timing out 5 min later), so both the fix and
   the revert restart it.'

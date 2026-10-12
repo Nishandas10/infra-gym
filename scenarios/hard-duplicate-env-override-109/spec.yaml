@@ -7,8 +7,8 @@ instance_of:
   template: hard-duplicate-env-override-109
   version: 1
   params: {}
-content_hash: sha256:960dcd054bf0a2f38cc099f6e99761180f1d7a9f4b39d2b90a7fc9c5c87c02ad
-validation_hash: sha256:c1290353aaffcd9a30e551069d960f726d8ee04e9bcbd091720432035dc04a3a
+content_hash: sha256:779f07847bb63ae2d1ce59119e31d18f2283c0912f92f0ae9dab7c97e77fca3d
+validation_hash: sha256:832f3d18d1f2eaf831400b311f61f73bacf0b16e0845e4e609198e71590f4d76
 title: A duplicate env entry from an old overlay silently overrides the correct value
 mechanism: hard/duplicate-env-definition
 split: hard
@@ -75,11 +75,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/recommendation
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/recommendation
@@ -107,11 +112,12 @@ reference:
   - Editing the ConfigMap, which already says 8080 (no effect).
   - Reading only the first PRODUCT_CATALOG_ADDR entry and concluding the config is fine.
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 1

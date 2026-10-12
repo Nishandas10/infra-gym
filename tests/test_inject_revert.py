@@ -98,3 +98,17 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
     for st in spec["fault"]["steps"]:
         for cmd in st.get("undo_commands", []):
             assert cmd in reverted_cmds, f"undo command not run: {json.dumps(cmd)[:120]}"
+
+
+def test_workers_placeholder_patches_every_worker_and_only_workers(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    spec, sdir = load(next(p for p in SPECS if p.parent.name == "node-cordoned-045"))
+    faults.inject(spec, sdir)
+    nodes = {n["metadata"]["name"]: n for n in fake.items("node", namespace=None)}
+    workers = {name for name, n in nodes.items() if "node-role.kubernetes.io/control-plane" not in n["metadata"]["labels"]}
+    assert workers and len(workers) < len(nodes)
+    for name, n in nodes.items():
+        assert bool(n["spec"].get("unschedulable")) == (name in workers), name
+    assert not faults.revert(spec)
+    assert not any(n["spec"].get("unschedulable") for n in fake.items("node", namespace=None))

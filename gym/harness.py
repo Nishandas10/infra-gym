@@ -8,7 +8,11 @@ For each scenario:
   4. hold                a do-nothing agent is still failing hold_s later
   5. reference solution  run the documented fix (spec.reference.commands)
   6. recover PASS        the verifier passes again (within recover_timeout_s)
+     6b. invariants       ... and so do the invariants (shop_health: every user journey)
+     6c. durability       ... and the checks still pass after restarting verifier.durability
   7. restore             undo the injection exactly, then WORLD_HEALTHY again
+
+Timings come from the instance (spec.validation, resolved from templates/defaults.yaml).
 """
 from __future__ import annotations
 
@@ -20,7 +24,7 @@ import sys
 import time
 import traceback
 
-from . import checks, faults
+from . import checks, faults, kube
 from .spec import REPO, checks_of, fault_label, load
 
 RESULTS = REPO / "results" / "validation.jsonl"
@@ -68,14 +72,25 @@ def run_solution(commands):
             raise RuntimeError(f"solution command failed (exit {r.returncode}): {cmd}")
 
 
-def durability_check(spec_checks, v):
-    """Restart validation.restart_after_fix targets, let them come back, then require PASS."""
+def stable_age(spec_checks):
+    """A stability check needs at least its own window to pass after recent restarts."""
+    return max([c.get("min_age_s", 0) for c in spec_checks if c["type"] == "pods_stable"] or [0])
+
+
+def restart_durability_targets(spec):
+    """Restart the workloads in verifier.durability (as a node drain or a deploy would)."""
     from .undo import restart
-    log(f"  6b. the fix must survive a restart of {', '.join(v['restart_after_fix'])}")
-    for target in v["restart_after_fix"]:
-        restart(target)
-    time.sleep(v.get("restart_settle_s", 45))
-    ok, _, t = poll(spec_checks, checks.PASS, v.get("recover_timeout_s", 300), v.get("poll_s", 10))
+    for r in spec["verifier"]["durability"]:
+        restart(r["restart"], r.get("namespace") or kube.APP_NS)
+
+
+def durability_check(spec, spec_checks, v):
+    """Restart verifier.durability targets, let them come back, then require PASS again: a fix
+    that only patched live state is lost on the next restart."""
+    log(f"  6c. the fix must survive a restart of {', '.join(r['restart'] for r in spec['verifier']['durability'])}")
+    restart_durability_targets(spec)
+    time.sleep(v["restart_settle_s"])
+    ok, _, t = poll(spec_checks, checks.PASS, v["recover_timeout_s"] + stable_age(spec_checks), v["poll_s"])
     return ok, t
 
 
@@ -86,8 +101,10 @@ def validate(spec_path, world_timeout=300):
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     _logfile = LOG_DIR / f"{sid}.log"
     _logfile.write_text("")
-    v = spec.get("validation") or {}
+    v = spec["validation"]
     spec_checks = checks_of(spec)
+    invariants = checks.invariant_checks(spec)
+    min_age = stable_age(spec_checks)
     rec = {"id": sid, "type": fault_label(spec), "validation_hash": spec["validation_hash"],
            "content_hash": spec["content_hash"], "template_version": spec["instance_of"]["version"],
            "started": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -103,31 +120,29 @@ def validate(spec_path, world_timeout=300):
             rec["verdict"] = "ENV_UNHEALTHY"
             return rec
         log("  1. baseline must PASS")
-        # A stability check needs at least its own window to pass after recent restarts.
-        stable_age = max([c.get("min_age_s", 0) for c in spec_checks if c["type"] == "pods_stable"] or [0])
-        ok, _, t = poll(spec_checks, checks.PASS, max(v.get("baseline_timeout_s", 120), stable_age + 90))
+        ok, _, t = poll(spec_checks, checks.PASS, max(v["baseline_timeout_s"], min_age + 90))
         if not ok:
             rec["verdict"] = "BASELINE_FAIL"
             return rec
         log("  2. inject")
         injected = True
         faults.inject(spec, sdir)
-        log(f"  3. verifier must FAIL (<= {v.get('detect_timeout_s', 240)}s)")
-        ok, _, t = poll(spec_checks, checks.FAIL, v.get("detect_timeout_s", 240), v.get("poll_s", 10))
+        log(f"  3. verifier must FAIL (<= {v['detect_timeout_s']}s)")
+        ok, _, t = poll(spec_checks, checks.FAIL, v["detect_timeout_s"], v["poll_s"])
         rec["timings"]["detect_s"] = t
         if not ok:
             rec["verdict"] = "NOT_DETECTED"
             return rec
         # The hold must outlast every stability window. Otherwise a pod that merely
         # got replaced (young) would count as a persistent failure.
-        hold = max(v.get("hold_s", 30), stable_age + 30)
+        hold = max(v["hold_s"], min_age + 30)
         log(f"  4. do-nothing agent: still FAIL after {hold}s?")
         # Keep exercising the system during the hold, as real users would; some faults
         # (leaks) only get worse with traffic.
         t_end = time.time() + hold
         fails = polls = 0
-        while time.time() < t_end - v.get("poll_s", 10):
-            time.sleep(v.get("poll_s", 10))
+        while time.time() < t_end - v["poll_s"]:
+            time.sleep(v["poll_s"])
             polls += 1
             fails += checks.overall(checks.run_checks(spec_checks)) == checks.FAIL
         time.sleep(max(0, t_end - time.time()))
@@ -140,18 +155,27 @@ def validate(spec_path, world_timeout=300):
             return rec
         log("  5. reference solution")
         run_solution(spec["reference"]["commands"])
-        log(f"  6. verifier must PASS (<= {v.get('recover_timeout_s', 300)}s)")
-        ok, _, t = poll(spec_checks, checks.PASS, v.get("recover_timeout_s", 300), v.get("poll_s", 10))
+        log(f"  6. verifier must PASS (<= {v['recover_timeout_s']}s)")
+        ok, _, t = poll(spec_checks, checks.PASS, v["recover_timeout_s"], v["poll_s"])
         rec["timings"]["recover_s"] = t
-        if ok and v.get("restart_after_fix"):
-            # Some scenarios only count a fix that is in the source of truth: restart the
-            # listed workloads (as a node drain or a deploy would) and require PASS again.
-            ok, t = durability_check(spec_checks, v)
+        if not ok:
+            rec["verdict"] = "FIX_DID_NOT_RECOVER"
+            return rec
+        if invariants:
+            # The fix must not leave (or cause) breakage elsewhere in the shop.
+            log(f"  6b. invariants must PASS ({', '.join(spec['verifier']['invariants'])})")
+            ok, _, t = poll(invariants, checks.PASS, v["recover_timeout_s"], v["poll_s"])
+            rec["timings"]["invariants_s"] = t
+            if not ok:
+                rec["verdict"] = "INVARIANT_FAILED"
+                return rec
+        if spec["verifier"]["durability"]:
+            ok, t = durability_check(spec, spec_checks, v)
             rec["timings"]["durable_s"] = t
             if not ok:
                 rec["verdict"] = "FIX_NOT_DURABLE"
                 return rec
-        rec["verdict"] = "VALIDATED" if ok else "FIX_DID_NOT_RECOVER"
+        rec["verdict"] = "VALIDATED"
         return rec
     except Exception as e:
         rec["verdict"] = "ERROR"

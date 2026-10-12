@@ -7,8 +7,8 @@ instance_of:
   template: limitrange-rejects-048
   version: 1
   params: {}
-content_hash: sha256:c3afbbe1f375d2c8331a1b909da9939687cb4e115bfa7c86ad8cb9533618bd77
-validation_hash: sha256:d9f77e2adbc39438dba7ab53af53cff75f0edbb5d5b5436e8674fe14e174e68f
+content_hash: sha256:40c4b8801530833b8b3a88cafe40fce47e08473560a6d7e94691d01b73b96f72
+validation_hash: sha256:55485644d74f1c8e2f7d1763fa32a27b5aee4643f1519ee9fe94d9b8f0691f4a
 title: LimitRange max is lower than a container's limit
 mechanism: platform/limit-range-rejects
 split: train
@@ -60,11 +60,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=ad
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=ad
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: limitrange/container-memory-cap
@@ -83,8 +88,9 @@ reference:
   - kubectl rollout restart deployment/ad
   - kubectl rollout status deployment/ad --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

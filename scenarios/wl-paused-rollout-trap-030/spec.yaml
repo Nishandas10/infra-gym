@@ -7,8 +7,8 @@ instance_of:
   template: wl-paused-rollout-trap-030
   version: 1
   params: {}
-content_hash: sha256:77e7370eb10d5dc7ec3e5f278c17f884564021e9791cf38e3fdbb25ba1d1d4e6
-validation_hash: sha256:8c2fbd9502096e70950e92dd861bb52b569df1459966302cb312352118c4cf7a
+content_hash: sha256:3a1d2bdcbe780259b5e25b9683e3ad47a59ab18336ff14a87b3a21e006ebda83
+validation_hash: sha256:c428c1bf3f2f24c05da2958e03d1801611e04edb9d2303eccaf2bb6491023bdd
 title: 'Bad config plus a paused Deployment: the fix does not roll out'
 mechanism: workload/paused-rollout-blocks-fix
 split: train
@@ -60,11 +60,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/cart
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/cart
@@ -83,8 +88,9 @@ reference:
   - kubectl rollout resume deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

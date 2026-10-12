@@ -56,11 +56,5 @@ ground_truth:
 reference:
   commands:
   - kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
 notes:
 - 256kb is below even an empty instance's footprint, so every write is refused.

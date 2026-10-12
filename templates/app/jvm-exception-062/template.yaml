@@ -61,11 +61,5 @@ ground_truth:
 reference:
   commands:
   - kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
 notes:
 - Byteman can only throw checked exceptions a method declares; getAds declares none.

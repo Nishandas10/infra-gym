@@ -7,8 +7,8 @@ instance_of:
   template: wl-unschedulable-request-017
   version: 1
   params: {}
-content_hash: sha256:cdf4953bdc98661a6d6339941fa9473de20f84487436652b0653967650734ce4
-validation_hash: sha256:0e1f9e0ad7009fbc42b1ff1cfe2510f16246b11fa71a162c8392d9e8ddf6c80c
+content_hash: sha256:641711e7a346c54cad53b7090f46fd0a4b78355f0fbcbf3b2c922cc2b2c2dec6
+validation_hash: sha256:34391676d59a0c2082203da413f9d4aa4b42a928a077753dfb6299b48caef7f1
 title: Memory request larger than any node -> Pending
 mechanism: workload/unschedulable-resource-request
 split: train
@@ -57,11 +57,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=recommendation
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/recommendation
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/recommendation
@@ -78,8 +83,9 @@ reference:
   - kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi
   - kubectl rollout status deployment/recommendation --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

@@ -7,8 +7,8 @@ instance_of:
   template: wl-client-dns-typo-015
   version: 1
   params: {}
-content_hash: sha256:04a6746c77e9bb62df6ba998a523effa2c52c898354c40fa155dbc825a16b65b
-validation_hash: sha256:de4bed94e5ff54f19efffae732f2a785b1e66de52da19ddc0392986d34f8687a
+content_hash: sha256:3bd5aa9323e23e6583018ca5a1278444defad0fddab77e288a9943ae538fe704
+validation_hash: sha256:a7c1caa13d3c6e2359fb05fa88982f51fa44d5e05804fb516d1e8dd6befb239d
 title: Client configured with a dependency hostname that does not exist
 mechanism: workload/client-dependency-hostname
 split: train
@@ -54,11 +54,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/frontend
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/frontend
@@ -76,8 +81,9 @@ reference:
   - kubectl set env deployment/frontend CART_ADDR=cart:8080
   - kubectl rollout status deployment/frontend --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

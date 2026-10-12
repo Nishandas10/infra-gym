@@ -53,9 +53,3 @@ reference:
   commands:
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

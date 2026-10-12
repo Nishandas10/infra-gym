@@ -8,9 +8,16 @@ from scripts.lint_scenarios import lint, prompt_leaks
 
 
 def test_lint_clean():
-    n_specs, _, problems = lint()
+    n_specs, _, problems, _ = lint()
     assert n_specs > 0
     assert not problems, "\n".join(problems)
+
+
+def test_single_check_scenarios_are_warned_about():
+    _, _, _, warnings = lint()
+    built = {sid: yaml.safe_load(f["spec.yaml"]) for sid, f in generate.build_all().items()}
+    single = {sid for sid, s in built.items() if len(s["verifier"]["checks"]) == 1 and s["bench_eligible"]}
+    assert single and {w.split(":", 1)[0] for w in warnings} == single
 
 
 def _spec():

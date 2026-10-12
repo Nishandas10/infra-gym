@@ -7,8 +7,8 @@ instance_of:
   template: kafka-broker-down-083
   version: 1
   params: {}
-content_hash: sha256:759fafdcda467fb9a2c01ed3dabee32bbbeaa4ea024fcd14651dfc37f5948da2
-validation_hash: sha256:a027e3248647f4bb10f445cab4b14ad67882743b181c6184396c749e8c8d970b
+content_hash: sha256:9b3146b3788a9a8b260a45f3e646302246af6da6aa89ab4acf99b25f8860eba6
+validation_hash: sha256:aa1cc2e2adc789f4989b34432838b8816a46a0c60e197aeb25404c0da75ab0bd
 title: Message broker scaled to zero (async pipeline stops silently)
 mechanism: datastore/message-broker-down
 split: train
@@ -56,11 +56,15 @@ verifier:
     timeout_s: 60
   - type: pods_ready
     selector: opentelemetry.io/name=kafka
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/kafka
@@ -85,8 +89,12 @@ reference:
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 480
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 480
+  poll_s: 10
+  restart_settle_s: 45
+notes:
+- 'verifier.durability is empty on purpose: restarting the broker after the fix drops its topics and can wedge the
+  consumers (see fault.revert_hooks and restart_on_revert), which would fail a correct fix.'

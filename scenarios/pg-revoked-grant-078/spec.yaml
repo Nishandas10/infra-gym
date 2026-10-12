@@ -7,8 +7,8 @@ instance_of:
   template: pg-revoked-grant-078
   version: 1
   params: {}
-content_hash: sha256:8c47b14d48a8bbcb2c642e465c2b47cec4676299bcdb3170ccf6947961d397ff
-validation_hash: sha256:1d22556679eb371530e5b19dfd56584d1fe1f4e84a11f07b139a7c336139db02
+content_hash: sha256:1563558be08f2a31f302302a8c7943dffd6d1b870579086992152a5993eb3dba
+validation_hash: sha256:161991043b2c9d567669f16bf4d9521b4dfccef84ac39d432a7ec9ef626ff520
 title: Database role lost SELECT on the table the service reads
 mechanism: datastore/db-permission-revoked
 split: train
@@ -66,11 +66,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/astronomy-db
@@ -87,8 +91,9 @@ reference:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO
     astronomy_user'
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

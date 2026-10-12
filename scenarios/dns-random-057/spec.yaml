@@ -7,8 +7,8 @@ instance_of:
   template: dns-random-057
   version: 1
   params: {}
-content_hash: sha256:c9b9224f04385b69983f477866d1b39c5f4c71b74286150a6114437d40a16bf2
-validation_hash: sha256:c993c20444eabb2c346bb20d31995f315d8c86c8412a8b94f07549fda3b7c702
+content_hash: sha256:b293c5a3b6c37e286348c041243bc4607f9f89074c7886993327d3cdf1089aad
+validation_hash: sha256:66bbf4eca1f65b211752179b1066125ca4f26b5569af85d49affc5dba713b1c1
 title: DNS returns random addresses for one name
 mechanism: chaos/dns-wrong-answers
 split: train
@@ -67,11 +67,15 @@ verifier:
     max_error_pct: 0
     max_avg_ms: 2500
     timeout_s: 6
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: dnschaos/catalog-dns-random
@@ -87,10 +91,11 @@ reference:
   commands:
   - kubectl delete dnschaos.chaos-mesh.org catalog-dns-random
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - DNSChaos needs a shell in the target container; recommendation (python) has one.

@@ -32,11 +32,6 @@ verifier:
     max_avg_ms: 5000
   - type: pods_ready
     selector: opentelemetry.io/name=payment
-  forbidden:
-  - delete_namespace
-  - disable_alerts
-  - scale_to_zero
-  - edit_verifier
 ground_truth:
   root_causes:
   - component: flag/paymentFailure
@@ -55,6 +50,5 @@ reference:
 validation:
   detect_timeout_s: 120
   recover_timeout_s: 120
-  hold_s: 30
 meta:
   golden: true

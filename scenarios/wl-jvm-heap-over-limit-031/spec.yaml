@@ -7,8 +7,8 @@ instance_of:
   template: wl-jvm-heap-over-limit-031
   version: 1
   params: {}
-content_hash: sha256:75f9f383f41926d7197376f4b2f0dbd2176cc72ee1b67b150dc642a4bbc95c67
-validation_hash: sha256:2aca3f319171f773154fe84884aa3ae81930a56b39c2f43c6024b232731d3d5a
+content_hash: sha256:361cecaf4cfe48f3014c4521c4333b5dfeffd22a6a98caeb51b1d58040e7c020
+validation_hash: sha256:e9ae44a5205cede1d330da5ed24421585dc3f06beba900712a8d082a915c6dd5
 title: Memory limit below the JVM heap the broker is configured to use
 mechanism: workload/jvm-heap-exceeds-limit
 split: train
@@ -59,11 +59,15 @@ verifier:
     min_age_s: 300
   - type: orders_recorded
     timeout_s: 60
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/kafka
@@ -91,11 +95,14 @@ reference:
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 600
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 600
+  poll_s: 10
+  restart_settle_s: 45
 notes:
+- 'verifier.durability is empty on purpose: restarting the broker after the fix drops its topics and can wedge the
+  consumers (see fault.revert_hooks and restart_on_revert), which would fail a correct fix.'
 - 'Measured: at 300Mi the JVM runs for minutes (heap pages are only touched as used), at 200Mi it OOMs twice then
   settles, at 150Mi it crash-loops with OOMKilled.'

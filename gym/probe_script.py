@@ -5,8 +5,10 @@ shop's front door (frontend-proxy), and reports per-journey success and latency
 as JSON. The verifier uses it instead of waiting on the load generator's
 low request rate (~1 request/s).
 
-usage: python3 probe.py '{"journeys": ["cart"], "repeat": 3}'
+usage: python3 probe.py '{"journeys": ["cart"], "repeat": 3, "namespace": "default"}'
        python3 probe.py '{"raw": [{"method": "GET", "url": "http://jaeger.default:16686/api/services"}]}'
+
+"namespace" is the shop's namespace (default: default).
 """
 import http.cookiejar
 import json
@@ -17,7 +19,8 @@ import urllib.error
 import urllib.request
 import uuid
 
-BASE = "http://frontend-proxy.default.svc.cluster.local:8080"
+NS = "default"   # set from the plan in main()
+BASE = f"http://frontend-proxy.{NS}.svc.cluster.local:8080"
 PRODUCTS = ["0PUK6V6EV0", "1YMWWN1N4O", "2ZYFJ3GM2N", "66VCHSJNUP", "6E92ZMYYFZ",
             "9SIQT8TOJO", "L9ECAV7KIM", "LS4PSXUNUM", "OLJCESPC7Z", "HQTGWGPNH4"]
 PERSON = {
@@ -174,7 +177,7 @@ def j_images(o, t):
 def j_images_browser(o, t):
     """Fetch a product image the way the shop's browser code does: it reads the numeric
     imageSlowLoad flag and passes it to Envoy as an x-envoy-fault-delay-request header."""
-    s, _, p = call("POST", "http://flagd.default.svc.cluster.local:8016/ofrep/v1/evaluate/flags/imageSlowLoad",
+    s, _, p = call("POST", f"http://flagd.{NS}.svc.cluster.local:8016/ofrep/v1/evaluate/flags/imageSlowLoad",
                    {"context": {}}, timeout=t, opener=o)
     delay = 0
     if s == 200:
@@ -196,7 +199,7 @@ def j_email(o, t):
                                   "country": "United States", "zip_code": "94043"},
              "items": [{"item": {"product_id": "OLJCESPC7Z", "quantity": 1},
                         "cost": {"currency_code": "USD", "units": 1, "nanos": 0}}]}
-    s, ms, p = call("POST", "http://email.default.svc.cluster.local:8080/send_order_confirmation",
+    s, ms, p = call("POST", f"http://email.{NS}.svc.cluster.local:8080/send_order_confirmation",
                     {"email": "gym-probe@example.com", "order": order}, timeout=t, opener=o)
     expect_ok(s, p, "POST email/send_order_confirmation")
     return ms
@@ -222,7 +225,10 @@ JOURNEYS = {
 
 
 def main():
+    global NS, BASE
     plan = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {"journeys": list(JOURNEYS)}
+    NS = plan.get("namespace", NS)
+    BASE = f"http://frontend-proxy.{NS}.svc.cluster.local:8080"
     timeout = float(plan.get("timeout", 8))
     out = {}
     for name in plan.get("journeys", []):

@@ -7,8 +7,8 @@ instance_of:
   template: prometheus-otlp-disabled-088
   version: 1
   params: {}
-content_hash: sha256:68fb3bbf1b25f7b456f18e1249a3aae23182393aebf73fbe4fc50ddcb8a3acc6
-validation_hash: sha256:3e36f69d04071f60d462c0d8757cafd73b9d4977f48668d2e529d303e50e5926
+content_hash: sha256:20d15cc96f2d8fb4c7db1e2cd916c02d31df404a775e589be86adf9750c69f27
+validation_hash: sha256:0efe39e09a1f1f67f5bcec2c0da79d16f23ae43e596c57f5e5d047b6518d88c7
 title: Prometheus restarted without its OTLP receiver
 mechanism: observability/metrics-ingest-disabled
 split: train
@@ -54,11 +54,16 @@ verifier:
   - type: prometheus
     query: sum(rate(http_server_request_duration_seconds_count[1m]))
     min_value: 0.01
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/prometheus
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/prometheus
@@ -75,8 +80,9 @@ reference:
   - kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
   - kubectl rollout status deployment/prometheus --timeout=240s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 360
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 360
+  poll_s: 10
+  restart_settle_s: 45

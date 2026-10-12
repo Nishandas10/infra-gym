@@ -7,8 +7,8 @@ instance_of:
   template: quota-blocks-pods-047
   version: 1
   params: {}
-content_hash: sha256:ea876fa95f1e0e20f6ec654bf470b50d915ac249b1008831c28fca1c746385e9
-validation_hash: sha256:067593232bd543d14606e20002250d16ce39194b599743e009d643cff29e6e18
+content_hash: sha256:0c85e8aa516ae880c017076a0d76e2562c20b1332addc616fe168ab60f3f75f0
+validation_hash: sha256:3a110006a1faec995c62b83012c8dc2a84ea96b98c2994c9a2fc114d7de74cdc
 title: ResourceQuota lower than the namespace's pod count
 mechanism: platform/resource-quota-exhausted
 split: train
@@ -59,11 +59,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=shipping
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=shipping
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: resourcequota/namespace-pod-quota
@@ -81,8 +86,9 @@ reference:
   - kubectl rollout restart deployment/shipping
   - kubectl rollout status deployment/shipping --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

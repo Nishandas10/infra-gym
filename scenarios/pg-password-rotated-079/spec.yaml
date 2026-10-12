@@ -7,8 +7,8 @@ instance_of:
   template: pg-password-rotated-079
   version: 1
   params: {}
-content_hash: sha256:ae5cd3f1acd2eeea09baa0de3947a777c7bf78e95bb5deb0460727f92e4126be
-validation_hash: sha256:1a66cd2b4d26c46a8307d5a28815d9fe89f133d1ccb87889b275889e83d9b082
+content_hash: sha256:34e686c0d1d7cedf88afd4e59db8c7ed10960968322b5fae8d617ab5a8612d44
+validation_hash: sha256:7089bb977249cc0255c23177b19cdaabb7e2be21045d4c6be03ed1cbe14cd388
 title: Database password rotated without updating the clients
 mechanism: datastore/db-credential-rotation
 split: train
@@ -66,11 +66,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/astronomy-db
@@ -88,8 +92,9 @@ reference:
   commands:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -c "ALTER ROLE astronomy_user PASSWORD 'astronomy_password'"
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

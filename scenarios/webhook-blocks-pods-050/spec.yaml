@@ -7,8 +7,8 @@ instance_of:
   template: webhook-blocks-pods-050
   version: 1
   params: {}
-content_hash: sha256:e1d6b9463dc42e0e63bcf5047a57e96094cc9a7bdc9192fdd15680a3238b0b02
-validation_hash: sha256:bd1d77bc341b360e0644ca2f6d5ca4e4930a0acf17ccb051ad8a2a0f31a1a561
+content_hash: sha256:1aa26294110110553360dc543d232722be2c5901b3d7de9280bd5a4fb9dc5ff9
+validation_hash: sha256:bd7573662eb9d46ced7298d79482683f09ec1f653cce0a34f83f447bd57df166
 title: Validating webhook with failurePolicy=Fail and no backend
 mechanism: platform/admission-webhook-unavailable
 split: train
@@ -80,11 +80,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=email
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=email
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: validatingwebhookconfiguration/pod-policy-guard
@@ -103,8 +108,9 @@ reference:
   - kubectl rollout restart deployment/email
   - kubectl rollout status deployment/email --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

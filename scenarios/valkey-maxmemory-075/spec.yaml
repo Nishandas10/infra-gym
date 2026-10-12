@@ -7,8 +7,8 @@ instance_of:
   template: valkey-maxmemory-075
   version: 1
   params: {}
-content_hash: sha256:23ce8513a64461df717f2de4eb9e0ca71c8941ed5416d66a20eca4c7d7e966ce
-validation_hash: sha256:7e2413a27b34ab17c689423c42fa6e7c510b9247bd4c826a6ac701a62caa50ab
+content_hash: sha256:f0c394513923fd2f1929be1b0c7a11fa7c354c1b576b52fa093b5a324f97e262
+validation_hash: sha256:4b447bf6d2a79bd9ad22b13c48ec4af2d2386c713cbcc79d74fef6dcce827fe0
 title: Valkey memory cap reached with 'noeviction' -> writes rejected
 mechanism: datastore/kv-memory-cap-noeviction
 split: train
@@ -57,11 +57,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/valkey-cart
@@ -77,10 +81,11 @@ reference:
   commands:
   - kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 256kb is below even an empty instance's footprint, so every write is refused.

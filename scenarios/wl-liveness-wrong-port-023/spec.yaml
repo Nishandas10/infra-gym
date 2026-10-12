@@ -7,8 +7,8 @@ instance_of:
   template: wl-liveness-wrong-port-023
   version: 1
   params: {}
-content_hash: sha256:305b5a73d22cf3029b462ad3974fcbc2db28002081ec45a73ed7546efe3fc48e
-validation_hash: sha256:650f933c24b267e06383705a77e35b7208da6e2406c998cc690f7213ef3f8954
+content_hash: sha256:c83e070a640df1a42521407da1ee96a483c9cd07ca41dc9e2814b25ddca20910
+validation_hash: sha256:49e6277e81e1c7eb598459fab6db2864323796b6e727f826b805a0972af6e66e
 title: Liveness probe checks the wrong port -> restart loop
 mechanism: workload/liveness-probe-misconfigured
 split: train
@@ -62,11 +62,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/product-catalog
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/product-catalog
@@ -84,8 +89,9 @@ reference:
   - kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
   - kubectl rollout status deployment/product-catalog --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 360
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 360
+  poll_s: 10
+  restart_settle_s: 45

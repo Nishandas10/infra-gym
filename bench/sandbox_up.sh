@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 # Creates the AI agent's Kubernetes identity and a fresh container it runs commands in.
 #
-# The agent may operate the shop (namespace default), cluster add-ons (kube-system),
-# nodes, the default namespace's labels and admission webhooks: everything the scenarios
+# The agent may operate the shop (namespace $APP_NS, set by agent_bench.py from worlds/*.yaml),
+# cluster add-ons (kube-system), nodes, the app namespace's labels and admission webhooks: everything the scenarios
 # need. It gets NO access to gym-system (the verifier's probe pods) or chaos-mesh, and
 # the container cannot see this repo, so it cannot read reference solutions or checks.
 set -euo pipefail
 CLUSTER=ai-gym
 KDIR="$HOME/.agent-kube"
+APP_NS="${APP_NS:-default}"
 mkdir -p "$KDIR"
 
 kubectl delete clusterrolebinding agent-view --ignore-not-found >/dev/null   # from an older guide
-kubectl apply -f - >/dev/null << 'YAML'
+kubectl apply -f - >/dev/null << YAML
 apiVersion: v1
 kind: ServiceAccount
-metadata: {name: agent, namespace: default}
+metadata: {name: agent, namespace: ${APP_NS}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -48,24 +49,24 @@ rules:
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
-metadata: {name: gym-agent, namespace: default}
+metadata: {name: gym-agent, namespace: ${APP_NS}}
 roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: gym-agent-namespaced}
-subjects: [{kind: ServiceAccount, name: agent, namespace: default}]
+subjects: [{kind: ServiceAccount, name: agent, namespace: ${APP_NS}}]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata: {name: gym-agent, namespace: kube-system}
 roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: gym-agent-namespaced}
-subjects: [{kind: ServiceAccount, name: agent, namespace: default}]
+subjects: [{kind: ServiceAccount, name: agent, namespace: ${APP_NS}}]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata: {name: gym-agent-cluster}
 roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: gym-agent-cluster}
-subjects: [{kind: ServiceAccount, name: agent, namespace: default}]
+subjects: [{kind: ServiceAccount, name: agent, namespace: ${APP_NS}}]
 YAML
 
-TOKEN=$(kubectl create token agent -n default --duration=24h)
+TOKEN=$(kubectl create token agent -n "$APP_NS" --duration=24h)
 TMP="$KDIR/admin-internal"
 kind get kubeconfig --internal --name "$CLUSTER" > "$TMP"
 SERVER=$(kubectl --kubeconfig "$TMP" config view --raw -o jsonpath='{.clusters[0].cluster.server}')
@@ -77,7 +78,7 @@ rm -f "$CFG"
 kubectl config --kubeconfig "$CFG" set-cluster gym --server="$SERVER" >/dev/null
 kubectl config --kubeconfig "$CFG" set clusters.gym.certificate-authority-data "$CA" >/dev/null
 kubectl config --kubeconfig "$CFG" set-credentials agent --token="$TOKEN" >/dev/null
-kubectl config --kubeconfig "$CFG" set-context agent --cluster=gym --user=agent --namespace=default >/dev/null
+kubectl config --kubeconfig "$CFG" set-context agent --cluster=gym --user=agent --namespace="$APP_NS" >/dev/null
 kubectl config --kubeconfig "$CFG" use-context agent >/dev/null
 chmod 600 "$CFG"
 

@@ -7,8 +7,8 @@ instance_of:
   template: flag-flood-homepage-073
   version: 1
   params: {}
-content_hash: sha256:104b7b7f981a891ca2ecfb207d483b2cee6ab43278a8f121b55eb791d700b7a2
-validation_hash: sha256:a2eb2f591c2ff69e161d1115f39f360ebc9a04146106debdd7c51e7ce7bf7047
+content_hash: sha256:1a3ffde48d999faa37e6db69c42f6feb06a428b3d3fdffbbd6b2ca412dc9eff2
+validation_hash: sha256:3cfb91d3c4a2c05ef632fc4b7955bdca0acad7ad1e7095ff0439e577d65d225a
 title: Synthetic traffic flood against the homepage (loadGeneratorFloodHomepage)
 mechanism: app-flag/traffic-flood
 split: train
@@ -49,11 +49,15 @@ verifier:
     max_avg_ms: 100000
     min_requests: 0
     max_rps: 2.0
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/loadGeneratorFloodHomepage
@@ -68,8 +72,9 @@ reference:
   commands:
   - python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
 validation:
-  detect_timeout_s: 180
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 180
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

@@ -49,10 +49,24 @@ def _key(kind, name, namespace):
 
 
 def _matches(obj, selector):
+    """Equality-based label selectors: key=value, key!=value, key, !key (comma-separated)."""
     if not selector:
         return True
     labels = obj.get("metadata", {}).get("labels") or {}
-    return all(labels.get(a) == b for a, b in (p.split("=", 1) for p in selector.split(",")))
+    for term in selector.split(","):
+        if "!=" in term:
+            key, value = term.split("!=", 1)
+            ok = labels.get(key) != value
+        elif "=" in term:
+            key, value = term.split("=", 1)
+            ok = labels.get(key) == value
+        elif term.startswith("!"):
+            ok = term[1:] not in labels
+        else:
+            ok = term in labels
+        if not ok:
+            return False
+    return True
 
 
 def merge(base, patch, strategic):

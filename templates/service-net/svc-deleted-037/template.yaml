@@ -32,6 +32,8 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  - type: endpoints
+    service: email
 ground_truth:
   root_causes:
   - component: service/email
@@ -49,8 +51,4 @@ reference:
   commands:
   - bash scripts/reset_world.sh
 validation:
-  detect_timeout_s: 240
   recover_timeout_s: 480
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

@@ -7,8 +7,8 @@ instance_of:
   template: catalog-fail-008
   version: 1
   params: {}
-content_hash: sha256:f1cc24854b118082b44d4f255499dae49e28cd626796be7ed9149fb71ecedd33
-validation_hash: sha256:bcbbbcd3b3d67dada941562ae12d8506eb9b3e625fc77dd9c7ad2dbb8d393edb
+content_hash: sha256:cf3f0a94834a0db333e2ac129b0f7b2a6fc91179fdbc73ee2a1c4a430a17420c
+validation_hash: sha256:c36057ffb7fc29f1f4f042cad7f6402514c500b0cc97b104fc3c439d078062fb
 title: One product always fails (productCatalogFailure)
 mechanism: app-flag/catalog-single-product-failure
 split: train
@@ -51,11 +51,15 @@ verifier:
     repeat: 3
     max_error_pct: 34
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/productCatalogFailure
@@ -72,7 +76,11 @@ reference:
   commands:
   - python injectors/toggle_flag.py productCatalogFailure --off
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 120
+  hold_s: 60
   recover_timeout_s: 120
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   golden: true

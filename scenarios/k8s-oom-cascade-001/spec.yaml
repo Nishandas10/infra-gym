@@ -7,8 +7,8 @@ instance_of:
   template: k8s-oom-cascade-001
   version: 1
   params: {}
-content_hash: sha256:73dce790ccdf603d8c3e2257827eeb9ff2c64bef9207a8b7ddbdafbfe6b8e85a
-validation_hash: sha256:8bac019f73ac29cd9d8bd9c4d29ae89e65dde01ffb2468b7409da638c8ce86b7
+content_hash: sha256:d4117b57a3a5fa53f51f7275a7404fa1ccd93697e46af0618eeba2a73931b2e0
+validation_hash: sha256:7dbc05aad20b4878a3ab2b02c6740215600409a6d302e90de8d9660641c573af
 title: Memory limit far below what the service needs -> OOMKilled / CrashLoopBackOff
 mechanism: workload/oom-memory-limit
 split: train
@@ -58,11 +58,16 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/cart
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/cart
@@ -81,9 +86,12 @@ reference:
   - kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
   - kubectl rollout status deployment/cart --timeout=180s
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 600
-  recover_timeout_s: 360
   hold_s: 45
+  recover_timeout_s: 360
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'The cart is a native-compiled .NET binary that needs only a few MiB. Measured on this cluster: at 5-20Mi it starts
   and is only OOM-killed after 6-15 minutes of traffic growth; at 3Mi the container is OOM-killed while starting,

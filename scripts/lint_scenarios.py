@@ -6,6 +6,9 @@ Templates are validated against the v2 schema (gym/core/schema.py) by the genera
 that this checks what the schema cannot see: known journeys, unique mechanisms, mechanisms that
 were dropped, page prompts that give the cause away (templates/taxonomy.yaml prompt_leak_terms),
 and that scenarios/ is up to date with templates/.
+
+Warnings do not fail the lint: they point at scenarios worth strengthening (for example a
+verifier with a single check, which a fix can pass by accident more easily than two specific ones).
 """
 import ast
 import pathlib
@@ -17,6 +20,7 @@ sys.path.insert(0, str(REPO))
 
 import yaml  # noqa: E402
 
+from gym import checks  # noqa: E402
 from gym.core import generate  # noqa: E402
 from gym.core.schema import taxonomy  # noqa: E402
 
@@ -39,12 +43,12 @@ def prompt_leaks(spec):
 
 
 def lint():
-    """Return (number of scenarios, number of distinct mechanisms, list of problems)."""
-    problems = []
+    """Return (number of scenarios, number of distinct mechanisms, problems, warnings)."""
+    problems, warnings = [], []
     try:
         built = generate.build_all()      # schema validation, unique ids and mechanisms
     except Exception as e:
-        return 0, 0, [f"{type(e).__name__}: {e}"]
+        return 0, 0, [f"{type(e).__name__}: {e}"], []
     known_journeys = journeys()
     dropped = yaml.safe_load((REPO / "templates" / "dropped.yaml").read_text()) or {}
     mechanisms = set()
@@ -60,15 +64,22 @@ def lint():
         if leaks:
             problems.append(f"{sid}: the page prompt gives the cause away ({', '.join(leaks)}); move that detail "
                             "to prompts.ticket, or add the term to task.leak_allow if it is a user-visible symptom")
+        only = s["verifier"]["checks"]
+        if len(only) == 1 and s.get("bench_eligible", True):
+            warnings.append(f"{sid}: a single check ({checks.describe(only[0])}); add a second, more specific one "
+                            "(pods_ready, endpoints, kafka_lag, orders_recorded...) if the fault has another outside signal")
     problems += [f"out of date: {p} (run: python scripts/generate.py)" for p in generate.stale(built)]
-    return len(built), len(mechanisms), problems
+    return len(built), len(mechanisms), problems, warnings
 
 
 def main():
-    n_specs, n_mechanisms, problems = lint()
-    print(f"{n_specs} scenarios, {n_mechanisms} distinct mechanisms, {len(problems)} problem(s)")
+    n_specs, n_mechanisms, problems, warnings = lint()
+    print(f"{n_specs} scenarios, {n_mechanisms} distinct mechanisms, {len(problems)} problem(s), "
+          f"{len(warnings)} warning(s)")
     for pr in problems:
         print("  -", pr)
+    for w in warnings:
+        print("  warning:", w)
     sys.exit(1 if problems else 0)
 
 

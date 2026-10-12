@@ -41,6 +41,7 @@ verifier:
     timeout_s: 60
   - type: pods_ready
     selector: opentelemetry.io/name=kafka
+  durability: []
 ground_truth:
   root_causes:
   - component: deployment/kafka
@@ -65,8 +66,7 @@ reference:
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
-  detect_timeout_s: 240
   recover_timeout_s: 480
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
+notes:
+- 'verifier.durability is empty on purpose: restarting the broker after the fix drops its topics and can wedge the
+  consumers (see fault.revert_hooks and restart_on_revert), which would fail a correct fix.'

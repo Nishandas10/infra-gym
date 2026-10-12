@@ -7,8 +7,8 @@ instance_of:
   template: hard-allowlist-forgets-checkout-106
   version: 1
   params: {}
-content_hash: sha256:2af7529941fa1e028da5ad8742804aca9295848e13f73eec23725b84e1f555fa
-validation_hash: sha256:b4c859166a8297705544cd15a6d6e5d39be3267821e7ebe8fdd70d9d1390276a
+content_hash: sha256:bc16bdcc96133e2f1a9730e0c8e0bcb575a3202abb88e80f4800a78f4592c279
+validation_hash: sha256:78ac2811cbbff29f1495d3647145fe550dfee4e51bc9e19fac64a2422a0eaa50
 title: A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame
 mechanism: hard/ingress-allowlist-omits-client-with-decoy-deploy
 split: hard
@@ -100,11 +100,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=product-catalog
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkpolicy/product-catalog-allow-clients
@@ -127,11 +132,12 @@ reference:
   - Rolling back payment because of its recent 'SDK bump' (a decoy; counts as a distractor touch).
   - Restarting checkout or product-catalog (changes nothing).
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 1

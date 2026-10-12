@@ -7,8 +7,8 @@ instance_of:
   template: kube-proxy-stopped-051
   version: 1
   params: {}
-content_hash: sha256:7f3808ace9023bb8ec49baa44926421b4d28a41f0635699e8d3ac5e0bbe9cd85
-validation_hash: sha256:9e56aab31210304f8d20272920adce09ac4ba07dfa791bcb6eafe539897fd9d1
+content_hash: sha256:0b5ef5a4b04ec6837a3f4d1a17098f3cc3aeda6a289827a7954046c044a577f6
+validation_hash: sha256:bf026a35ccb4055188b160c2b04181cdc8c5c028dd708df109cf450c9927eef2
 title: kube-proxy removed; Service rules go stale when a pod moves
 mechanism: platform/service-proxy-down
 split: train
@@ -59,11 +59,21 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  - type: pods_ready
+    selector: k8s-app=kube-proxy
+    namespace: kube-system
+  invariants:
+  - shop_health
+  durability:
+  - restart: daemonset/kube-proxy
+    namespace: kube-system
+  - restart: opentelemetry.io/name=payment
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: daemonset/kube-proxy
@@ -82,8 +92,9 @@ reference:
   - kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
   - kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

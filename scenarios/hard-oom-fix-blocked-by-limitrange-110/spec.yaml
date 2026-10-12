@@ -7,8 +7,8 @@ instance_of:
   template: hard-oom-fix-blocked-by-limitrange-110
   version: 1
   params: {}
-content_hash: sha256:21ad97cd9994f1320e372eceb41aea7f4db05be2f2aa36394d750147833d9377
-validation_hash: sha256:5671e49a607e12d448570477e8768339d13c8b55ba51e14d79ed1d8ee2cda73a
+content_hash: sha256:193519046e022cee35beac1f1e0274798e29eb6dcd718d2413b1a725a9e13b8b
+validation_hash: sha256:1731ee3ea8c1509bff6cfe0444fe1d491d84bd92b062bc802b6c14ab05f9a9b2
 title: The ad service OOM-loops, and the obvious fix is rejected by a namespace LimitRange
 mechanism: hard/oom-fix-blocked-by-limitrange
 split: hard
@@ -75,11 +75,16 @@ verifier:
   - type: pods_stable
     selector: opentelemetry.io/name=ad
     min_age_s: 120
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/ad
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/ad
@@ -106,11 +111,12 @@ reference:
   - 'Setting the limit to 128Mi to satisfy the LimitRange: the JVM still does not fit.'
   - Not reading ReplicaSet events, so the rejection stays invisible.
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 3

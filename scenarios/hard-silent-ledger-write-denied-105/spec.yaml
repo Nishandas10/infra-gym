@@ -7,8 +7,8 @@ instance_of:
   template: hard-silent-ledger-write-denied-105
   version: 1
   params: {}
-content_hash: sha256:58a03edff7d01ade6a73c5d8f9e10e685fb1caffcafbd6f03decad238d01400d
-validation_hash: sha256:5662427abcbde6d90a0a07ffa1ec4e9e8943f74210acab10ca8fa1e1160e1266
+content_hash: sha256:ae2bc27280c2380597ec955ff7d2706cabd9936aa88e23d116fe0ef1ca79b2a3
+validation_hash: sha256:9c844a06a0cfdc1f161d82ba6c028738735cbe1106a4b891931f97638e80a1c3
 title: Orders disappear between checkout and the accounting ledger (write permission revoked)
 mechanism: hard/silent-async-write-permission
 split: hard
@@ -137,11 +137,15 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/astronomy-db
@@ -169,11 +173,12 @@ reference:
   - Stopping at 'checkout works' because every user-facing check is green.
   - Chasing the S3 export failure or the Pending GPU job (other teams, unrelated).
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 1

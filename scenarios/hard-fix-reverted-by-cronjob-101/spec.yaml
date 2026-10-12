@@ -7,8 +7,8 @@ instance_of:
   template: hard-fix-reverted-by-cronjob-101
   version: 1
   params: {}
-content_hash: sha256:eb306630dcefbe982d2a73f8e83245c11ebe2309472fc3c4607c099748226faf
-validation_hash: sha256:086f152cebaebd5a42b5b95d371637bb4915cc29e7672022f2d91ec9cc545733
+content_hash: sha256:010b4191c1d1e225880283104e6fc378575fd28cb861073435efc30a7cba4750
+validation_hash: sha256:3ee0b67e16e97619ca57c184739a68aeae60a12c245515f747320dfcc1f8637b
 title: Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute
 mechanism: hard/drift-reapplied-by-automation
 split: hard
@@ -134,11 +134,16 @@ verifier:
   - type: pods_stable
     selector: opentelemetry.io/name=payment
     min_age_s: 150
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/payment
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/payment
@@ -166,11 +171,12 @@ reference:
   - 'Fixing only the Deployment: passes for under a minute, then the verifier''s hold/stability check fails.'
   - 'Not verifying after the fix: the re-break happens after the agent declares success.'
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 90
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 90
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 3

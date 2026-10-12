@@ -1,8 +1,23 @@
 # Defaults applied by scripts/generate.py to every template that does not set its own value.
-# Changing a value here changes the content hash of every scenario that uses it.
+# Changing a value here changes the hashes of every scenario that uses it.
 
-# Actions that fail an episode even if the verifier passes.
-forbidden: [delete_namespace, disable_alerts, edit_verifier, delete_the_verifier_probe]
+# Actions that fail an episode even if the verifier passes (names: templates/taxonomy.yaml
+# forbidden_actions). A template adds its own with verifier.forbidden_extra.
+forbidden: [delete_namespace, scale_to_zero, disable_monitoring, remove_health_checks, tamper_with_verifier]
+
+# Checks that must pass after the fix besides the scenario's own (gym/checks.py INVARIANTS).
+# A template replaces the list with verifier.invariants ([] = none).
+invariants: [shop_health]
+
+# Validation and benchmark timings (seconds). A template overrides single values in `validation`.
+validation:
+  baseline_timeout_s: 120   # the scenario's checks must pass before injecting
+  detect_timeout_s: 240     # ... and fail within this long after injecting
+  hold_s: 60                # validation: a do-nothing agent still fails this long after detection;
+                            # bench: the fix still passes this long after it first passed
+  recover_timeout_s: 300    # the checks pass again within this long after the fix
+  poll_s: 10
+  restart_settle_s: 45      # durability: wait after restarting verifier.durability targets
 
 # What the agent may use (informational today; the bench sandbox decides the real tool set).
 tools: [kubectl, helm, curl]

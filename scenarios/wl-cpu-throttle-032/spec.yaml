@@ -7,8 +7,8 @@ instance_of:
   template: wl-cpu-throttle-032
   version: 1
   params: {}
-content_hash: sha256:16126328f9224897683017e91cc5ba4b66bba9ac4ce7e83905044c4b88437801
-validation_hash: sha256:d941b01a530e834610d71b7419cb26b6fec244ea4202bef3cfe4ac11e53197b1
+content_hash: sha256:6aa59f4b45f65edab68a9a46a483b98f5cfddfc3985c8c43de57bb2f936418a0
+validation_hash: sha256:f1ab8d2b0faaab561fd45ee83009452f7cecca9a12b8c8dca2fd075adebd030b
 title: CPU limit so low the service is throttled into slowness
 mechanism: workload/cpu-limit-throttling
 split: train
@@ -55,11 +55,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 1500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/frontend
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/frontend
@@ -76,8 +81,9 @@ reference:
   - kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"}]'
   - kubectl rollout status deployment/frontend --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

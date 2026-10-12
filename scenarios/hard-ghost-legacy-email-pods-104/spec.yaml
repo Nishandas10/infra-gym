@@ -7,8 +7,8 @@ instance_of:
   template: hard-ghost-legacy-email-pods-104
   version: 1
   params: {}
-content_hash: sha256:f3f70295fd1a3fb87270eb2dae9db4afa7b2db7ca03d53d8cd5815a0c5525e4b
-validation_hash: sha256:8336cda2b0cfb6977e12ed33a272507d2caff92339fa2baa9e0699e072c96cc2
+content_hash: sha256:cd45c68a76a7a7f8fd7606baa691f378b9c03ee8c7708c13c65a8728405c14e8
+validation_hash: sha256:6ae3c35fd5722d8ddc51b988a4d520bb4a9b25c7f83cccf0b1b8aed284c1cd1a
 title: Leftover legacy pods still match the email Service and swallow part of the traffic
 mechanism: hard/stale-workload-matches-service-selector
 split: hard
@@ -91,11 +91,15 @@ verifier:
     repeat: 8
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/email-v1-legacy
@@ -117,11 +121,12 @@ reference:
   - 'Restarting the real email Deployment: nothing changes.'
   - Testing once and concluding the service is fine (the failure is intermittent).
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   tier: hard
   layers: 1

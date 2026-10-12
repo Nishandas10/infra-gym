@@ -41,18 +41,7 @@ fault:
     pause_s: 30
   - mechanism: k8s.object_patch
     kind: node
-    name: ai-gym-worker
-    namespace: null
-    ops:
-    - op: append
-      path: /spec/taints
-      value:
-        key: dedicated
-        value: batch
-        effect: NoSchedule
-  - mechanism: k8s.object_patch
-    kind: node
-    name: ai-gym-worker2
+    name: $workers
     namespace: null
     ops:
     - op: append
@@ -74,23 +63,23 @@ verifier:
     selector: opentelemetry.io/name=currency
 ground_truth:
   root_causes:
-  - component: node/ai-gym-worker,ai-gym-worker2
+  - component: node/$workers
     namespace: null
-    what: both workers carry the NoSchedule taint dedicated=batch, so the recreated currency pod is Pending
-  explanation: 'Both worker nodes carry a NoSchedule taint (dedicated=batch) and the currency pod, recreated afterwards,
+    what: every worker node carries the NoSchedule taint dedicated=batch, so the recreated currency pod is Pending
+  explanation: 'All worker nodes carry a NoSchedule taint (dedicated=batch) and the currency pod, recreated afterwards,
     has no toleration, so it is Pending and currency conversion fails. Separately, the collector exports traces
     to the wrong Jaeger port: loud, real, but it does not affect customers.'
   evidence:
   - The currency journey fails; `kubectl get pods -l opentelemetry.io/name=currency` shows Pending.
   - '`kubectl describe pod` (or events): 0/3 nodes available, untolerated taint dedicated=batch.'
-  - '`kubectl describe nodes` shows the taint on both workers.'
+  - '`kubectl describe nodes` shows the taint on every worker.'
   - Remove the taints (or add a toleration); currency schedules and conversions work. The collector export errors
     can be fixed separately; they are not what customers see.
   red_herrings:
   - the trace pipeline is genuinely broken (wrong exporter port), with errors in collector logs
 reference:
   commands:
-  - kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+  - kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
   - kubectl rollout status deployment/currency --timeout=300s
   traps:
   - Spending the budget on the collector's export errors (real but not customer-facing).
@@ -99,7 +88,6 @@ validation:
   detect_timeout_s: 300
   recover_timeout_s: 420
   hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
 budget:
   max_steps: 40

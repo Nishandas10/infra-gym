@@ -36,11 +36,6 @@ verifier:
     repeat: 3
     max_error_pct: 34
     max_avg_ms: 2500
-  forbidden:
-  - delete_namespace
-  - disable_alerts
-  - scale_to_zero
-  - edit_verifier
 ground_truth:
   root_causes:
   - component: flag/productCatalogFailure

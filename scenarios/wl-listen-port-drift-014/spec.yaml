@@ -7,8 +7,8 @@ instance_of:
   template: wl-listen-port-drift-014
   version: 1
   params: {}
-content_hash: sha256:d13ea54e74748dea15fe13a6e49ce7bb23659bd7ffa1ef10cdcffa8b9b7ae0dd
-validation_hash: sha256:ef2e458d2023f6cb70199510503939fe8aa01a6c44b496abd10ce4a7a5348842
+content_hash: sha256:c57baa042e376fba82ddeaf6227a39980b31ec67d2910c67651152b55fba6307
+validation_hash: sha256:87757ac4527af4e577e85f436b21eed4854c89af7cad2aae7170009cce513a8e
 title: Service listens on a different port than its Kubernetes Service targets
 mechanism: workload/listen-port-drift
 split: train
@@ -52,11 +52,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/payment
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/payment
@@ -74,8 +79,9 @@ reference:
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

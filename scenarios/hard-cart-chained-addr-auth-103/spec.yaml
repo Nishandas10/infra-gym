@@ -7,8 +7,8 @@ instance_of:
   template: hard-cart-chained-addr-auth-103
   version: 1
   params: {}
-content_hash: sha256:8b98c4212855810d74ed019ef66654223de3589732b3d2e933468ef9df95e9cf
-validation_hash: sha256:29918341dedb89b1788d082d1cff06a75fa39781b976acdf4f32498d4bc3f174
+content_hash: sha256:44e7db5cdfa4abdeacbe116a6b9f0b7ca91ee467c2829ea83038a3201fc4791a
+validation_hash: sha256:b66d7ba2ba1aaf0f4da132ef8d8b8e8639a7d163bfaab2f392abfa52cf28830b
 title: A mistyped cart datastore port hides a half-finished credential rotation behind it
 mechanism: hard/chained-config-then-credential
 split: hard
@@ -82,11 +82,16 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/cart
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/cart
@@ -116,11 +121,12 @@ reference:
   - Declaring victory after the port fix without re-testing (the second layer is still there).
   - 'Restarting valkey-cart to drop the password: it works but throws away every customer''s cart.'
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'recreate_pods: old cart pods hold connections authenticated before the rotation and would keep working; replacing
   them makes every cart connection new (as 076 does with a restart).'

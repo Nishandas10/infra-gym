@@ -78,6 +78,8 @@ verifier:
     repeat: 4
     max_error_pct: 0
     max_avg_ms: 2500
+  durability:
+  - restart: deployment/quote
 ground_truth:
   root_causes:
   - component: service/quote
@@ -106,7 +108,6 @@ validation:
   detect_timeout_s: 300
   recover_timeout_s: 420
   hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
 budget:
   max_steps: 40

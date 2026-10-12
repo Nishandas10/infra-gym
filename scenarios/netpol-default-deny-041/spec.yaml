@@ -7,8 +7,8 @@ instance_of:
   template: netpol-default-deny-041
   version: 1
   params: {}
-content_hash: sha256:54ca35ee53b9796742e242e99f8211d575abe698c715e6f57ef94d6fe6d587d3
-validation_hash: sha256:ccac76cbe02a2f98179ef89e42bc526aabc60384fd9317bb97c3648075706c73
+content_hash: sha256:64b5f855e2c0d6e4ae8045f661184bb7fa12230256d6225a733a1662bb1de96e
+validation_hash: sha256:8487bf480f08d25e322f7424545a7ce117a50cafb5c0e1c859a8dcb20201a9ab
 title: Namespace-wide default-deny ingress policy
 mechanism: network-policy/namespace-default-deny
 split: train
@@ -59,11 +59,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 2500
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: networkpolicy/default-deny-ingress
@@ -79,8 +83,9 @@ reference:
   commands:
   - kubectl delete networkpolicy default-deny-ingress
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

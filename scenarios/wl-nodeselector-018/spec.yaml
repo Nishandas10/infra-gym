@@ -7,8 +7,8 @@ instance_of:
   template: wl-nodeselector-018
   version: 1
   params: {}
-content_hash: sha256:75ca624ae17128134cb02e3bc5f7a3fc5f4545c7bf1863066a24de538d803057
-validation_hash: sha256:860afd49730f738afd9c10b289a82f5fe39c7d330703708cb98cf3dbcd6b8ba2
+content_hash: sha256:a9d4628e03fa8f84d37fc691680715081cda333fddeca311f1c76c5f980365a9
+validation_hash: sha256:f3c1b12b095cc57a3a66575e028c4e4c4ebf9931e8ad05d3f50d0ff661de49f2
 title: nodeSelector matches no node -> Pending
 mechanism: workload/unschedulable-node-selector
 split: train
@@ -51,11 +51,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=ad
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/ad
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/ad
@@ -72,8 +77,9 @@ reference:
   - kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
   - kubectl rollout status deployment/ad --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

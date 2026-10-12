@@ -7,8 +7,8 @@ instance_of:
   template: pod-security-restricted-049
   version: 1
   params: {}
-content_hash: sha256:a8498b5a5dd0503d65f0e8ca7e070c916e1e78b6115922c28c9b78dc64d73948
-validation_hash: sha256:625b22f4acbbc06b5d144fec24f274eb0fb983cbc2139a9b2b2a4d8ed4f26525
+content_hash: sha256:4fc7ad5b306f59d4c70bfd5896ace0d59f1caeb9a92e77b541f8d3bb0419cbea
+validation_hash: sha256:c882bcafdf71ca982f15dd44e6af15c685284cfb042106212a6399058b81e85c
 title: Namespace switched to the 'restricted' Pod Security Standard
 mechanism: platform/pod-security-admission
 split: train
@@ -56,11 +56,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=image-provider
+  invariants:
+  - shop_health
+  durability:
+  - restart: opentelemetry.io/name=image-provider
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: namespace/default
@@ -78,8 +83,9 @@ reference:
   - kubectl rollout restart deployment/image-provider
   - kubectl rollout status deployment/image-provider --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

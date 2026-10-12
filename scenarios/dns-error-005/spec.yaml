@@ -7,8 +7,8 @@ instance_of:
   template: dns-error-005
   version: 1
   params: {}
-content_hash: sha256:fbb42fb2beccbd86232f637b26f336e0588cd11d8446ecc4acadad921c4d6764
-validation_hash: sha256:5c2a88801129b7759d55396c8eb7baf8df33683d68d476e5a4744de80719c491
+content_hash: sha256:2af71ab5630e35b032c967b781e9641297f0438cd6ba6c109f563e41030d7fda
+validation_hash: sha256:da7ff1d6d22b0bb88936ef7050970a102660eb59cb0f23728f71393ffb8bfe87
 title: DNS lookups of one dependency fail from one service
 mechanism: chaos/dns-error
 split: train
@@ -55,11 +55,15 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: dnschaos/dns-error-005
@@ -77,8 +81,12 @@ reference:
   commands:
   - kubectl delete dnschaos.chaos-mesh.org dns-error-005
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 180
+  hold_s: 60
   recover_timeout_s: 240
+  poll_s: 10
+  restart_settle_s: 45
 notes:
 - 'kill_pods_after: cart keeps a long-lived connection to valkey-cart; a routine reschedule of the valkey pod forces
   it to look the name up again.'

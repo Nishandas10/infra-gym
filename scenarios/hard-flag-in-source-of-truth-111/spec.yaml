@@ -7,8 +7,8 @@ instance_of:
   template: hard-flag-in-source-of-truth-111
   version: 1
   params: {}
-content_hash: sha256:4650b56a119e12e540ee03db3bb86f51183d8f3c16b5d6f137821160ab1908b9
-validation_hash: sha256:9c17db510000378a462d047c1508cba83254021c6703ba6bac2d545b38d1679e
+content_hash: sha256:3ed8dfc3be0578feecaf3015c78f26f09ebf2491a71d937068426c7761086248
+validation_hash: sha256:6a54fe8c0578bfe68d21246263b50c948799e8d8645e0e17984bfa1af0cd1612
 title: Half of card payments are declined; a live fix does not survive the next restart
 mechanism: hard/fault-in-source-config-live-fix-not-durable
 split: hard
@@ -50,11 +50,16 @@ verifier:
     repeat: 8
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/flagd
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: configmap/flagd-config
@@ -75,13 +80,11 @@ reference:
   - 'Fixing only the live flag file: passes now, fails after the verifier restarts flagd.'
   - 'Fixing only the ConfigMap without restarting flagd: nothing changes until the next restart.'
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 420
-  hold_s: 60
-  poll_s: 10
   baseline_timeout_s: 180
-  restart_after_fix:
-  - deployment/flagd
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 420
+  poll_s: 10
   restart_settle_s: 45
 meta:
   tier: hard

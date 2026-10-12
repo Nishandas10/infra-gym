@@ -7,8 +7,8 @@ instance_of:
   template: pod-kill-003
   version: 1
   params: {}
-content_hash: sha256:9c80f0cd75632bb03992cf9822a02f892b975e8386da847cf71245f6b5e8986f
-validation_hash: sha256:68c95bb98bcb714ef7458ef8147f1d13716a19913389fd0d52514a4faead42fe
+content_hash: sha256:9ad8243a21bf63754990ca788b573c47e2017564a2da1b89b32654b2b51bbab5
+validation_hash: sha256:548394667fd30d0ddebf71b7367c73719ea80b14cbd6b5cdc75dcce1a88e5c1d
 title: A service's pod is killed every 45 seconds
 mechanism: chaos/pod-kill-periodic
 split: train
@@ -49,11 +49,15 @@ verifier:
     repeat: 3
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: schedule/pod-kill-003
@@ -70,8 +74,11 @@ reference:
   commands:
   - kubectl delete schedule.chaos-mesh.org pod-kill-003
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 150
-  recover_timeout_s: 240
   hold_s: 45
+  recover_timeout_s: 240
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   golden: true

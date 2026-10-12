@@ -7,8 +7,8 @@ instance_of:
   template: wl-crash-invalid-env-013
   version: 1
   params: {}
-content_hash: sha256:48bace544514e85030d7335617e64e8e524c10aa5cb44dc74c9d239fb3f707bf
-validation_hash: sha256:ad1cad4a2f247c6b355f4a222cda6e0ca4528f4285f2ed4eff7aaed28aad4d2b
+content_hash: sha256:fc2023c5e84acacfcd0d5534716b235ec48c2a474b675c6fc695fc82c7a93653
+validation_hash: sha256:ee63a86ba74d9de168b1201a948695b0d42d74000a6d805a1ce24809c57f0349
 title: Invalid configuration value makes the service crash at startup
 mechanism: workload/invalid-config-crash
 split: train
@@ -51,11 +51,16 @@ verifier:
     max_avg_ms: 2500
   - type: pods_ready
     selector: opentelemetry.io/name=shipping
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/shipping
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/shipping
@@ -72,8 +77,9 @@ reference:
   - kubectl set env deployment/shipping SHIPPING_PORT=8080
   - kubectl rollout status deployment/shipping --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

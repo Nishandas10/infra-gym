@@ -7,8 +7,8 @@ instance_of:
   template: wl-missing-configmap-volume-019
   version: 1
   params: {}
-content_hash: sha256:74d14532f2d018655d3a875b747142299200d86ec197ca13862a18fc87203415
-validation_hash: sha256:27f44d1b098be531cc7b91bdb87ec234edf50cf3c5d3a7a9bf461e0255fd1357
+content_hash: sha256:4f0ee949f1b4013a83166f1eaab66f9c535ba24bd21e5b0acf8590a1d02f42ba
+validation_hash: sha256:639c88a79838f4c3b6f15d63e48a0124c11188467ecbbd8f5e3c6dfad81f3ff9
 title: Pod mounts a ConfigMap that does not exist -> stuck ContainerCreating
 mechanism: workload/missing-configmap-volume
 split: train
@@ -60,11 +60,16 @@ verifier:
   - type: kafka_lag
     group: fraud-detection
     max_lag: 50
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/fraud-detection
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/fraud-detection
@@ -84,8 +89,9 @@ reference:
   - kubectl rollout undo deployment/fraud-detection
   - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

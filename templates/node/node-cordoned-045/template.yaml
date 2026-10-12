@@ -24,15 +24,7 @@ fault:
   steps:
   - mechanism: k8s.object_patch
     kind: node
-    name: ai-gym-worker
-    namespace: null
-    ops:
-    - op: set
-      path: /spec/unschedulable
-      value: true
-  - mechanism: k8s.object_patch
-    kind: node
-    name: ai-gym-worker2
+    name: $workers
     namespace: null
     ops:
     - op: set
@@ -51,22 +43,16 @@ verifier:
     selector: opentelemetry.io/name=cart
 ground_truth:
   root_causes:
-  - component: node/ai-gym-worker,ai-gym-worker2
+  - component: node/$workers
     namespace: null
-    what: both worker nodes are cordoned, so the cart pod cannot be scheduled
-  explanation: Both worker nodes were cordoned for maintenance and never uncordoned. When the cart pod was removed,
+    what: every worker node is cordoned, so the cart pod cannot be scheduled
+  explanation: All worker nodes were cordoned for maintenance and never uncordoned. When the cart pod was removed,
     its replacement had nowhere to be scheduled (the control-plane node is tainted).
   evidence:
   - '`kubectl get pods`: cart `Pending`.'
   - '`kubectl describe pod -l opentelemetry.io/name=cart`: `node(s) were unschedulable`.'
-  - '`kubectl get nodes`: both workers `SchedulingDisabled`.'
+  - '`kubectl get nodes`: every worker `SchedulingDisabled`.'
 reference:
   commands:
-  - kubectl uncordon ai-gym-worker ai-gym-worker2
+  - kubectl uncordon -l '!node-role.kubernetes.io/control-plane'
   - kubectl rollout status deployment/cart --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

@@ -7,8 +7,8 @@ instance_of:
   template: wl-scaled-to-zero-025
   version: 1
   params: {}
-content_hash: sha256:0fefcfcc50a23ac8a3a5c619009d39526afdff08bd17bbb8e0843bc7fdaab0a7
-validation_hash: sha256:2a0a73966ed3a894db27e19739b5eda56ea84561781c0201765535e3ec44b912
+content_hash: sha256:061e837584f8e603e60988c4a71159b24debbe04589634b30f287db9c0ea9a4f
+validation_hash: sha256:848c5acf7df78498f2232c0b537f19d9b83e13653ad74df80597d25f50230a52
 title: Deployment scaled to zero replicas
 mechanism: workload/scaled-to-zero
 split: train
@@ -50,11 +50,16 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: checkout
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/checkout
@@ -71,8 +76,9 @@ reference:
   - kubectl scale deployment checkout --replicas=1
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

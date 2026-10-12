@@ -60,9 +60,3 @@ reference:
   - kubectl delete resourcequota namespace-pod-quota
   - kubectl rollout restart deployment/shipping
   - kubectl rollout status deployment/shipping --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120

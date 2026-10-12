@@ -7,8 +7,8 @@ instance_of:
   template: kafka-message-too-large-082
   version: 1
   params: {}
-content_hash: sha256:575bbbf52b0b14c72544614b40d46062fb707012268c611731af71d64c58eefb
-validation_hash: sha256:2eed56306b05b81b438966cafbe5a99c22bf8414d4617dea3664d7d2fc28a91b
+content_hash: sha256:cac75f6c274f47f9da7d0d0fec6b67958eaad762c4558841dd7e9c0770afaab6
+validation_hash: sha256:03d49af05e6e90c382867350f9b0dacfd0c778ced22c5b273172ba86a8f75013
 title: Topic max message size below the size of real messages
 mechanism: datastore/queue-message-size-limit
 split: train
@@ -75,11 +75,15 @@ verifier:
     repeat: 2
     max_error_pct: 0
     max_avg_ms: 5000
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/kafka
@@ -97,8 +101,9 @@ reference:
   - kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092
     --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

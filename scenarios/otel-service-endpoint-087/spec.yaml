@@ -7,8 +7,8 @@ instance_of:
   template: otel-service-endpoint-087
   version: 1
   params: {}
-content_hash: sha256:e220057d6d19bd82cbbceda1f6ae439ea6671496bacbe340163831812d33c377
-validation_hash: sha256:ae8135da7bea797778907cfe061d19a7b5a7e75de220b614e037490a4c70d15a
+content_hash: sha256:a51b9a74f981243680d4d23db36f8860ede18e2d6d7057423b46964884b58896
+validation_hash: sha256:95c0fb5b7642ac36fbcdcbb70dd6af2e68fdcbef1e7f79f16449a605a34f8b48
 title: One service exports telemetry to a collector name that does not exist
 mechanism: observability/service-exporter-misconfigured
 split: train
@@ -50,11 +50,16 @@ verifier:
     service: checkout
     lookback: 1m
     min_traces: 1
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/checkout
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: deployment/checkout
@@ -71,8 +76,9 @@ reference:
   - kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
   - kubectl rollout status deployment/checkout --timeout=300s
 validation:
-  detect_timeout_s: 300
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 300
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

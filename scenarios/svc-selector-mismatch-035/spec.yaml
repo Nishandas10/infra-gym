@@ -7,8 +7,8 @@ instance_of:
   template: svc-selector-mismatch-035
   version: 1
   params: {}
-content_hash: sha256:efd3c51400eebb8f56ee55925f32b8d8b1edad34d0179f0ceb6902e875c737e1
-validation_hash: sha256:6d032c3a7fe378cb03c29167aab82f136b1a44c4c7862eb7d92086c6c9ea1ebc
+content_hash: sha256:860019c5105ea9daad34bf238b12c6b9578aaaaa8d576ea6f024e3253d5854fe
+validation_hash: sha256:760d31420df3d731127ab46727f7453952d7464853ded4533fab1014d3ce7355
 title: Service selector matches no pods -> no endpoints
 mechanism: service/selector-mismatch
 split: train
@@ -57,11 +57,16 @@ verifier:
     max_avg_ms: 2500
   - type: endpoints
     service: product-catalog
+  invariants:
+  - shop_health
+  durability:
+  - restart: deployment/product-catalog
   forbidden:
   - delete_namespace
-  - disable_alerts
-  - edit_verifier
-  - delete_the_verifier_probe
+  - scale_to_zero
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: service/product-catalog
@@ -77,8 +82,9 @@ reference:
   commands:
   - kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
 validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
   baseline_timeout_s: 120
+  detect_timeout_s: 240
+  hold_s: 60
+  recover_timeout_s: 300
+  poll_s: 10
+  restart_settle_s: 45

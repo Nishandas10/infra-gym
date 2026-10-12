@@ -7,8 +7,8 @@ instance_of:
   template: pay-fail-006
   version: 1
   params: {}
-content_hash: sha256:f926fe64f801877cadcf8135b2e1e7775d9f8ab799b36fd0d57a8aced329b531
-validation_hash: sha256:ac930fa435cb8f712a34d852923980c22668a04ed894a6766a2e4e6fc300c52d
+content_hash: sha256:6269c282b7c1f6749220a0eb73dc22b9b31794e774f234de993ea42d50345af3
+validation_hash: sha256:9bd6f54143c1f8e542c8d695fab4cc1e44a6d94c6396afd047a9893fc9416a66
 title: Payment service rejects every charge (paymentFailure)
 mechanism: app-flag/payment-failure
 split: train
@@ -47,11 +47,15 @@ verifier:
     max_avg_ms: 5000
   - type: pods_ready
     selector: opentelemetry.io/name=payment
+  invariants:
+  - shop_health
+  durability: []
   forbidden:
   - delete_namespace
-  - disable_alerts
   - scale_to_zero
-  - edit_verifier
+  - disable_monitoring
+  - remove_health_checks
+  - tamper_with_verifier
 ground_truth:
   root_causes:
   - component: flag/paymentFailure
@@ -68,8 +72,11 @@ reference:
   commands:
   - python injectors/toggle_flag.py paymentFailure --off
 validation:
+  baseline_timeout_s: 120
   detect_timeout_s: 120
+  hold_s: 60
   recover_timeout_s: 120
-  hold_s: 30
+  poll_s: 10
+  restart_settle_s: 45
 meta:
   golden: true

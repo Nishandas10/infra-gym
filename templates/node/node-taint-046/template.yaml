@@ -22,18 +22,7 @@ fault:
   steps:
   - mechanism: k8s.object_patch
     kind: node
-    name: ai-gym-worker
-    namespace: null
-    ops:
-    - op: append
-      path: /spec/taints
-      value:
-        key: dedicated
-        value: batch
-        effect: NoSchedule
-  - mechanism: k8s.object_patch
-    kind: node
-    name: ai-gym-worker2
+    name: $workers
     namespace: null
     ops:
     - op: append
@@ -55,10 +44,10 @@ verifier:
     selector: opentelemetry.io/name=currency
 ground_truth:
   root_causes:
-  - component: node/ai-gym-worker,ai-gym-worker2
+  - component: node/$workers
     namespace: null
-    what: both workers carry the NoSchedule taint dedicated=batch and the currency pod has no toleration
-  explanation: Both workers were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new currency
+    what: every worker node carries the NoSchedule taint dedicated=batch and the currency pod has no toleration
+  explanation: All worker nodes were tainted `dedicated=batch:NoSchedule` to reserve them for batch jobs. The new currency
     pod has no matching toleration and cannot be scheduled anywhere.
   evidence:
   - '`kubectl get pods`: currency `Pending`.'
@@ -66,11 +55,5 @@ ground_truth:
   - '`kubectl describe nodes | grep Taints`.'
 reference:
   commands:
-  - kubectl taint nodes ai-gym-worker ai-gym-worker2 dedicated=batch:NoSchedule-
+  - kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
   - kubectl rollout status deployment/currency --timeout=300s
-validation:
-  detect_timeout_s: 240
-  recover_timeout_s: 300
-  hold_s: 30
-  poll_s: 10
-  baseline_timeout_s: 120
