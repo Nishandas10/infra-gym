@@ -5,7 +5,7 @@ usage:
   python scripts/generate.py --check    # exit 1 if any instance is out of date (CI)
   python scripts/generate.py --index    # only rebuild scenarios/CATALOG.md
 
-Never edit scenarios/<id>/ by hand: edit templates/<family>/<id>/ and regenerate.
+Never edit scenarios/<id>/ by hand: edit templates/<layer>/<id>/ and regenerate.
 """
 import argparse
 import pathlib
