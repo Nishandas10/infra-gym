@@ -8,9 +8,8 @@
 
 1. checkout logs: charging the card fails with 'connection refused' to the payment Service.
 2. payment logs say it listens on 8081; `kubectl get svc payment` targets 8080. Env PAYMENT_PORT=8081.
-3. Fix the env var; checkout recovers. Watch for a minute: payment rolls again and breaks.
+3. Once the env var is corrected, checkout recovers, but within a minute payment rolls again and breaks.
 4. `kubectl rollout history deployment/payment`, the deployment's managedFields (manager 'curl') and `kubectl get cronjobs,jobs` show payment-config-sync re-applying the bad value every minute.
-5. Stop the automation (delete or suspend the CronJob) and fix the env var.
 
 ## Traps (why this is hard)
 
@@ -18,6 +17,8 @@
 - Not verifying after the fix: the re-break happens after the agent declares success.
 
 ## Fix
+
+Stop the payment-config-sync CronJob (delete or suspend it) and set PAYMENT_PORT back to 8080.
 
 ```bash
 kubectl delete cronjob payment-config-sync

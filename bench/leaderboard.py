@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Turns bench/results/results.jsonl into a leaderboard (printed, and saved to bench/results/leaderboard.md)."""
+"""Turns the benchmark results into a leaderboard (printed, and saved as leaderboard-<suite>.md).
+
+  python bench/leaderboard.py --suite bench-v1-dev            only rows of exactly the suite's instances
+  python bench/leaderboard.py --suite bench-v1-dev --common   only scenarios every model finished
+  python bench/leaderboard.py                                 every recorded episode (versions may differ)
+
+Pass rates are broken down by the tag axes layer, fix type and drivers. Private suites read and write
+the private checkout's results (bench/rows.py).
+"""
 import argparse
-import json
 import math
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-RES = Path(__file__).resolve().parent / "results"
-sys.path.insert(0, str(RES.parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import yaml  # noqa: E402
-
-from gym.faults import canonical  # noqa: E402
-from gym.spec import all_specs  # noqa: E402
+import rows as R  # noqa: E402
 
 
 def wilson(k, n, z=1.96):
@@ -28,47 +31,31 @@ def wilson(k, n, z=1.96):
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--set", help="only scenarios listed in this set file (e.g. bench/sets/set30.txt)")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    R.add_suite_args(ap)
     ap.add_argument("--common", action="store_true",
                     help="only scenarios that every model has a finished result for (fair comparison)")
     ap.add_argument("--model", default="", help="only models whose ID contains one of these (comma-separated)")
     args = ap.parse_args()
-    path = RES / "results.jsonl"
-    if not path.exists():
-        sys.exit("No results yet. Run: python bench/agent_bench.py run")
-    layer_by_id = {}
-    for p in all_specs():
-        s = yaml.safe_load(p.read_text())
-        layer_by_id[s["id"]] = s["tags"]["layer"]
-    latest = {}
-    for line in open(path):
-        if line.strip():
-            r = json.loads(line)
-            if r.get("fault_type"):  # results from before spec v2 use the old mechanism names
-                r["fault_type"] = canonical(r["fault_type"])
-            if "layer" not in r:     # results from before Phase 2 recorded a family instead
-                r["layer"] = layer_by_id.get(r.get("scenario"), r.get("family", "unknown"))
-            latest[(r["key"], r["model"], r["attempt"])] = r
+    suite = R.suite_from_args(args)
+    latest = R.load(suite, args.any_version)
     if args.model:
         wanted = [w.strip() for w in args.model.split(",") if w.strip()]
-        latest = {k: r for k, r in latest.items() if any(w in r["model"] for w in wanted)}
-    if args.set:
-        ids = {l.split("#")[0].strip() for l in open(args.set) if l.split("#")[0].strip()}
-        latest = {k: r for k, r in latest.items() if r["key"] in ids}
+        latest = [r for r in latest if any(w in r["model"] for w in wanted)]
+    notes = []
     if args.common:
-        models_all = {r["model"] for r in latest.values()}
+        models_all = {r["model"] for r in latest}
         have = defaultdict(set)
-        for r in latest.values():
+        for r in latest:
             if r.get("status") == "done":
-                have[r["key"]].add(r["model"])
+                have[r["scenario"]].add(r["model"])
         shared = {k for k, ms in have.items() if ms == models_all}
-        latest = {k: r for k, r in latest.items() if r["key"] in shared}
-        print(f"Comparing on {len(shared)} scenarios that all {len(models_all)} models have finished.\n")
+        latest = [r for r in latest if r["scenario"] in shared]
+        notes.append(f"Compared on the {len(shared)} scenarios that all {len(models_all)} models finished.")
     if not latest:
-        sys.exit("Nothing to show with these filters.")
+        sys.exit("Nothing to show with these filters." + ("" if suite else " Run: python bench/agent_bench.py run"))
     by_model = defaultdict(list)
-    for r in latest.values():
+    for r in latest:
         by_model[r["model"]].append(r)
 
     stats = []
@@ -87,7 +74,8 @@ def main():
                       "touched": touched, "worse": worse})
     stats.sort(key=lambda s: (-s["p"], s["model"]))
 
-    out = ["# Leaderboard", "",
+    name = R.title(suite, args.any_version)
+    out = [f"# Leaderboard ({name})", "", *R.provenance(suite, latest, args.any_version), *notes, "",
            "| Rank | Model | Pass rate | 95% range | Passed / episodes | Clean fixes | Collateral changes | "
            "Made it worse | Forbidden | Avg commands | Avg tokens | Errors/invalid |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -95,28 +83,17 @@ def main():
         out.append(f"| {i} | {s['model']} | {s['p']*100:.1f}% | {s['lo']*100:.1f}–{s['hi']*100:.1f}% | "
                    f"{s['k']}/{s['n']} | {s['clean']}/{s['n']} | {s['touched']} | {s['worse']} | {s['forbidden']} | "
                    f"{s['steps']:.1f} | {s['tokens']:,.0f} | {s['skipped']} |")
-
-    models = [s["model"] for s in stats]
-    for field, title in (("layer", "Pass rate by layer"), ("fault_type", "Pass rate by fault type")):
-        groups = sorted({r.get(field, "unknown") for r in latest.values()})
-        out += ["", f"## {title}", "", f"| {field} | " + " | ".join(models) + " |", "|---|" + "---|" * len(models)]
-        for g in groups:
-            cells = []
-            for m in models:
-                rs = [r for r in by_model[m] if r.get(field, "unknown") == g and r.get("status") == "done"]
-                k, n = sum(bool(r["passed"]) for r in rs), len(rs)
-                cells.append(f"{k}/{n} ({k/n*100:.0f}%)" if n else "-")
-            out.append(f"| {g} | " + " | ".join(cells) + " |")
+    out += R.axis_tables(latest, [s["model"] for s in stats])
+    out += ["", "Errors/invalid = API failures, or the scenario's baseline/fault check misbehaved; excluded from "
+            "the pass rate. Clean fixes = passed with no collateral change, nothing made worse and no forbidden "
+            "action. Collateral = changed/created/deleted objects unrelated to the fault (incl. noise objects); "
+            "made it worse = a shop check that passed during the fault failed after the agent."]
 
     text = "\n".join(out)
     print(text)
-    out_file = RES / (f"leaderboard-{Path(args.set).stem}.md" if args.set else "leaderboard.md")
+    out_file = R.results_dir(suite) / f"leaderboard-{name}.md"
     out_file.write_text(text + "\n")
     print(f"\nSaved to {out_file}")
-    print("Errors/invalid = API failures, or the scenario's baseline/fault check misbehaved; excluded from pass rate.")
-    print("Clean fixes = passed with no collateral change, nothing made worse and no forbidden action.")
-    print("Collateral = changed/created/deleted objects unrelated to the fault (incl. noise objects); "
-          "Made it worse = a shop check that passed during the fault failed after the agent.")
 
 
 if __name__ == "__main__":

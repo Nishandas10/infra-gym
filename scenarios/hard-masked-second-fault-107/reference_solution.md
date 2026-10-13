@@ -6,10 +6,9 @@
 
 ## How a careful SRE finds it
 
-1. checkout logs: failed to get product from product-catalog:9090 (connection refused). Fix PRODUCT_CATALOG_ADDR.
-2. Re-test: checkout still fails, now while getting a shipping quote.
+1. checkout logs: failed to get product from product-catalog:9090 (connection refused).
+2. Once PRODUCT_CATALOG_ADDR is corrected, checkout still fails, now while getting a shipping quote.
 3. `kubectl get svc shipping -o yaml`: targetPort 8888; shipping pods listen on 8080 (endpoints/pod spec).
-4. Fix the targetPort; checkout works.
 
 ## Traps (why this is hard)
 
@@ -20,6 +19,8 @@
 - Pending GPU backfill pod with FailedScheduling events
 
 ## Fix
+
+Set checkout's PRODUCT_CATALOG_ADDR back to product-catalog:8080, then set the shipping Service's targetPort back to 8080.
 
 ```bash
 kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080

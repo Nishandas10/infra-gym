@@ -135,7 +135,6 @@ ground_truth:
   - 'accounting logs: ''permission denied for table order'' on insert.'
   - 'In the DB (`kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db`): `\dp accounting."order"`
     shows astronomy_user has no INSERT.'
-  - GRANT INSERT back and restart accounting.
   red_herrings:
   - failed nightly S3 export Job
   - Pending GPU retraining pod with FailedScheduling events
@@ -145,6 +144,7 @@ reference:
     TO astronomy_user'
   - kubectl rollout restart deployment/accounting
   - kubectl rollout status deployment/accounting --timeout=300s
+  fix: GRANT INSERT on accounting."order" back to astronomy_user, then restart accounting so it reconnects.
   traps:
   - Stopping at 'checkout works' because every user-facing check is green.
   - Chasing the S3 export failure or the Pending GPU job (other teams, unrelated).

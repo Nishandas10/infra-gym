@@ -7,7 +7,7 @@ instance_of:
   template: hard-silent-ledger-write-denied-105
   version: 1
   params: {}
-content_hash: sha256:ae2bc27280c2380597ec955ff7d2706cabd9936aa88e23d116fe0ef1ca79b2a3
+content_hash: sha256:cea2385a157e4528cae196e14f46fa79fccc6a1a941733a14ae9ff358d41164e
 validation_hash: sha256:9c844a06a0cfdc1f161d82ba6c028738735cbe1106a4b891931f97638e80a1c3
 status: validated
 title: Orders disappear between checkout and the accounting ledger (write permission revoked)
@@ -160,7 +160,6 @@ ground_truth:
   - 'accounting logs: ''permission denied for table order'' on insert.'
   - 'In the DB (`kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db`): `\dp accounting."order"`
     shows astronomy_user has no INSERT.'
-  - GRANT INSERT back and restart accounting.
   red_herrings:
   - failed nightly S3 export Job
   - Pending GPU retraining pod with FailedScheduling events
@@ -170,6 +169,7 @@ reference:
     TO astronomy_user'
   - kubectl rollout restart deployment/accounting
   - kubectl rollout status deployment/accounting --timeout=300s
+  fix: GRANT INSERT on accounting."order" back to astronomy_user, then restart accounting so it reconnects.
   traps:
   - Stopping at 'checkout works' because every user-facing check is green.
   - Chasing the S3 export failure or the Pending GPU job (other teams, unrelated).

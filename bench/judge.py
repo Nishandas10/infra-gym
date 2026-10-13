@@ -4,15 +4,16 @@
 It never changes PASS/FAIL. The verifier decides that. The judge adds a second, separate score:
 did the model correctly explain WHY the incident happened?
 
-  python bench/judge.py run    --set bench/sets/hard.txt --dry-run     show the prompt + cost estimate, no API call
-  python bench/judge.py run    --set bench/sets/hard.txt               grade every finished episode in the set
-  python bench/judge.py audit  --set bench/sets/hard.txt --n 6         grade a random sample yourself (blind)
-  python bench/judge.py report --set bench/sets/hard.txt               diagnosis table + judge-vs-human agreement
+  python bench/judge.py run    --suite hard-v1 --dry-run    show the prompt + cost estimate, no API call
+  python bench/judge.py run    --suite hard-v1              grade every finished episode in the suite
+  python bench/judge.py audit  --suite hard-v1 --n 6        grade a random sample yourself (blind)
+  python bench/judge.py report --suite hard-v1              diagnosis table + judge-vs-human agreement
 
 Options for run:   --model claude (only that model's episodes)   --judge <model id>   --votes 3   --limit N   --regrade
 Answer key:  scenarios/<id>/judge_key.md if it exists, otherwise the scenario's ground_truth (root causes,
              explanation, evidence, noise) and reference fix, rendered by gym.core.generate.answer_key
-Output:      bench/results/judgments.jsonl, bench/results/human_grades.jsonl, bench/results/diagnosis-<set>.md
+Output:      bench/results/judgments.jsonl, bench/results/human_grades.jsonl, bench/results/diagnosis-<suite>.md
+             (in private/results/ for a private suite)
 
 Rubric v2 grades three things separately: location (did the report name the faulty object(s)),
 mechanism (did it say what is wrong with them) and the overall root_cause grade, which needs both.
@@ -33,7 +34,12 @@ import yaml
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
-RESULTS = HERE / "results"
+sys.path.insert(0, str(HERE))
+
+import rows as R  # noqa: E402
+from rows import ep_key  # noqa: E402
+
+RESULTS = HERE / "results"          # main() points these at the private checkout for a private suite
 JUDGMENTS = RESULTS / "judgments.jsonl"
 HUMAN = RESULTS / "human_grades.jsonl"
 RUBRIC_VERSION = "v2"
@@ -100,27 +106,11 @@ def append_jsonl(path, row):
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def read_set(path):
-    if not path:
-        return None
-    ids = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
-            ids.append(line)
-    return set(ids)
-
-
-def episodes(set_ids, model_filter):
-    """Latest result per (scenario, model, attempt), limited to graded episodes in the set."""
-    latest = {}
-    for r in read_jsonl(RESULTS / "results.jsonl"):
-        latest[(r.get("scenario"), r.get("model"), r.get("attempt"))] = r
+def episodes(a):
+    """The latest row of every finished episode in scope (the suite's instances, see bench/rows.py)."""
     out, skipped = [], Counter()
-    for r in latest.values():
-        if set_ids is not None and r.get("scenario") not in set_ids:
-            continue
-        if model_filter and model_filter not in str(r.get("model")):
+    for r in R.load(a.suite_obj, a.any_version):
+        if a.model and a.model not in str(r.get("model")):
             continue
         if r.get("status") in ("error", "invalid"):
             skipped[r.get("status")] += 1
@@ -130,8 +120,8 @@ def episodes(set_ids, model_filter):
     return out, skipped
 
 
-def ep_key(r):
-    return f"{r.get('scenario')}|{r.get('model')}|{r.get('attempt')}"
+def suite_flag(a):
+    return f" --suite {a.suite}" if a.suite else ""
 
 
 def answer_key(sid):
@@ -270,8 +260,7 @@ def cost_of(js, tin, tout):
 
 # ------------------------------------------------------------------------- commands
 def cmd_run(a):
-    set_ids = read_set(a.set)
-    eps, skipped = episodes(set_ids, a.model)
+    eps, skipped = episodes(a)
     js = judge_settings(a.judge)
     done = {(j["key"], j["judge"], j["rubric"], j["diag_hash"]) for j in read_jsonl(JUDGMENTS)}
     todo, no_key = [], []
@@ -350,7 +339,7 @@ def cmd_run(a):
         print(f"[{i}/{len(todo)}] {row['scenario']:44} {'PASS' if row['passed'] else 'FAIL'}  "
               f"root cause: {row['root_cause']}{flag}")
     print(f"\nDone. Judge cost this run: ${total:.3f}. Next: python bench/judge.py report"
-          + (f" --set {a.set}" if a.set else ""))
+          + suite_flag(a))
 
 
 def latest_judgments(judge=None):
@@ -364,8 +353,7 @@ def latest_judgments(judge=None):
 
 def cmd_audit(a):
     """You grade a random sample yourself, without seeing the judge's grade, to measure how far to trust it."""
-    set_ids = read_set(a.set)
-    eps, _ = episodes(set_ids, a.model)
+    eps, _ = episodes(a)
     graded = {h["key"] for h in read_jsonl(HUMAN)}
     pool = [r for r in eps if ep_key(r) not in graded and (r.get("diagnosis") or "").strip()
             and answer_key(r["scenario"])[0]]
@@ -395,7 +383,7 @@ def cmd_audit(a):
                              "root_cause": keys[ans], "note": note, "diag_hash": diag_hash(r.get("diagnosis")),
                              "at": time.strftime("%Y-%m-%d %H:%M:%S")})
         print("saved\n")
-    print("Done. See agreement with: python bench/judge.py report" + (f" --set {a.set}" if a.set else ""))
+    print("Done. See agreement with: python bench/judge.py report" + suite_flag(a))
 
 
 def kappa(pairs):
@@ -422,8 +410,7 @@ def quadrant(passed, grade):
 
 
 def cmd_report(a):
-    set_ids = read_set(a.set)
-    eps, skipped = episodes(set_ids, a.model)
+    eps, skipped = episodes(a)
     if not a.judge:  # grades from different judges are never mixed in one table
         keys = {ep_key(r) for r in eps}
         used = sorted({j["judge"] for j in read_jsonl(JUDGMENTS) if j["key"] in keys})
@@ -436,10 +423,10 @@ def cmd_report(a):
     js = latest_judgments(a.judge)
     rows = [(r, js[ep_key(r)]) for r in eps if ep_key(r) in js]
     if not rows:
-        sys.exit("No graded episodes yet. Run: python bench/judge.py run" + (f" --set {a.set}" if a.set else ""))
+        sys.exit("No graded episodes yet. Run: python bench/judge.py run" + suite_flag(a))
     judges = sorted({j["judge"] for _, j in rows})
     L = []
-    title = Path(a.set).stem if a.set else "all"
+    title = R.title(a.suite_obj, a.any_version)
     L.append(f"# Diagnosis scores ({title})\n")
     L.append(f"Judge: {', '.join(judges)}, rubric {RUBRIC_VERSION}. The judge saw only the answer key, the incident "
              "prompt and the model's written report (no model name, no PASS/FAIL). Pass rate comes from the "
@@ -481,9 +468,10 @@ def cmd_report(a):
                  f"{j['root_cause']}{votes} | {quadrant(bool(r.get('passed')), j['root_cause'])} | {ev} |")
 
     human = {h["key"]: h for h in read_jsonl(HUMAN)}
+    scope = {ep_key(r) for r in eps}
     pairs = [(human[k]["root_cause"], j["root_cause"]) for k, j in js.items()
              if k in human and human[k].get("diag_hash") in (None, j.get("diag_hash"))
-             and (set_ids is None or j["scenario"] in set_ids)]
+             and k in scope]
     L.append("\n## How far to trust the judge\n")
     if pairs:
         exact = sum(x == y for x, y in pairs) / len(pairs)
@@ -494,7 +482,7 @@ def cmd_report(a):
                  f"Cohen's kappa: {'n/a' if k is None else f'{k:.2f}'} (above 0.6 = good, above 0.8 = very good).\n")
         diffs = [(k2, human[k2]["root_cause"], j["root_cause"]) for k2, j in js.items()
                  if k2 in human and human[k2]["root_cause"] != j["root_cause"]
-                 and (set_ids is None or j["scenario"] in set_ids)]
+                 and k2 in scope]
         if diffs:
             L.append("Disagreements (read these reports again and decide who is right):\n")
             for k2, h, jg in diffs:
@@ -502,7 +490,7 @@ def cmd_report(a):
         if len(pairs) < 10:
             L.append("\nFewer than 10 human grades: treat the agreement numbers as rough.")
     else:
-        L.append("No human grades yet. Run: python bench/judge.py audit" + (f" --set {a.set}" if a.set else ""))
+        L.append("No human grades yet. Run: python bench/judge.py audit" + suite_flag(a))
     cost = sum((j.get("cost") or 0) for _, j in rows)
     L.append(f"\nJudge cost for these grades: ${cost:.3f}")
 
@@ -519,7 +507,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("run", "audit", "report"):
         p = sub.add_parser(name)
-        p.add_argument("--set", help="e.g. bench/sets/hard.txt (default: every episode)")
+        R.add_suite_args(p)
         p.add_argument("--model", help="only episodes of models whose id contains this text")
         if name == "run":
             p.add_argument("--judge", default="claude-opus-5-5")
@@ -534,6 +522,10 @@ def main():
         if name == "report":
             p.add_argument("--judge", help="only grades from this judge model")
     a = ap.parse_args()
+    a.suite_obj = R.suite_from_args(a)
+    global RESULTS, JUDGMENTS, HUMAN
+    RESULTS = R.results_dir(a.suite_obj)
+    JUDGMENTS, HUMAN = RESULTS / "judgments.jsonl", RESULTS / "human_grades.jsonl"
     {"run": cmd_run, "audit": cmd_audit, "report": cmd_report}[a.cmd](a)
 
 

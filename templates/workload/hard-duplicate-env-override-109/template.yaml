@@ -78,7 +78,6 @@ ground_truth:
   - '`kubectl get deploy recommendation -o yaml` shows PRODUCT_CATALOG_ADDR twice; the effective value is the last
     one (`kubectl exec deploy/recommendation -- env | grep PRODUCT_CATALOG`).'
   - 'The ConfigMap is correct and irrelevant: explicit env beats envFrom.'
-  - Remove the duplicate (or `kubectl set env` the variable), then let it roll out.
   red_herrings:
   - a correct-looking ConfigMap wired in via envFrom
 reference:
@@ -87,6 +86,8 @@ reference:
     seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env;
     print(json.dumps(d))' | kubectl replace -f -
   - kubectl rollout status deployment/recommendation --timeout=300s
+  fix: Remove the duplicate PRODUCT_CATALOG_ADDR entry from recommendation's env (or set the variable with `kubectl
+    set env`), then let the rollout finish.
   traps:
   - Editing the ConfigMap, which already says 8080 (no effect).
   - Reading only the first PRODUCT_CATALOG_ADDR entry and concluding the config is fine.

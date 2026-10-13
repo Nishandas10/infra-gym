@@ -7,7 +7,7 @@ instance_of:
   template: pg-connection-limit-080
   version: 1
   params: {}
-content_hash: sha256:9f26ab35da86c1d756eb1c99b333ac8343a9a486d2f1da6cb8b5b93a48bd7c48
+content_hash: sha256:eaa9f07ff20465ef384a6399911cb4daa43adf892048797b869849364fb6b5b6
 validation_hash: sha256:3a102f9936ba6662aac3d1627f56c82a94d05faf54f6cc276388686f0a6f28fe
 status: validated
 title: Role connection limit set to zero
@@ -87,10 +87,10 @@ ground_truth:
   evidence:
   - 'product-catalog logs: `too many connections for role "astronomy_user"`.'
   - '`psql -c "select rolname, rolconnlimit from pg_roles"`: connlimit 0.'
-  - Set it back to -1 (unlimited).
 reference:
   commands:
   - kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
+  fix: Set astronomy_user's connection limit back to -1 (unlimited).
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 240

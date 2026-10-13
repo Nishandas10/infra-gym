@@ -9,7 +9,6 @@
 1. payment logs: about half of charges fail with the feature-flag-driven error.
 2. flagd's OFREP API (POST /ofrep/v1/evaluate/flags/paymentFailure) returns variant 50%.
 3. The live file in the flagd-ui container and the flagd-config ConfigMap both say 50%.
-4. Fix the ConfigMap (the source of truth) and restart flagd (or fix both the ConfigMap and the live file).
 
 ## Traps (why this is hard)
 
@@ -17,6 +16,8 @@
 - Fixing only the ConfigMap without restarting flagd: nothing changes until the next restart.
 
 ## Fix
+
+Set paymentFailure to off in the flagd-config ConfigMap (the source of truth) and restart flagd, or fix both the ConfigMap and the live file. Fixing only the live file does not survive a flagd restart.
 
 ```bash
 python injectors/source_flag.py paymentFailure off

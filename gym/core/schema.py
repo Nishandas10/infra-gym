@@ -189,6 +189,7 @@ class ResolvedVerifier(Strict):
 
 class Reference(Strict):
     commands: list[str] = Field(min_length=1, description="The reference fix, run by the validation harness")
+    fix: str | None = Field(None, description="The fix in words, with any accepted alternatives (answer key)")
     traps: list[str] = []                # why the scenario is hard (Hard tier)
 
 
@@ -276,6 +277,48 @@ class Instance(Template):
     def hash_format(cls, v):
         if not HASH_RE.match(v):
             raise ValueError("hashes must be 'sha256:<64 hex>'")
+        return v
+
+
+SUITE_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+class SuiteMember(Strict):
+    id: str
+    hash: str = Field(description="The instance's content_hash when the suite was frozen")
+
+    @field_validator("hash")
+    @classmethod
+    def hash_format(cls, v):
+        if not HASH_RE.match(v):
+            raise ValueError("hashes must be 'sha256:<64 hex>'")
+        return v
+
+
+class Suite(Strict):
+    """A frozen, versioned list of instances that models are compared on (gym/core/suites.py)."""
+    name: str
+    version: int = Field(ge=1, description="Bump on any change to the instance list or a member's hash")
+    visibility: Literal["public", "private"]
+    hint_level: Literal["page", "ticket", "hinted"] = "page"
+    description: str = ""
+    selection: dict[str, Any] = {}        # how scripts/make_suite.py chose the instances; informational
+    instances: list[SuiteMember] = Field(min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def name_format(cls, v):
+        if not SUITE_NAME_RE.match(v):
+            raise ValueError(f"suite name {v!r} must be lowercase words joined by '-'")
+        return v
+
+    @field_validator("instances")
+    @classmethod
+    def unique_ids(cls, v):
+        ids = [m.id for m in v]
+        dups = sorted({i for i in ids if ids.count(i) > 1})
+        if dups:
+            raise ValueError(f"listed more than once: {', '.join(dups)}")
         return v
 
 

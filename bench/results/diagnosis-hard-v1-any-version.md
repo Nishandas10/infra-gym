@@ -1,12 +1,12 @@
-# Diagnosis scores (hard)
+# Diagnosis scores (hard-v1-any-version)
 
-Judge: claude-opus-5-5, rubric v1. The judge saw only the answer key, the incident prompt and the model's written report (no model name, no PASS/FAIL). Pass rate comes from the verifier and is not affected by the judge.
+Judge: claude-opus-5-5, rubric v2. The judge saw only the answer key, the incident prompt and the model's written report (no model name, no PASS/FAIL). Pass rate comes from the verifier and is not affected by the judge.
 
 
-| Model | Episodes | Pass rate | Root cause correct | Diagnosis score | Fixed + understood | Fixed, cause wrong/unstated | Blamed noise | Judge votes split |
-|---|---|---|---|---|---|---|---|---|
-| claude-opus-5-5 | 12 | 11/12 (92%) | 12/12 (100%) | 1.00 | 11/12 | 0/12 | 0 | 0 |
-| gemini-3.8-flash | 12 | 1/12 (8%) | 9/12 (75%) | 0.83 | 1/12 | 0/12 | 0 | 0 |
+| Model | Episodes | Pass rate | Root cause correct | Location correct | Mechanism correct | Diagnosis score | Fixed + understood | Fixed, cause wrong/unstated | Blamed noise | Judge votes split |
+|---|---|---|---|---|---|---|---|---|---|---|
+| claude-opus-5-5 | 12 | 11/12 (92%) | 12/12 (100%) | - | - | 1.00 | 11/12 | 0/12 | 0 | 0 |
+| gemini-3.8-flash | 12 | 1/12 (8%) | 9/12 (75%) | - | - | 0.83 | 1/12 | 0/12 | 0 | 0 |
 
 Diagnosis score: correct = 1, partial = 0.5, wrong or missing = 0, averaged over episodes.
 

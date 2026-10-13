@@ -54,7 +54,7 @@ ground_truth:
   evidence:
   - Requests to frontend-proxy time out; new connections between services time out too.
   - '`kubectl get networkpolicy`: `default-deny-ingress` with `podSelector: {}`.'
-  - Remove it, or add explicit allow policies before enforcing default-deny.
 reference:
   commands:
   - kubectl delete networkpolicy default-deny-ingress
+  fix: Delete NetworkPolicy default-deny-ingress, or add explicit allow policies before enforcing default-deny.

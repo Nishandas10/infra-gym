@@ -7,9 +7,8 @@
 ## How a careful SRE finds it
 
 1. ad pods: OOMKilled / CrashLoopBackOff; the memory limit is 48Mi.
-2. Raise the limit (e.g. back to the previous revision): `kubectl rollout status` stalls; the new ReplicaSet's events say 'forbidden: maximum memory usage per Container is 128Mi'.
+2. After raising the limit (e.g. back to the previous revision), `kubectl rollout status` stalls; the new ReplicaSet's events say 'forbidden: maximum memory usage per Container is 128Mi'.
 3. `kubectl get limitrange` shows namespace-container-limits.
-4. Raise or remove the LimitRange, then restore ad's memory settings.
 
 ## Traps (why this is hard)
 
@@ -17,6 +16,8 @@
 - Not reading ReplicaSet events, so the rejection stays invisible.
 
 ## Fix
+
+Raise or remove the LimitRange namespace-container-limits, then restore ad's memory limit (for example with `kubectl rollout undo deployment/ad`).
 
 ```bash
 kubectl delete limitrange namespace-container-limits

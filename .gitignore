@@ -25,3 +25,10 @@ bench/results/transcripts/
 .env.*
 bench/config.before-*.yaml
 *.tgz
+
+# Checkout of the private repository: private suites (the held-out test suite) and their results.
+# Never commit its contents here (gym/core/suites.py).
+private/
+
+# Planning documents (kept local, not published)
+docs/

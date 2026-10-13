@@ -97,10 +97,9 @@ ground_truth:
     and the shipping Service targets port 8888 where nothing listens. Checkout looks up products before it asks
     shipping for a quote, so only the first fault is visible until it is fixed.
   evidence:
-  - 'checkout logs: failed to get product from product-catalog:9090 (connection refused). Fix PRODUCT_CATALOG_ADDR.'
-  - 'Re-test: checkout still fails, now while getting a shipping quote.'
+  - 'checkout logs: failed to get product from product-catalog:9090 (connection refused).'
+  - Once PRODUCT_CATALOG_ADDR is corrected, checkout still fails, now while getting a shipping quote.
   - '`kubectl get svc shipping -o yaml`: targetPort 8888; shipping pods listen on 8080 (endpoints/pod spec).'
-  - Fix the targetPort; checkout works.
   red_herrings:
   - Pending GPU backfill pod with FailedScheduling events
 reference:
@@ -108,6 +107,8 @@ reference:
   - kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
   - kubectl rollout status deployment/checkout --timeout=300s
   - kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
+  fix: Set checkout's PRODUCT_CATALOG_ADDR back to product-catalog:8080, then set the shipping Service's targetPort
+    back to 8080.
   traps:
   - Stopping after the first fix without re-testing end to end.
 validation:

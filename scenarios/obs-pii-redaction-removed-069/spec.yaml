@@ -7,7 +7,7 @@ instance_of:
   template: obs-pii-redaction-removed-069
   version: 1
   params: {}
-content_hash: sha256:f9c6d5724da7aabe137bfd6b8a9bb72729baa1d6e58ffb3c667b4403c75955a2
+content_hash: sha256:2e0c91791cb5a7cad108a66892de59c0e6c1f738412a96d4f9fa37105d04486c
 validation_hash: sha256:b54e565d06a14cdf84ee226968c1e017a2f60478b928623c0e36ac96466f80f6
 status: validated
 title: PII reaches the tracing backend after the redaction step was removed from the pipeline
@@ -88,8 +88,6 @@ ground_truth:
   - 'Jaeger: checkout/payment spans carry `user.email` and `demo.payment.card_number` in clear text.'
   - '`kubectl get cm otel-collector-agent -o yaml`: the traces pipeline''s processors list lacks `transform/redact_sensitive_data`
     and `redaction`, although both processors are still defined.'
-  - 'Restore them in the pipeline and restart the collector. In reality, also purge the leaked data and investigate
-    why apps emit raw PII (here: the `emitRawPii` flag).'
 reference:
   commands:
   - kubectl get configmap otel-collector-agent -o yaml > /tmp/relay.yaml && python3 -c "import sys,yaml; d=yaml.safe_load(open('/tmp/relay.yaml'));
@@ -99,6 +97,9 @@ reference:
     && kubectl apply -f /tmp/relay.yaml
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+  fix: Put transform/redact_sensitive_data and redaction back into the collector's traces pipeline and restart the
+    collector. In reality, also purge the leaked data and investigate why apps emit raw PII (here, the emitRawPii
+    flag).
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 300

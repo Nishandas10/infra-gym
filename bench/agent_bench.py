@@ -3,10 +3,16 @@
 
   python bench/agent_bench.py preflight   check the cluster, the restore logic and the agent's permissions
   python bench/agent_bench.py smoke       check the API key, model IDs and tool calling
-  python bench/agent_bench.py run         run every model on every selected scenario
-  python bench/agent_bench.py pick        choose a fixed, balanced scenario set (e.g. 30 scenarios)
+  python bench/agent_bench.py run --suite bench-v1-dev   run every model on a frozen suite (suites/*.yaml)
+  python bench/agent_bench.py run         run every model on every bench-eligible, validated scenario
+  python scripts/make_suite.py            freeze a new suite (replaces the old `pick` command)
   python bench/cost.py                    what each model cost, from the recorded tokens
-  python bench/leaderboard.py             build the leaderboard from the results
+  python bench/leaderboard.py --suite bench-v1-dev   build the leaderboard from the results
+
+A suite run refuses to start if any member's content_hash differs from the suite (the scenario changed
+since the suite was frozen) or a member is no longer validated. Every result row records the suite's
+name, version and fingerprint, the instance's content and validation hashes, its tags and the git commit.
+Results of private suites go to the private checkout (private/results/), never to bench/results/.
 
 One episode = world healthy -> snapshot -> baseline PASS -> inject -> verifier FAIL ->
 the model tries to fix it -> verifier PASS (and still PASS after a hold) -> revert the
@@ -19,7 +25,6 @@ import json
 import os
 import subprocess
 import sys
-import random
 import time
 import uuid
 from types import SimpleNamespace as NS
@@ -33,14 +38,14 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
 from gym import checks, faults, harness, kube, toolbox  # noqa: E402
-from gym.core import status  # noqa: E402
+from gym.core import status, suites  # noqa: E402
 from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog  # noqa: E402
+import rows  # noqa: E402
 import world  # noqa: E402
 from safety import forbidden_actions, is_mutating, live_guards, protected_workloads, workload_guards  # noqa: E402
 
 HERE = REPO / "bench"
-RESULTS = HERE / "results"
 SANDBOX = "agent-box"
 
 SYSTEM_PROMPT = f"""You are the on-call SRE for an online shop running on Kubernetes.
@@ -102,12 +107,28 @@ def select_scenarios(cfg):
             continue
         if sid in cfg.get("exclude", []):
             continue
-        chosen.append({"id": sid, "spec": spec, "dir": sdir, "layer": layer_of(spec), "tier": tier_of(spec),
-                       "fault_type": fault_label(spec)})
+        chosen.append(entry(spec, sdir))
     if not_validated:
         log(f"{len(not_validated)} scenario(s) skipped: their current version is not validated yet "
             "(python scripts/validate_scenario.py --eligible --fill 5)")
     return chosen
+
+
+def entry(spec, sdir):
+    return {"id": spec["id"], "spec": spec, "dir": sdir, "layer": layer_of(spec), "tier": tier_of(spec),
+            "fault_type": fault_label(spec)}
+
+
+def suite_scenarios(suite):
+    """The suite's instances in suite order; exits if any member no longer matches what was frozen."""
+    insts = suites.instances()
+    problems = suites.verify(suite, insts)
+    if problems:
+        sys.exit(f"Suite {suite.name} v{suite.version} cannot run as frozen:\n" +
+                 "\n".join(f"  - {p}" for p in problems) +
+                 "\nA changed scenario needs a new suite version (scripts/make_suite.py --version N); "
+                 "a scenario that is not validated needs validation runs (scripts/validate_scenario.py).")
+    return [entry(*insts[m.id]) for m in suite.instances]
 
 
 # --------------------------------------------------------------------- world
@@ -754,10 +775,13 @@ def _cleanup(spec, snap, state):
     return notes
 
 
-def episode(sc, ms, attempt, client, cfg):
-    sid, model = sc["id"], ms["id"]
-    row = {"key": sid, "scenario": sid, "layer": sc["layer"], "tier": sc["tier"], "fault_type": sc["fault_type"],
-           "content_hash": sc["spec"]["content_hash"], "hint_level": cfg.get("hint_level", "page"),
+def episode(sc, ms, attempt, client, cfg, run):
+    """One episode. run: {"results_dir", "provenance"} (suite name/version/fingerprint and git commit)."""
+    sid, model, spec = sc["id"], ms["id"], sc["spec"]
+    row = {"episode": uuid.uuid4().hex, "key": sid, "scenario": sid, "layer": sc["layer"], "tier": sc["tier"],
+           "fault_type": sc["fault_type"], "tags": spec["tags"], "content_hash": spec["content_hash"],
+           "validation_hash": spec["validation_hash"], "template_version": spec["version"],
+           "hint_level": cfg.get("hint_level", "page"), **run["provenance"],
            "model": model, "attempt": attempt, "at": now()}
     start = time.time()
     recovery = ensure_world() or []
@@ -776,26 +800,15 @@ def episode(sc, ms, attempt, client, cfg):
             result["world_recovery"] = recovery
         result["minutes"] = round((time.time() - start) / 60, 1)
         if state["agent"] is not None:
-            tdir = RESULTS / "transcripts" / model.replace("/", "__")
+            tdir = run["results_dir"] / "transcripts" / model.replace("/", "__")
             tdir.mkdir(parents=True, exist_ok=True)
-            with open(tdir / f"{sid}__a{attempt}.json", "w") as f:
-                json.dump({"scenario": sid, "model": model, "attempt": attempt, "passed": result.get("passed"),
+            with open(tdir / f"{sid}__a{attempt}__{row['episode'][:8]}.json", "w") as f:
+                json.dump({"episode": row["episode"], "scenario": sid, "model": model, "attempt": attempt,
+                           "content_hash": row["content_hash"], "passed": result.get("passed"),
                            "messages": state["agent"]["messages"], "cleanup": result["cleanup"],
                            "timeline": state["agent"].get("timeline", []),
                            "ttd_s": result.get("ttd_s"), "ttm_s": result.get("ttm_s")}, f, indent=1)
     return result
-
-
-def read_latest(path):
-    rows = {}
-    if path.exists():
-        for line in open(path):
-            try:
-                r = json.loads(line)
-                rows[(r["key"], r["model"], r["attempt"])] = r
-            except (json.JSONDecodeError, KeyError):
-                continue
-    return rows
 
 
 def append(path, row):
@@ -860,83 +873,58 @@ def cmd_smoke(cfg, args):
         log(f"     answer: {answer[:200]!r}")
 
 
-def read_set(path):
-    return [l.split("#")[0].strip() for l in open(path) if l.split("#")[0].strip()]
-
-
-def cmd_pick(cfg, args):
-    """A fixed scenario set (proportional to layer sizes by default), so every model is compared on
-    exactly the same scenarios."""
-    pool = [s for s in select_scenarios({**cfg, "include": []}) if args.tier in ("all", s["tier"])]
-    rng = random.Random(args.seed)
-    fams = {}
-    for s in pool:
-        fams.setdefault(s["layer"], []).append(s)
-    for v in fams.values():
-        rng.shuffle(v)
-    picked, order = [], sorted(fams)
-    n = min(args.n, len(pool))
-    if getattr(args, "mode", "proportional") == "proportional":
-        # Each family gets its share of the eligible pool (largest remainder), so the set's pass
-        # rate estimates the pass rate on everything; at least one per family when n allows.
-        exact = {f: n * len(fams[f]) / len(pool) for f in order}
-        quota = {f: int(exact[f]) for f in order}
-        if n >= len(order):
-            for f in order:
-                quota[f] = max(1, quota[f])
-        for f in sorted(order, key=lambda f: (-(exact[f] - int(exact[f])), f)):
-            if sum(quota.values()) >= n:
-                break
-            if quota[f] < len(fams[f]):
-                quota[f] += 1
-        while sum(quota.values()) > n:  # the 'at least one' rule can overshoot
-            f = max(order, key=lambda f: (quota[f] - exact[f], f))
-            quota[f] -= 1
-        for f in order:
-            picked += [fams[f].pop() for _ in range(min(quota[f], len(fams[f])))]
-    else:
-        while len(picked) < n:
-            for f in order:  # round-robin over families
-                if fams[f] and len(picked) < n:
-                    picked.append(fams[f].pop())
-    out = HERE / "sets" / f"{args.name}.txt"
-    out.parent.mkdir(exist_ok=True)
-    out.write_text(f"# {len(picked)} scenarios, seed {args.seed}, from {len(pool)} eligible\n" +
-                   "".join(f"{s['id']}  # {s['layer']} / {s['fault_type']}\n" for s in picked))
-    counts = {}
-    for s in picked:
-        counts[s["layer"]] = counts.get(s["layer"], 0) + 1
-    log(f"Wrote {out} ({len(picked)} of {len(pool)} eligible scenarios). By layer: {counts}")
+def run_provenance(suite):
+    """Fields every row of this run records: which suite (if any) and which code."""
+    sha, dirty = harness.git_state(exclude=("results", "bench/results"))
+    return {"suite": suite.name if suite else None, "suite_version": suite.version if suite else None,
+            "suite_hash": suites.fingerprint(suite) if suite else None, "git_sha": sha, "git_dirty": dirty}
 
 
 def cmd_run(cfg, args):
-    if args.set:
-        cfg = {**cfg, "include": []}
-    scenarios = [s for s in select_scenarios(cfg) if not args.only or args.only in s["id"]]
-    if args.set:
-        wanted = read_set(args.set)
-        by_id = {s["id"]: s for s in scenarios}
-        missing = [w for w in wanted if w not in by_id]
-        if missing:
-            sys.exit(f"These scenarios in {args.set} are not selectable: {missing}")
-        scenarios = [by_id[w] for w in wanted]
+    suite = None
+    if args.suite:
+        if "--set" in sys.argv:
+            log("note: --set is now --suite; --set will be removed in the next release")
+        try:
+            suite = suites.load(args.suite)
+        except (FileNotFoundError, ValueError) as e:
+            sys.exit(str(e))
+        scenarios = [s for s in suite_scenarios(suite) if not args.only or args.only in s["id"]]
+        if not args.hint_level:
+            cfg = {**cfg, "hint_level": suite.hint_level}
+        elif args.hint_level != suite.hint_level:
+            log(f"note: suite {suite.name} is graded at hint level {suite.hint_level}; these {args.hint_level} "
+                "episodes are recorded but do not count in the suite's reports")
+        log(f"Suite {suite.name} v{suite.version} ({suite.visibility}, {len(suite.instances)} instances, "
+            f"fingerprint {suites.fingerprint(suite)[:19]}): every member matches its frozen hash")
+    else:
+        scenarios = [s for s in select_scenarios(cfg) if not args.only or args.only in s["id"]]
     if args.attempts:
         cfg = {**cfg, "attempts_per_model": args.attempts}
     if args.limit:
         scenarios = scenarios[:args.limit]
     if not scenarios:
-        sys.exit("No scenarios selected. Check bench/config.yaml.")
+        sys.exit("No scenarios selected. Check bench/config.yaml or the suite.")
     settings = {m["id"]: model_settings(cfg, m) for m in cfg["models"] if not args.model or args.model in m["id"]}
     models = list(settings)
     for ms in settings.values():
         make_client(ms)  # fail fast if a key is missing
-    path = RESULTS / "results.jsonl"
-    done = {k for k, r in read_latest(path).items()
-            if not (args.retry_errors and r.get("status") in ("error", "invalid"))}
+    results_dir = rows.results_dir(suite)
+    path = results_dir / "results.jsonl"
+    hint = cfg.get("hint_level", "page")
+    # an episode is done if this exact instance (content_hash) already ran at this hint level
+    current = {s["id"]: s["spec"]["content_hash"] for s in scenarios}
+    done = {(r["scenario"], r["model"], r["attempt"]) for r in rows.latest(rows.read_jsonl(path))
+            if r.get("content_hash") and r["content_hash"] == current.get(r.get("scenario"))
+            and rows.hint_level(r) == hint
+            and not (args.retry_errors and r.get("status") in ("error", "invalid"))}
     plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1)
             for sc in scenarios for m in models if (sc["id"], m, a) not in done]
     log(f"{len(plan)} episodes to run ({len(scenarios)} scenarios x {len(models)} models x "
-        f"{cfg['attempts_per_model']} attempts, minus finished ones)")
+        f"{cfg['attempts_per_model']} attempts, minus finished ones); results: {path}")
+    run = {"results_dir": results_dir, "provenance": run_provenance(suite)}
+    if run["provenance"]["git_dirty"]:
+        log("note: the working tree has uncommitted code changes; rows record git_dirty: true")
     toolbox.ensure()
     t0 = time.time()
     api_fail_streak, given_up = {}, set()
@@ -948,7 +936,7 @@ def cmd_run(cfg, args):
             eta = f", about {(time.time() - t0) / (i - 1) * (len(plan) - i + 1) / 3600:.1f}h left"
         log(f"[{i}/{len(plan)}{eta}] {sc['id']} | {model} | attempt {attempt}")
         ms = settings[model]
-        row = episode(sc, ms, attempt, make_client(ms), cfg)
+        row = episode(sc, ms, attempt, make_client(ms), cfg, run)
         append(path, row)
         api_fail_streak[model] = api_fail_streak.get(model, 0) + 1 if row.get("stop") == "api_error" else 0
         if api_fail_streak[model] >= 3:
@@ -963,32 +951,27 @@ def cmd_run(cfg, args):
             f"{row['minutes']} min{extra})")
         if row.get("cleanup"):
             log(f"   cleanup: {'; '.join(row['cleanup'])[:300]}")
-    log("Finished. Build the table with: python bench/leaderboard.py")
+    log("Finished. Build the table with: python bench/leaderboard.py" + (f" --suite {suite.name}" if suite else ""))
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["preflight", "smoke", "run", "pick"])
+    p.add_argument("command", choices=["preflight", "smoke", "run"])
+    p.add_argument("--suite", help="run: a frozen suite, by name (bench-v1-dev) or path (suites/bench-v1-dev.yaml)")
+    p.add_argument("--set", dest="suite", help="old name of --suite (kept for one release)")
     p.add_argument("--only", help="only scenarios whose id contains this text")
     p.add_argument("--model", help="only models whose ID contains this text")
     p.add_argument("--limit", type=int, help="run at most this many scenarios")
     p.add_argument("--retry-errors", action="store_true", help="re-run episodes that ended in error/invalid")
-    p.add_argument("--set", help="file with the scenario ids to run (see: pick)")
     p.add_argument("--attempts", type=int, help="attempts per model for this run (overrides config)")
-    p.add_argument("--n", type=int, default=30, help="pick: how many scenarios")
-    p.add_argument("--seed", type=int, default=1, help="pick: random seed (same seed = same set)")
-    p.add_argument("--name", default="set30", help="pick: name of the set file")
-    p.add_argument("--mode", default="proportional", choices=["proportional", "balanced"],
-                   help="pick: proportional to layer sizes (default; represents the whole set) or equal per layer")
-    p.add_argument("--tier", default="standard", choices=["standard", "hard", "all"],
-                   help="pick: which tier to pick from (default: standard, i.e. not the Hard tier)")
     p.add_argument("--hint-level", choices=["page", "ticket", "hinted"],
-                   help="run: which prompt the agent gets (default: page = symptoms only; recorded per episode)")
+                   help="run: which prompt the agent gets (default: the suite's, else page = symptoms only; "
+                        "recorded per episode)")
     args = p.parse_args()
     cfg = load_config()
     if args.hint_level:
         cfg["hint_level"] = args.hint_level
-    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run, "pick": cmd_pick}[args.command](cfg, args)
+    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run}[args.command](cfg, args)
 
 
 if __name__ == "__main__":

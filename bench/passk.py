@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
 """Per-scenario table for multi-attempt runs: pass@1 (average attempt), pass@k (solved in any attempt),
-and an estimated bill from the token counts.   Usage: python bench/passk.py [--in-price 0.75 --out-price 3.75]"""
+and an estimated bill from the token counts.
+Usage: python bench/passk.py [--suite bench-v1-dev] [--in-price 0.75 --out-price 3.75]"""
 import argparse
-import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import rows as R  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--in-price", type=float, default=0.75, help="$ per 1M input tokens")
 ap.add_argument("--out-price", type=float, default=3.75, help="$ per 1M output tokens (thinking included)")
 ap.add_argument("--model", default="")
+R.add_suite_args(ap)
 a = ap.parse_args()
 
-path = Path(__file__).resolve().parent / "results" / "results.jsonl"
-if not path.exists():
+latest = R.load(R.suite_from_args(a), a.any_version)
+if not latest:
     sys.exit("No results yet.")
-latest = {}
-for line in open(path):
-    if line.strip():
-        r = json.loads(line)
-        latest[(r["key"], r["model"], r["attempt"])] = r
 
 by = defaultdict(lambda: defaultdict(list))
-for r in latest.values():
+for r in latest:
     if a.model in r["model"]:
         by[r["model"]][r["key"]].append(r)
 

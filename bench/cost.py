@@ -4,12 +4,12 @@
   python bench/cost.py                      cost per model so far
   python bench/cost.py --project 90         ...plus a projection for 90 episodes per model
   python bench/cost.py --model opus         only models whose ID contains this text
+  python bench/cost.py --suite bench-v1-dev  only episodes of a suite's instances
 
 Prices are $ per 1M tokens, set per model in config.yaml, e.g.
   price: {input: 4, output: 20, cache_read: 0.20, cache_write: 5}
 This is an estimate from the token counts; your provider's billing page has the real number."""
 import argparse
-import json
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -17,24 +17,24 @@ from pathlib import Path
 import yaml
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+import rows as R  # noqa: E402
+
 ap = argparse.ArgumentParser()
 ap.add_argument("--project", type=int, default=0, help="also estimate the cost of this many episodes per model")
 ap.add_argument("--model", default="")
+R.add_suite_args(ap)
 a = ap.parse_args()
 
-path = HERE / "results" / "results.jsonl"
-if not path.exists():
+latest = R.load(R.suite_from_args(a), a.any_version)
+if not latest:
     sys.exit("No results yet.")
 cfg = yaml.safe_load(open(HERE / "config.yaml"))
 prices = {m["id"]: m.get("price") for m in cfg.get("models", [])}
 
-latest = {}
-for line in open(path):
-    if line.strip():
-        r = json.loads(line)
-        latest[(r["key"], r["model"], r["attempt"])] = r
 by = defaultdict(list)
-for r in latest.values():
+for r in latest:
     if a.model in r["model"]:
         by[r["model"]].append(r)
 

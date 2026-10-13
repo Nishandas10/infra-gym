@@ -7,9 +7,8 @@
 ## How a careful SRE finds it
 
 1. cart logs: connection refused to valkey-cart:6380; the Service and valkey listen on 6379.
-2. Fix VALKEY_ADDR; cart now fails with NOAUTH / authentication required.
+2. Once VALKEY_ADDR is corrected, cart fails with NOAUTH / authentication required.
 3. `kubectl get secrets` shows valkey-cart-credentials, annotated as rotated this morning for consumer 'cart'.
-4. Either roll the rotation back (clear requirepass using the stored password) or give cart the password; restart cart so it reconnects.
 
 ## Traps (why this is hard)
 
@@ -17,6 +16,8 @@
 - Restarting valkey-cart to drop the password: it works but throws away every customer's cart.
 
 ## Fix
+
+Set cart's VALKEY_ADDR back to valkey-cart:6379; then either roll the password rotation back (clear requirepass using the stored password) or give cart the password, and restart cart so it reconnects.
 
 ```bash
 kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379

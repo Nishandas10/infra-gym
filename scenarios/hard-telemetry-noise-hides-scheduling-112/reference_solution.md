@@ -9,7 +9,6 @@
 1. The currency journey fails; `kubectl get pods -l opentelemetry.io/name=currency` shows Pending.
 2. `kubectl describe pod` (or events): 0/3 nodes available, untolerated taint dedicated=batch.
 3. `kubectl describe nodes` shows the taint on every worker.
-4. Remove the taints (or add a toleration); currency schedules and conversions work. The collector export errors can be fixed separately; they are not what customers see.
 
 ## Traps (why this is hard)
 
@@ -21,6 +20,8 @@
 - the trace pipeline is genuinely broken (wrong exporter port), with errors in collector logs
 
 ## Fix
+
+Remove the dedicated=batch taint from the worker nodes (or give currency a matching toleration) so currency schedules. The collector's export errors are a separate problem that customers do not see.
 
 ```bash
 kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-

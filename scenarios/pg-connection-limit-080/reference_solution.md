@@ -8,9 +8,10 @@
 
 1. product-catalog logs: `too many connections for role "astronomy_user"`.
 2. `psql -c "select rolname, rolconnlimit from pg_roles"`: connlimit 0.
-3. Set it back to -1 (unlimited).
 
 ## Fix
+
+Set astronomy_user's connection limit back to -1 (unlimited).
 
 ```bash
 kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'

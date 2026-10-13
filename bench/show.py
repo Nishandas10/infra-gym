@@ -2,32 +2,29 @@
 """See what the model actually did in an episode.
 
   python bench/show.py                       list every finished episode
+  python bench/show.py --suite bench-v1-dev  ... only those of a suite's instances
   python bench/show.py flag-ad-failure-064   the full story of one episode, step by step
   python bench/show.py flag-ad-failure-064 --full      do not shorten command output
   python bench/show.py flag-ad-failure-064 --out story.md   also save it to a file
 
-Reads bench/results/results.jsonl and bench/results/transcripts/<model>/<scenario>__a<N>.json.
+Reads results.jsonl and transcripts/<model>/<scenario>__a<N>__<episode>.json in bench/results/
+(private/results/ for a private suite).
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RESULTS = HERE / "results"
+sys.path.insert(0, str(HERE))
+
+import rows as R  # noqa: E402
 
 
-def load_results():
-    rows = {}
-    p = RESULTS / "results.jsonl"
-    if p.exists():
-        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
-            try:
-                r = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            rows[(r.get("scenario"), r.get("model"), r.get("attempt"))] = r
-    return list(rows.values())
+
+def load_results(suite=None, any_version=False):
+    return R.load(suite, any_version)
 
 
 def short(text, limit):
@@ -55,20 +52,26 @@ def list_episodes(rows):
     print("\nTo read one: python bench/show.py <scenario-name>")
 
 
-def story(sc_id, model_filter, attempt, full):
+def story(sc_id, model_filter, attempt, full, suite=None, any_version=False):
     limit = 0 if full else 1500
-    files = sorted((RESULTS / "transcripts").glob(f"*/{sc_id}__a*.json"))
+    files = sorted((R.results_dir(suite) / "transcripts").glob(f"*/{sc_id}__a*.json"))
     if model_filter:
         files = [f for f in files if model_filter.replace("/", "__") in f.parent.name]
     if attempt:
-        files = [f for f in files if f.name.endswith(f"__a{attempt}.json")]
+        files = [f for f in files if re.search(rf"__a{attempt}(__|\.json)", f.name)]
     if not files:
         sys.exit(f"No transcript found for '{sc_id}'. Run  python bench/show.py  to see the names.")
-    rows = {(r.get("scenario"), r.get("model"), r.get("attempt")): r for r in load_results()}
+    rows = load_results(suite, any_version)
+    by_episode = {r["episode"]: r for r in rows if r.get("episode")}
+    legacy = {(r.get("scenario"), r.get("model"), r.get("attempt")): r for r in rows if not r.get("episode")}
     out = []
     for f in files:
         t = json.loads(f.read_text(encoding="utf-8"))
-        r = rows.get((t["scenario"], t["model"], t["attempt"]), {})
+        r = by_episode.get(t.get("episode")) or legacy.get((t["scenario"], t["model"], t["attempt"]))
+        if r is None:
+            if suite is not None:   # an episode of another version or hint level than the suite's
+                continue
+            r = {}
         out.append("=" * 78)
         out.append(f"{t['scenario']}   model: {t['model']}   attempt {t['attempt']}")
         verdict = "PASSED" if t.get("passed") else "DID NOT PASS"
@@ -132,10 +135,12 @@ def main():
     ap.add_argument("--attempt")
     ap.add_argument("--full", action="store_true")
     ap.add_argument("--out")
+    R.add_suite_args(ap)
     a = ap.parse_args()
+    suite = R.suite_from_args(a)
     if not a.scenario:
-        return list_episodes(load_results())
-    text = story(a.scenario, a.model, a.attempt, a.full)
+        return list_episodes(load_results(suite, a.any_version))
+    text = story(a.scenario, a.model, a.attempt, a.full, suite, a.any_version)
     print(text)
     if a.out:
         Path(a.out).write_text(text, encoding="utf-8")

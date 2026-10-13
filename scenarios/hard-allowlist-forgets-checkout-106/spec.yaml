@@ -7,7 +7,7 @@ instance_of:
   template: hard-allowlist-forgets-checkout-106
   version: 1
   params: {}
-content_hash: sha256:bc16bdcc96133e2f1a9730e0c8e0bcb575a3202abb88e80f4800a78f4592c279
+content_hash: sha256:36179c24464778e222ef4625e5326791558fa6d054e8a87562432260ef4f94ec
 validation_hash: sha256:78ac2811cbbff29f1495d3647145fe550dfee4e51bc9e19fac64a2422a0eaa50
 status: validated
 title: A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame
@@ -123,12 +123,13 @@ ground_truth:
   - 'checkout logs: preparing the order fails getting products from product-catalog (deadline exceeded).'
   - 'product-catalog is healthy and the frontend reaches it (browse works): the failure is client-specific.'
   - '`kubectl get networkpolicy` shows product-catalog-allow-clients; its allow-list omits checkout.'
-  - Add checkout to the allow-list (removing the policy also works, but weakens the zero-trust change).
   red_herrings:
   - payment rolled out minutes earlier with a risky-sounding change-cause
 reference:
   commands:
   - kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+  fix: Add checkout to the allow-list of NetworkPolicy product-catalog-allow-clients. Removing the policy also works,
+    but undoes the zero-trust change.
   traps:
   - Rolling back payment because of its recent 'SDK bump' (a decoy; counts as a distractor touch).
   - Restarting checkout or product-catalog (changes nothing).

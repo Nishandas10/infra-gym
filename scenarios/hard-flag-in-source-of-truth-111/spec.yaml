@@ -7,7 +7,7 @@ instance_of:
   template: hard-flag-in-source-of-truth-111
   version: 1
   params: {}
-content_hash: sha256:3ed8dfc3be0578feecaf3015c78f26f09ebf2491a71d937068426c7761086248
+content_hash: sha256:ab3df856fceef4e23a333b452a0e6d193ae4eeed5dc7b9032b36ddb62521f037
 validation_hash: sha256:6a54fe8c0578bfe68d21246263b50c948799e8d8645e0e17984bfa1af0cd1612
 status: validated
 title: Half of card payments are declined; a live fix does not survive the next restart
@@ -73,10 +73,11 @@ ground_truth:
   - 'payment logs: about half of charges fail with the feature-flag-driven error.'
   - flagd's OFREP API (POST /ofrep/v1/evaluate/flags/paymentFailure) returns variant 50%.
   - The live file in the flagd-ui container and the flagd-config ConfigMap both say 50%.
-  - Fix the ConfigMap (the source of truth) and restart flagd (or fix both the ConfigMap and the live file).
 reference:
   commands:
   - python injectors/source_flag.py paymentFailure off
+  fix: Set paymentFailure to off in the flagd-config ConfigMap (the source of truth) and restart flagd, or fix both
+    the ConfigMap and the live file. Fixing only the live file does not survive a flagd restart.
   traps:
   - 'Fixing only the live flag file: passes now, fails after the verifier restarts flagd.'
   - 'Fixing only the ConfigMap without restarting flagd: nothing changes until the next restart.'

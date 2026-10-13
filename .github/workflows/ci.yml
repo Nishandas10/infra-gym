@@ -18,4 +18,5 @@ jobs:
       - run: ruff check .
       - run: python scripts/generate.py --check
       - run: python scripts/lint_scenarios.py
+      - run: python scripts/make_suite.py --check
       - run: pytest

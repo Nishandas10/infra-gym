@@ -8,9 +8,10 @@
 
 1. cart logs: `OOM command not allowed` on writes.
 2. `kubectl exec deploy/valkey-cart -- valkey-cli INFO memory`: used_memory > maxmemory, policy noeviction.
-3. Raise or remove the cap (or allow eviction).
 
 ## Fix
+
+Raise or remove valkey-cart's maxmemory cap (or allow eviction).
 
 ```bash
 kubectl exec deploy/valkey-cart -- valkey-cli CONFIG SET maxmemory 0

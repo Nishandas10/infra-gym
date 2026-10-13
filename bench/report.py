@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""One table for investors and the paper: every model on the Standard and the Hard tier,
-with safety and cost. Reads results/results.jsonl, the set files and prices in config.yaml.
+"""One table for investors and the paper: every model on the Standard and the Hard suite, with safety
+and cost, then the pass rate by tag axes (layer, fix type, drivers) over both suites.
 
-  python bench/report.py --standard bench/sets/set30.txt --hard bench/sets/hard.txt
+  python bench/report.py --standard bench-v1-dev --hard hard-v1
+
+Only rows of exactly the suites' instances count (bench/rows.py). Prices come from config.yaml.
 """
 import argparse
-import json
 import math
 import sys
 from collections import defaultdict
@@ -14,14 +15,14 @@ from pathlib import Path
 import yaml
 
 HERE = Path(__file__).resolve().parent
-ap = argparse.ArgumentParser()
-ap.add_argument("--standard", default=str(HERE / "sets" / "set30.txt"))
-ap.add_argument("--hard", default=str(HERE / "sets" / "hard.txt"))
+sys.path.insert(0, str(HERE))
+
+import rows as R  # noqa: E402
+
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument("--standard", default="bench-v1-dev", help="suite for the Standard column")
+ap.add_argument("--hard", default="hard-v1", help="suite for the Hard column")
 a = ap.parse_args()
-
-
-def read_set(p):
-    return {l.split("#")[0].strip() for l in open(p) if l.split("#")[0].strip()} if Path(p).exists() else set()
 
 
 def wilson(k, n, z=1.96):
@@ -43,22 +44,22 @@ def cost(r, price):
             cr * price.get("cache_read", price["input"]) + r.get("tokens_out", 0) * price["output"]) / 1e6
 
 
-path = HERE / "results" / "results.jsonl"
-if not path.exists():
-    sys.exit("No results yet.")
+try:
+    tiers = {"Standard": R.suites.load(a.standard), "Hard": R.suites.load(a.hard)}
+except (FileNotFoundError, ValueError) as e:
+    sys.exit(str(e))
+if any(s.visibility == "private" for s in tiers.values()):
+    sys.exit("report.py is for published numbers; it does not report private suites")
 cfg = yaml.safe_load(open(HERE / "config.yaml"))
 prices = {m["id"]: m.get("price") for m in cfg.get("models", [])}
-latest = {}
-for line in open(path):
-    if line.strip():
-        r = json.loads(line)
-        latest[(r["key"], r["model"], r["attempt"])] = r
-tiers = {"Standard": read_set(a.standard), "Hard": read_set(a.hard)}
 by = defaultdict(lambda: defaultdict(list))
-for r in latest.values():
-    for tier, ids in tiers.items():
-        if r["key"] in ids:
-            by[r["model"]][tier].append(r)
+everything = []
+for tier, suite in tiers.items():
+    for r in R.load(suite):
+        by[r["model"]][tier].append(r)
+        everything.append(r)
+if not everything:
+    sys.exit("No results for these suites yet.")
 
 rows = []
 for model, t in by.items():
@@ -82,11 +83,16 @@ for model, t in by.items():
     row["per_solve"] = f"${spent / solved:.2f}" if prices.get(model) and solved else "-"
     rows.append(row)
 rows.sort(key=lambda r: (-r["Hard_p"], -r["Standard_p"]))
-out = ["| Model | Standard tier | Hard tier | Clean fixes | Made worse / forbidden | Cost per episode | Cost per solved incident |",
+st, hd = tiers["Standard"], tiers["Hard"]
+out = [f"| Model | Standard ({st.name} v{st.version}) | Hard ({hd.name} v{hd.version}) | Clean fixes | "
+       "Made worse / forbidden | Cost per episode | Cost per solved incident |",
        "|---|---|---|---|---|---|---|"]
 for r in rows:
     out.append(f"| {r['model']} | {r['Standard']} | {r['Hard']} | {r['clean']} | {r['worse']} | {r['per_ep']} | {r['per_solve']} |")
 out += ["", "Pass rates with 95% ranges. Costs are estimates from recorded tokens and config prices."]
+for suite in tiers.values():
+    out += [f"- {line}" for line in R.provenance(suite, R.load(suite))]
+out += R.axis_tables(everything, [r["model"] for r in rows])
 text = "\n".join(out)
 print(text)
 (HERE / "results" / "report.md").write_text(text + "\n")

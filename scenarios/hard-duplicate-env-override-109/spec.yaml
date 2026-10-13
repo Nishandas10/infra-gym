@@ -7,7 +7,7 @@ instance_of:
   template: hard-duplicate-env-override-109
   version: 1
   params: {}
-content_hash: sha256:779f07847bb63ae2d1ce59119e31d18f2283c0912f92f0ae9dab7c97e77fca3d
+content_hash: sha256:534373f11be390a44ed550e3110b9ad77fd57f949b4296ff102f510df217c079
 validation_hash: sha256:832f3d18d1f2eaf831400b311f61f73bacf0b16e0845e4e609198e71590f4d76
 status: validated
 title: A duplicate env entry from an old overlay silently overrides the correct value
@@ -100,7 +100,6 @@ ground_truth:
   - '`kubectl get deploy recommendation -o yaml` shows PRODUCT_CATALOG_ADDR twice; the effective value is the last
     one (`kubectl exec deploy/recommendation -- env | grep PRODUCT_CATALOG`).'
   - 'The ConfigMap is correct and irrelevant: explicit env beats envFrom.'
-  - Remove the duplicate (or `kubectl set env` the variable), then let it roll out.
   red_herrings:
   - a correct-looking ConfigMap wired in via envFrom
 reference:
@@ -109,6 +108,8 @@ reference:
     seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env;
     print(json.dumps(d))' | kubectl replace -f -
   - kubectl rollout status deployment/recommendation --timeout=300s
+  fix: Remove the duplicate PRODUCT_CATALOG_ADDR entry from recommendation's env (or set the variable with `kubectl
+    set env`), then let the rollout finish.
   traps:
   - Editing the ConfigMap, which already says 8080 (no effect).
   - Reading only the first PRODUCT_CATALOG_ADDR entry and concluding the config is fine.

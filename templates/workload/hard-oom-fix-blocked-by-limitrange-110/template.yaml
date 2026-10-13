@@ -77,15 +77,16 @@ ground_truth:
     ReplicaSet never gets pods and the old ones keep crashing.
   evidence:
   - 'ad pods: OOMKilled / CrashLoopBackOff; the memory limit is 48Mi.'
-  - 'Raise the limit (e.g. back to the previous revision): `kubectl rollout status` stalls; the new ReplicaSet''s
-    events say ''forbidden: maximum memory usage per Container is 128Mi''.'
+  - 'After raising the limit (e.g. back to the previous revision), `kubectl rollout status` stalls; the new
+    ReplicaSet''s events say ''forbidden: maximum memory usage per Container is 128Mi''.'
   - '`kubectl get limitrange` shows namespace-container-limits.'
-  - Raise or remove the LimitRange, then restore ad's memory settings.
 reference:
   commands:
   - kubectl delete limitrange namespace-container-limits
   - kubectl rollout undo deployment/ad
   - kubectl rollout status deployment/ad --timeout=300s
+  fix: Raise or remove the LimitRange namespace-container-limits, then restore ad's memory limit (for example with
+    `kubectl rollout undo deployment/ad`).
   traps:
   - 'Setting the limit to 128Mi to satisfy the LimitRange: the JVM still does not fit.'
   - Not reading ReplicaSet events, so the rejection stays invisible.

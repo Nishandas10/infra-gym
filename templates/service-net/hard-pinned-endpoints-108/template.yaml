@@ -94,13 +94,14 @@ ground_truth:
   - '`kubectl get endpointslices -l kubernetes.io/service-name=quote` shows quote-pinned with 10.244.250.17, which
     matches no pod (`kubectl get pods -o wide`).'
   - '`kubectl get svc quote -o yaml`: no spec.selector, so Kubernetes manages no endpoints for it.'
-  - Restore the selector from the quote Deployment's labels and delete the pinned EndpointSlice.
   red_herrings:
   - crash-looping quote-cache-warmer (pricing team) logging upstream timeouts
 reference:
   commands:
   - kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
   - kubectl delete endpointslice quote-pinned
+  fix: Restore the quote Service's selector from the quote Deployment's labels and delete the pinned EndpointSlice
+    quote-pinned.
   traps:
   - Restarting quote or shipping (changes nothing).
   - 'Restoring the selector but keeping the pinned slice: the dead IP stays in rotation (intermittent).'

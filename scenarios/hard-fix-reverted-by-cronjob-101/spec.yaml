@@ -7,7 +7,7 @@ instance_of:
   template: hard-fix-reverted-by-cronjob-101
   version: 1
   params: {}
-content_hash: sha256:010b4191c1d1e225880283104e6fc378575fd28cb861073435efc30a7cba4750
+content_hash: sha256:fe7af5f1ac1a064c031d601a9564f271e18b724d03b65853e18f2b1366c27f3a
 validation_hash: sha256:3ee0b67e16e97619ca57c184739a68aeae60a12c245515f747320dfcc1f8637b
 status: validated
 title: Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute
@@ -159,15 +159,15 @@ ground_truth:
   evidence:
   - 'checkout logs: charging the card fails with ''connection refused'' to the payment Service.'
   - payment logs say it listens on 8081; `kubectl get svc payment` targets 8080. Env PAYMENT_PORT=8081.
-  - 'Fix the env var; checkout recovers. Watch for a minute: payment rolls again and breaks.'
+  - Once the env var is corrected, checkout recovers, but within a minute payment rolls again and breaks.
   - '`kubectl rollout history deployment/payment`, the deployment''s managedFields (manager ''curl'') and `kubectl
     get cronjobs,jobs` show payment-config-sync re-applying the bad value every minute.'
-  - Stop the automation (delete or suspend the CronJob) and fix the env var.
 reference:
   commands:
   - kubectl delete cronjob payment-config-sync
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
+  fix: Stop the payment-config-sync CronJob (delete or suspend it) and set PAYMENT_PORT back to 8080.
   traps:
   - 'Fixing only the Deployment: passes for under a minute, then the verifier''s hold/stability check fails.'
   - 'Not verifying after the fix: the re-break happens after the agent declares success.'

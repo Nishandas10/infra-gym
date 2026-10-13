@@ -9,7 +9,6 @@
 1. Every user journey passes; the problem is in the asynchronous path checkout -> Kafka -> accounting -> DB.
 2. accounting logs: 'permission denied for table order' on insert.
 3. In the DB (`kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db`): `\dp accounting."order"` shows astronomy_user has no INSERT.
-4. GRANT INSERT back and restart accounting.
 
 ## Traps (why this is hard)
 
@@ -22,6 +21,8 @@
 - Pending GPU retraining pod with FailedScheduling events
 
 ## Fix
+
+GRANT INSERT on accounting."order" back to astronomy_user, then restart accounting so it reconnects.
 
 ```bash
 kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT INSERT ON accounting."order" TO astronomy_user'

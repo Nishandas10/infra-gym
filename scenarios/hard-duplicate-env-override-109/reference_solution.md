@@ -9,7 +9,6 @@
 1. recommendation logs: cannot reach product-catalog:3550 (connection refused / unavailable).
 2. `kubectl get deploy recommendation -o yaml` shows PRODUCT_CATALOG_ADDR twice; the effective value is the last one (`kubectl exec deploy/recommendation -- env | grep PRODUCT_CATALOG`).
 3. The ConfigMap is correct and irrelevant: explicit env beats envFrom.
-4. Remove the duplicate (or `kubectl set env` the variable), then let it roll out.
 
 ## Traps (why this is hard)
 
@@ -21,6 +20,8 @@
 - a correct-looking ConfigMap wired in via envFrom
 
 ## Fix
+
+Remove the duplicate PRODUCT_CATALOG_ADDR entry from recommendation's env (or set the variable with `kubectl set env`), then let the rollout finish.
 
 ```bash
 kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env; print(json.dumps(d))' | kubectl replace -f -

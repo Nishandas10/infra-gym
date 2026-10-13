@@ -56,6 +56,8 @@ def test_behaviour_change_changes_hash(change):
     (lambda t: t["task"]["prompts"].update(page="Checkout is broken. Find the cause and fix it."), True),
     (lambda t: t["ground_truth"].update(explanation=t["ground_truth"]["explanation"] + " More detail."), True),
     (lambda t: t.update(budget={"max_steps": 31, "wall_s": 900}), True),
+    (lambda t: t["reference"].update(fix="Set PAYMENT_PORT back to 8080."), True),   # the judge sees it
+    (lambda t: t["reference"].update(fix=None), False),       # unset = as before the field existed
     (lambda t: t["tags"].update(symptom="partial"), False),   # tags describe a scenario, they don't change it
 ])
 def test_non_runtime_change_keeps_validation_hash(change, content_changes):
@@ -138,6 +140,17 @@ def test_answer_key_names_every_root_cause_and_noise():
     for noise in inst["ground_truth"].get("red_herrings", []):
         assert noise in key
     assert "NOT the cause" in key
+    assert inst["reference"]["fix"] in key
+
+
+def test_evidence_lists_observations_not_fix_steps():
+    """The reference fix is in reference.fix / reference.commands, not at the end of ground_truth.evidence."""
+    fix_verbs = {"fix", "remove", "restore", "add", "raise", "lower", "stop", "delete", "grant", "set", "scale",
+                 "restart", "revert", "roll", "uncordon", "untaint", "enable", "re-enable", "patch", "correct"}
+    for files in BUILT.values():
+        inst = yaml.safe_load(files["spec.yaml"])
+        for item in inst["ground_truth"]["evidence"]:
+            assert item.split()[0].strip("'`\"").rstrip(",:;").lower() not in fix_verbs, f"{inst['id']}: {item}"
 
 
 def test_template_folder_is_its_layer():

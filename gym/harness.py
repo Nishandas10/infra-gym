@@ -82,11 +82,11 @@ def _run(cmd, timeout=60):
     return r.stdout
 
 
-def git_state():
-    """The repo commit the run used, and whether code differed from it (results/ excluded)."""
+def git_state(exclude=("results",)):
+    """The repo commit the run used, and whether code differed from it (the `exclude` paths not counted)."""
     try:
         sha = _run(["git", "rev-parse", "HEAD"]).strip()
-        dirty = bool(_run(["git", "status", "--porcelain", "--", ".", ":(exclude)results"]).strip())
+        dirty = bool(_run(["git", "status", "--porcelain", "--", ".", *(f":(exclude){p}" for p in exclude)]).strip())
         return sha, dirty
     except Exception:
         return None, None

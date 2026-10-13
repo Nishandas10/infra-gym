@@ -8,9 +8,10 @@
 
 1. Application logs: `no such host` / `EAI_AGAIN` for service names.
 2. `kubectl -n kube-system get deploy coredns`: 0 replicas; `kubectl -n kube-system get pods -l k8s-app=kube-dns`: none.
-3. Scale it back up.
 
 ## Fix
+
+Scale the coredns Deployment in kube-system back up.
 
 ```bash
 kubectl -n kube-system scale deployment coredns --replicas=2

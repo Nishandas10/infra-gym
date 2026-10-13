@@ -20,7 +20,7 @@ scenario has nothing to restart).
   fix is deleting the chaos object, which an SRE never does in a real incident.
 - **Only validated scenarios run** (`only_validated` in `config.yaml`): at least 5 validation runs of
   the scenario's current version with at most 1 failure (`gym/core/status.py`).
-- **Every result row records the scenario's `content_hash`**, so results can be tied to the exact
+- **Every result row records the suite and the scenario's `content_hash`** (see Suites), so results can be tied to the exact
   version of the scenario that ran.
 - **The model works in a container that cannot see this repo**, so it can't read reference
   solutions, checks or the undo log.
@@ -40,30 +40,67 @@ scenario has nothing to restart).
   objects in `default`, CoreDNS and kube-proxy, node labels, cordons and taints, namespace
   labels and webhooks. One episode can't leak into the next.
 
+## Suites
+
+Models are compared on **suites**: frozen, versioned lists of `{id, hash}` pairs, where `hash` is the
+instance's `content_hash` when the suite was frozen (`gym/core/suites.py`, made by `scripts/make_suite.py`).
+
+| Suite | Where | Instances | What for |
+|---|---|---|---|
+| `bench-v1-dev` | `suites/` (public) | 20 standard | development and published results |
+| `hard-v1` | `suites/` (public) | the 12 Hard scenarios | the Hard tier |
+| `lite` | `suites/` (public) | 10 fast standard | smoke runs and onboarding |
+| `bench-v1-test` | `private/suites/` (private) | 40 standard, 5/5 validated, at most 4 flag scenarios | held-out test; no results published |
+
+All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `lite` share no instance with
+`bench-v1-test`. `private/` is a checkout of a separate private repository and is git-ignored here
+(`INFRA_GYM_PRIVATE` points elsewhere); results of a private suite are written to `private/results/`, never to
+`bench/results/`.
+
+- `python bench/agent_bench.py run --suite bench-v1-dev` refuses to start if any member's current `content_hash`
+  differs from the suite (the scenario changed after the suite was frozen) or a member is no longer validated.
+  Fix it by freezing a new suite version, not by editing the suite file.
+- `python scripts/make_suite.py --check` verifies every suite against the current instances (CI runs the same check
+  in `tests/test_suites.py`).
+- `python scripts/make_suite.py --name X --n N [--split train|hard] [--clean] [--cap fix_type=flag:4] [--exclude S] [--fastest]`
+  freezes a new suite: seeded, proportional to layer sizes, preferring new symptoms and fix types within a layer,
+  validated instances only (`--clean`: no failed validation run). It replaces the old `pick` command.
+
 ## Commands
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run [--limit N] [--only ID] [--model ID] [--retry-errors] [--hint-level page|ticket|hinted]
-    python bench/leaderboard.py
+    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--hint-level page|ticket|hinted]
+    python bench/leaderboard.py --suite S [--common]
 
-The agent gets the scenario's `page` prompt (symptoms only) unless `--hint-level` says otherwise;
-every result row records the hint level, the scenario's layer, tier and `content_hash`.
+Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
+still works as an alias of `--suite` for one release; `.txt` set files are no longer accepted.
+
+The agent gets the suite's hint level (`page`) unless `--hint-level` says otherwise; such episodes are recorded but
+do not count in the suite's reports. Every result row records:
+
+- `suite`, `suite_version`, `suite_hash` (fingerprint of the suite's name, version, hint level and members)
+- `content_hash`, `validation_hash`, `template_version` and `tags` of the instance, and `hint_level`
+- `episode` (a unique id), `git_sha` and `git_dirty` (code changes outside the results folders)
 
 Results: `bench/results/results.jsonl` (one line per episode), plus full transcripts in
-`bench/results/transcripts/<model>/<scenario>__a<N>.json`. Re-running `run` resumes where it stopped.
+`bench/results/transcripts/<model>/<scenario>__a<N>__<episode>.json`. Re-running `run` resumes where it stopped: an
+episode is done when that model and attempt already ran this exact instance (`content_hash`) at this hint level.
 
-## Scenario sets, Claude, and cost
+Every report (`leaderboard.py`, `scoreboard.py`, `judge.py`, `cost.py`, `passk.py`, `show.py`, `quality_card.py`)
+takes `--suite S` and then counts only rows whose `(scenario, content_hash)` is a member of the suite at its hint
+level (`bench/rows.py`), so a row counts for every suite that holds exactly the instance it ran. `--any-version`
+matches by id only, for results from before suites; those numbers are labelled as not pinned. Leaderboard,
+scoreboard and report break pass rates down by the tag axes layer, fix type and drivers.
 
-- `python bench/agent_bench.py pick --n 30 --seed 1` writes `bench/sets/set30.txt`, a fixed, layer-balanced set.
-  Same seed = same set, so every model can be compared on exactly the same scenarios.
-- `python bench/agent_bench.py run --set bench/sets/set30.txt --model claude --attempts 3` runs only that set,
-  only matching models, with 3 attempts (overrides config).
+## Claude and cost
+
+- `python bench/agent_bench.py run --suite bench-v1-dev --model claude --attempts 3` runs only matching models,
+  with 3 attempts (overrides config).
 - Claude runs on the native API when `base_url` is `https://api.anthropic.com`: `effort` is sent as
   `output_config.effort`, the conversation is prompt-cached automatically, and thinking blocks are passed back unchanged.
   Temperature is not sent to Claude (thinking models use their default).
 - `python bench/cost.py --project 90` prints cost per model from the recorded tokens (prices from config.yaml).
-- `python bench/leaderboard.py --set bench/sets/set30.txt --common` compares models only on scenarios all of them finished.
 
 ## Providers
 
@@ -79,10 +116,10 @@ Results: `bench/results/results.jsonl` (one line per episode), plus full transcr
 
     python bench/show.py                         # list every finished episode
     python bench/show.py <scenario> [--model m]  # what the model did, step by step (thinking, commands, outputs, timing)
-    python bench/judge.py run --set S [--dry-run] [--model m] [--judge id]   # grade root-cause reports vs the ground truth
-    python bench/judge.py audit --set S --n 12   # grade a sample yourself, blind, to measure judge agreement
-    python bench/judge.py report --set S         # diagnosis table + judge-vs-human agreement (Cohen's kappa)
-    python bench/scoreboard.py --set S [--common]   # Diag. / Mit. / E2E / TTD / TTM / Tokens / Clean / Worse / $ per solve
+    python bench/judge.py run --suite S [--dry-run] [--model m] [--judge id]   # grade root-cause reports vs the ground truth
+    python bench/judge.py audit --suite S --n 12 # grade a sample yourself, blind, to measure judge agreement
+    python bench/judge.py report --suite S # diagnosis table + judge-vs-human agreement (Cohen's kappa)
+    python bench/scoreboard.py --suite S [--common]   # Diag. / Mit. / E2E / TTD / TTM / Tokens / Clean / Worse / $ per solve
 
 - The judge never changes PASS/FAIL; the verifier decides that. It sees the answer key, the incident prompt and the
   model's report only (no model name, no PASS/FAIL), votes 2-3 times, and grades correct / partial / wrong / missing.

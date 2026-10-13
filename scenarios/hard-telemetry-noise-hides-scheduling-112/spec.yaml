@@ -7,7 +7,7 @@ instance_of:
   template: hard-telemetry-noise-hides-scheduling-112
   version: 1
   params: {}
-content_hash: sha256:4aff192e8263430346f508b0f002e9e4c5bbe340efe42e906ea58a975db0eed1
+content_hash: sha256:99ae89f32f102c3ba3b199d03979d586376fc0df3593bf3e58fcb8d397fecb8f
 validation_hash: sha256:12f0c17bf6e741d7eb128c984363fe8aa42b1f7e44f8984f0fa407f099ceab8a
 status: validated
 title: A loud telemetry outage hides the quiet scheduling failure that is actually hurting customers
@@ -96,14 +96,14 @@ ground_truth:
   - The currency journey fails; `kubectl get pods -l opentelemetry.io/name=currency` shows Pending.
   - '`kubectl describe pod` (or events): 0/3 nodes available, untolerated taint dedicated=batch.'
   - '`kubectl describe nodes` shows the taint on every worker.'
-  - Remove the taints (or add a toleration); currency schedules and conversions work. The collector export errors
-    can be fixed separately; they are not what customers see.
   red_herrings:
   - the trace pipeline is genuinely broken (wrong exporter port), with errors in collector logs
 reference:
   commands:
   - kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
   - kubectl rollout status deployment/currency --timeout=300s
+  fix: Remove the dedicated=batch taint from the worker nodes (or give currency a matching toleration) so currency
+    schedules. The collector's export errors are a separate problem that customers do not see.
   traps:
   - Spending the budget on the collector's export errors (real but not customer-facing).
   - Restarting the currency pod (it stays Pending).

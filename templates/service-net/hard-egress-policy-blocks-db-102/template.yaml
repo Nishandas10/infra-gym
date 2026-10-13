@@ -165,7 +165,6 @@ ground_truth:
     and connections from other pods succeed. So the path, not the database, is broken.'
   - A timeout (not 'connection refused' or an auth error) from one client suggests filtering.
   - '`kubectl get networkpolicy` shows product-catalog-egress-hardening; its egress ports omit 5432.'
-  - Add 5432 to the policy (or remove the policy), then restart product-catalog.
   red_herrings:
   - failed backup Job with a password error
   - crash-looping search indexer logging DB timeouts
@@ -174,6 +173,8 @@ reference:
   - kubectl patch networkpolicy product-catalog-egress-hardening --type=json -p '[{"op":"add","path":"/spec/egress/1/ports/-","value":{"protocol":"TCP","port":5432}}]'
   - kubectl rollout restart deployment/product-catalog
   - kubectl rollout status deployment/product-catalog --timeout=300s
+  fix: Add TCP 5432 to the egress ports of NetworkPolicy product-catalog-egress-hardening (or remove the policy),
+    then restart product-catalog.
   traps:
   - Chasing the backup job's password error or the indexer's timeouts (other teams, unrelated).
   - Restarting or reconfiguring the database (changes nothing).

@@ -7,7 +7,7 @@ instance_of:
   template: hard-pinned-endpoints-108
   version: 1
   params: {}
-content_hash: sha256:c458a2faec9aadd52b0d0cb0ccfee5fe2d3be0b9f6470ad0c031749eff5a0aa7
+content_hash: sha256:c8559d19cab041090dc28e80cdaaeb2d275d8708c597e0687cc4d1a449ed8531
 validation_hash: sha256:292e31bcfeb1466946e7862b28fc2c794fdd856b31bbae5328e6de1d1ae553a3
 status: validated
 title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
@@ -116,13 +116,14 @@ ground_truth:
   - '`kubectl get endpointslices -l kubernetes.io/service-name=quote` shows quote-pinned with 10.244.250.17, which
     matches no pod (`kubectl get pods -o wide`).'
   - '`kubectl get svc quote -o yaml`: no spec.selector, so Kubernetes manages no endpoints for it.'
-  - Restore the selector from the quote Deployment's labels and delete the pinned EndpointSlice.
   red_herrings:
   - crash-looping quote-cache-warmer (pricing team) logging upstream timeouts
 reference:
   commands:
   - kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
   - kubectl delete endpointslice quote-pinned
+  fix: Restore the quote Service's selector from the quote Deployment's labels and delete the pinned EndpointSlice
+    quote-pinned.
   traps:
   - Restarting quote or shipping (changes nothing).
   - 'Restoring the selector but keeping the pinned slice: the dead IP stays in rotation (intermittent).'

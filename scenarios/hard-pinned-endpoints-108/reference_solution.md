@@ -9,7 +9,6 @@
 1. shipping logs: requests to http://quote:8080 time out. quote pods are Running and log nothing.
 2. `kubectl get endpointslices -l kubernetes.io/service-name=quote` shows quote-pinned with 10.244.250.17, which matches no pod (`kubectl get pods -o wide`).
 3. `kubectl get svc quote -o yaml`: no spec.selector, so Kubernetes manages no endpoints for it.
-4. Restore the selector from the quote Deployment's labels and delete the pinned EndpointSlice.
 
 ## Traps (why this is hard)
 
@@ -21,6 +20,8 @@
 - crash-looping quote-cache-warmer (pricing team) logging upstream timeouts
 
 ## Fix
+
+Restore the quote Service's selector from the quote Deployment's labels and delete the pinned EndpointSlice quote-pinned.
 
 ```bash
 kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'

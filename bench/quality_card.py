@@ -5,7 +5,7 @@ Only runs of each scenario's current version count (records whose validation_has
 instance), the same evidence gym/core/status.py turns into validated / quarantined / draft.
 
   python bench/quality_card.py                 all scenarios
-  python bench/quality_card.py --set bench/sets/hard.txt
+  python bench/quality_card.py --suite hard-v1     only a suite's instances (quality_card-hard-v1.md)
 
 Per scenario: validation runs, how many reached VALIDATED, flake rate, and the median times to
 detect the fault, to recover after the reference fix, and to reset the world afterwards.
@@ -20,21 +20,23 @@ import yaml
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(HERE))
 
+import rows as R  # noqa: E402
 from gym.core import status  # noqa: E402
 from gym.core.generate import load_defaults  # noqa: E402
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--set", help="only scenarios in this set file")
+ap.add_argument("--suite", help="only this suite's instances (name or path)")
+ap.add_argument("--set", dest="suite", help="old name of --suite (kept for one release)")
 a = ap.parse_args()
+suite = R.suite_from_args(argparse.Namespace(suite=a.suite, any_version=False))
 
 if not status.RESULTS.exists():
     sys.exit("No results/validation.jsonl yet. Run scripts/validate_scenario.py first.")
 records = status.load_records()
 rules = load_defaults().status.model_dump()
-wanted = None
-if a.set:
-    wanted = [l.split("#")[0].strip() for l in open(a.set) if l.split("#")[0].strip()]
+wanted = [m.id for m in suite.instances] if suite else None
 
 meta = {}
 for p in sorted((REPO / "scenarios").glob("*/spec.yaml")):
@@ -69,6 +71,7 @@ out += ["", f"{len(ids)} scenarios, {tot_runs} validation runs, "
         else f"{len(ids)} scenarios, no runs of their current versions yet"]
 text = "\n".join(out)
 print(text)
-(HERE / "results").mkdir(exist_ok=True)
-(HERE / "results" / "quality_card.md").write_text(text + "\n")
-print(f"\nSaved to {HERE / 'results' / 'quality_card.md'}")
+out_file = R.results_dir(suite) / ("quality_card.md" if suite is None else f"quality_card-{suite.name}.md")
+out_file.parent.mkdir(parents=True, exist_ok=True)
+out_file.write_text(text + "\n")
+print(f"\nSaved to {out_file}")

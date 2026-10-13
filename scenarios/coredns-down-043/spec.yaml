@@ -7,7 +7,7 @@ instance_of:
   template: coredns-down-043
   version: 1
   params: {}
-content_hash: sha256:2c14b201f76b31196d32964e505c57d14303b04ae5b8d2efecff9cdb81977327
+content_hash: sha256:d00cf6410e79e17c5ba5de8a1d34573fa62d67fea73cdd928a628048259857e4
 validation_hash: sha256:ffe976e54e23fec1e983c1cb80ec4ed4907c3a8afdaa6bd4a9ddf017171d1feb
 status: validated
 title: Cluster DNS scaled to zero
@@ -80,11 +80,11 @@ ground_truth:
   - 'Application logs: `no such host` / `EAI_AGAIN` for service names.'
   - '`kubectl -n kube-system get deploy coredns`: 0 replicas; `kubectl -n kube-system get pods -l k8s-app=kube-dns`:
     none.'
-  - Scale it back up.
 reference:
   commands:
   - kubectl -n kube-system scale deployment coredns --replicas=2
   - kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+  fix: Scale the coredns Deployment in kube-system back up.
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 240

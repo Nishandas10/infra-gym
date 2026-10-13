@@ -15,8 +15,8 @@ Two hashes:
                    reference fix, validation timings, extra files. Validation status is keyed on it, so
                    rewording a prompt or an explanation does not throw away validation runs.
   content_hash     everything that decides how a scenario behaves and is graded: the above plus
-                   prompts, ground truth, forbidden actions, budget and tools. Benchmark results
-                   and suites are keyed on it.
+                   prompts, ground truth, the reference fix in words, forbidden actions, budget and
+                   tools. Benchmark results and suites are keyed on it.
 """
 from __future__ import annotations
 
@@ -94,11 +94,14 @@ def validation_hash(inst, files):
 
 
 def content_hash(inst, files):
-    return _sha({
+    payload = {
         "validation_hash": validation_hash(inst, files), "task": inst["task"],
         "ground_truth": inst["ground_truth"], "forbidden": inst["verifier"]["forbidden"],
         "budget": inst["budget"], "tools": inst["tools"],
-    })
+    }
+    if inst["reference"].get("fix"):   # the answer key shows it; only when set, so other hashes stay as they were
+        payload["fix"] = inst["reference"]["fix"]
+    return _sha(payload)
 
 
 # Durability: after the fix passes, these workloads are restarted and the checks must pass again,
@@ -184,7 +187,8 @@ def reference_markdown(inst):
         lines += ["", "## Traps (why this is hard)", ""] + [f"- {t}" for t in ref["traps"]]
     if gt.get("red_herrings"):
         lines += ["", "## Noise in this scenario (not the cause)", ""] + [f"- {n}" for n in gt["red_herrings"]]
-    lines += ["", "## Fix", "", "```bash", *ref["commands"], "```", "", "## Confirm", "",
+    lines += ["", "## Fix", ""] + ([ref["fix"], ""] if ref.get("fix") else [])
+    lines += ["```bash", *ref["commands"], "```", "", "## Confirm", "",
               f"`python verifiers/verify.py scenarios/{inst['id']}` passes.", ""]
     return "\n".join(lines)
 
@@ -202,7 +206,8 @@ def answer_key(inst):
     lines += [f"- {e}" for e in gt["evidence"]]
     if gt.get("red_herrings"):
         lines += ["", "NOISE (observed, but NOT the cause):"] + [f"- {r}" for r in gt["red_herrings"]]
-    lines += ["", "REFERENCE FIX:"] + [f"  {c}" for c in inst["reference"]["commands"]]
+    lines += ["", "REFERENCE FIX:"] + ([inst["reference"]["fix"]] if inst["reference"].get("fix") else [])
+    lines += [f"  {c}" for c in inst["reference"]["commands"]]
     return "\n".join(lines)
 
 

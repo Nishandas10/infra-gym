@@ -85,10 +85,8 @@ ground_truth:
     Fixing the port alone turns 'connection refused' into NOAUTH errors.
   evidence:
   - 'cart logs: connection refused to valkey-cart:6380; the Service and valkey listen on 6379.'
-  - Fix VALKEY_ADDR; cart now fails with NOAUTH / authentication required.
+  - Once VALKEY_ADDR is corrected, cart fails with NOAUTH / authentication required.
   - '`kubectl get secrets` shows valkey-cart-credentials, annotated as rotated this morning for consumer ''cart''.'
-  - Either roll the rotation back (clear requirepass using the stored password) or give cart the password; restart
-    cart so it reconnects.
 reference:
   commands:
   - kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
@@ -96,6 +94,8 @@ reference:
     | base64 -d)" --no-auth-warning CONFIG SET requirepass ''
   - kubectl rollout restart deployment/cart
   - kubectl rollout status deployment/cart --timeout=300s
+  fix: Set cart's VALKEY_ADDR back to valkey-cart:6379; then either roll the password rotation back (clear
+    requirepass using the stored password) or give cart the password, and restart cart so it reconnects.
   traps:
   - Declaring victory after the port fix without re-testing (the second layer is still there).
   - 'Restarting valkey-cart to drop the password: it works but throws away every customer''s cart.'

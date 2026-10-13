@@ -8,9 +8,10 @@
 
 1. `kubectl logs deploy/frontend`: name resolution errors (EAI_AGAIN / getaddrinfo).
 2. `kubectl get networkpolicy frontend-egress-app-ports -o yaml`: only TCP 8080 is allowed; no rule for port 53.
-3. Add a DNS rule or remove the policy.
 
 ## Fix
+
+Add a DNS egress rule (UDP and TCP 53) to NetworkPolicy frontend-egress-app-ports, or remove the policy; then restart frontend.
 
 ```bash
 kubectl delete networkpolicy frontend-egress-app-ports

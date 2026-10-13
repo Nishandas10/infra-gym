@@ -7,7 +7,7 @@ instance_of:
   template: hard-ghost-legacy-email-pods-104
   version: 1
   params: {}
-content_hash: sha256:cd45c68a76a7a7f8fd7606baa691f378b9c03ee8c7708c13c65a8728405c14e8
+content_hash: sha256:23a4caedbf16d4a2a19966d467e44126c3bada52288446683bc6305ecc81026a
 validation_hash: sha256:6ae3c35fd5722d8ddc51b988a4d520bb4a9b25c7f83cccf0b1b8aed284c1cd1a
 status: validated
 title: Leftover legacy pods still match the email Service and swallow part of the traffic
@@ -114,10 +114,10 @@ ground_truth:
   - The real email pod's logs show only successful sends; checkout logs show some send failures.
   - '`kubectl get endpoints email` lists two pod IPs; `kubectl get pods -l opentelemetry.io/name=email` shows an
     extra pod from Deployment email-v1-legacy (busybox, old version label).'
-  - Remove the legacy Deployment (or relabel it out of the Service).
 reference:
   commands:
   - kubectl delete deployment email-v1-legacy
+  fix: Delete the email-v1-legacy Deployment (or relabel its pods so the email Service no longer selects them).
   traps:
   - 'Restarting the real email Deployment: nothing changes.'
   - Testing once and concluding the service is fine (the failure is intermittent).
