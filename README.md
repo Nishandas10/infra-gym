@@ -11,107 +11,126 @@ the exact scenario version that ran. All scenarios are listed in [scenarios/CATA
 
 ## Architecture
 
-Scenarios are authored as templates and generated into hashed instances. A validation harness proves
-each instance on the live cluster, and that evidence decides which instances are `validated`. Suites
-freeze lists of validated instances by hash. The benchmark runs a model on a suite, and the reports
-count only results of the suite's exact instances.
+**Pipeline.** Scenarios are authored as templates and generated into hashed instances. Repeated
+validation runs on the live cluster are the evidence that decides each instance's status. Only
+`validated` instances can be frozen into a suite, and the reports count only results of a suite's
+exact instances.
+
+```mermaid
+flowchart TB
+  subgraph BUILD["&nbsp;① Build and validate scenarios&nbsp;"]
+    direction LR
+    A["✍️ <b>Author</b><br/>templates/*.yaml"]:::author
+    G["⚙️ <b>Generate</b><br/>scripts/generate.py"]:::proc
+    I[("📦 <b>Instances</b><br/>scenarios/*/spec.yaml<br/>content + validation hash")]:::data
+    V["🧪 <b>Validate × 5</b><br/>scripts/validate_scenario.py"]:::proc
+    E[("📒 <b>Evidence</b><br/>results/validation.jsonl")]:::data
+    A --> G --> I --> V --> E
+    E -. "status: validated /<br/>quarantined / draft" .-> G
+  end
+
+  subgraph RUN["&nbsp;② Benchmark models&nbsp;"]
+    direction LR
+    S["🧊 <b>Freeze suite</b><br/>scripts/make_suite.py"]:::proc
+    SU[("🗂️ <b>Suites</b><br/>suites/*.yaml<br/>id + hash per member")]:::data
+    B["🤖 <b>Run</b><br/>bench/agent_bench.py"]:::proc
+    R[("📊 <b>Results</b><br/>results.jsonl + transcripts")]:::data
+    L["🏆 <b>Reports</b><br/>leaderboard · scoreboard · judge"]:::out
+    S --> SU --> B --> R --> L
+  end
+
+  BUILD == "validated instances only" ==> RUN
+
+  classDef author fill:#EDE9FE,stroke:#7C3AED,color:#2E1065,stroke-width:1.5px
+  classDef proc fill:#DBEAFE,stroke:#2563EB,color:#0B1F44,stroke-width:1.5px
+  classDef data fill:#FEF3C7,stroke:#D97706,color:#3D2A00,stroke-width:1.5px
+  classDef out fill:#DCFCE7,stroke:#16A34A,color:#052E16,stroke-width:1.5px
+  style BUILD fill:transparent,stroke:#94A3B8,stroke-width:1.5px
+  style RUN fill:transparent,stroke:#94A3B8,stroke-width:1.5px
+```
+
+**Runtime.** During an episode the runner talks to the model API, runs the model's commands in a
+Docker sandbox whose Kubernetes account cannot see the gym's own namespace, and injects, verifies
+and restores the cluster itself.
 
 ```mermaid
 flowchart LR
-  subgraph AUTHOR["1. Author (git)"]
-    TPL["templates/*/*/template.yaml<br/>fault · prompts · checks<br/>ground truth · reference fix"]
-    CFG["templates/taxonomy.yaml<br/>templates/defaults.yaml<br/>worlds/k8s-shop.yaml"]
+
+  subgraph API["&nbsp;☁️ Model APIs&nbsp;"]
+    M["<b>Claude</b> · Anthropic<br/><b>Gemini</b> · Google<br/>others · OpenRouter"]:::ext
   end
-
-  GEN["scripts/generate.py<br/>(gym/core: schema, generate)"]
-  INST["scenarios/*/spec.yaml<br/>resolved instance<br/>content_hash · validation_hash · status"]
-
-  subgraph VALIDATE["2. Validate"]
-    VS["scripts/validate_scenario.py<br/>(gym/harness.py)"]
-    VJ[("results/validation.jsonl<br/>+ environments.jsonl")]
-    ST["gym/core/status.py<br/>validated · quarantined · draft"]
+  subgraph VM["&nbsp;🖥️ Dev VM&nbsp;"]
+    direction TB
+    B["🤖 <b>agent_bench.py</b><br/>episode runner"]:::proc
+    SB["📦 <b>agent-box</b><br/>Docker sandbox"]:::sandbox
   end
-
-  subgraph FREEZE["3. Freeze suites"]
-    MS["scripts/make_suite.py"]
-    SU[("suites/*.yaml (public)<br/>private/suites/*.yaml (held out)<br/>id + content_hash per member")]
+  subgraph K8S["&nbsp;☸️ kind cluster&nbsp;"]
+    direction TB
+    PROBE["🔎 <b>Probe pods</b><br/>ns gym-system"]:::k8s
+    SHOP["🛒 <b>Shop</b> · ns default<br/>~20 services · flagd<br/>Kafka · Postgres · Valkey"]:::k8s
+    SYS["⚙️ <b>Platform</b><br/>kube-system · nodes"]:::k8s
   end
+  M <==>|"prompt ⇄ run_shell"| B
+  B -->|"docker exec"| SB
+  B ==>|"inject · revert · verify<br/>snapshot · restore"| K8S
+  SB ==>|"kubectl<br/>restricted RBAC"| K8S
+  PROBE -.->|"user journeys"| SHOP
 
-  subgraph BENCH["4. Benchmark"]
-    AB["bench/agent_bench.py run --suite"]
-    SB["agent-box sandbox (Docker)<br/>kubectl with restricted RBAC"]
-    RJ[("bench/results/results.jsonl<br/>+ transcripts")]
-  end
-
-  subgraph CLUSTER["kind cluster (ai-gym)"]
-    SHOP["namespace default<br/>OTel demo shop: services, flagd,<br/>Kafka, Postgres, Valkey, collector"]
-    GYMNS["namespace gym-system<br/>probe + Kafka tool pods"]
-    SYS["kube-system: CoreDNS, kube-proxy<br/>nodes · webhooks · Chaos Mesh"]
-  end
-
-  subgraph APIS["Model APIs"]
-    LLM["Claude (Anthropic) · Gemini (Google)<br/>others via OpenRouter"]
-  end
-
-  subgraph REPORT["5. Report"]
-    ROWS["bench/rows.py<br/>suite + hash filter"]
-    OUT["leaderboard · scoreboard · report<br/>by layer, fix type, drivers"]
-    JD["bench/judge.py<br/>diagnosis vs ground truth"]
-  end
-
-  TPL --> GEN
-  CFG --> GEN
-  GEN --> INST
-  INST --> VS
-  VS -- "inject · reference fix · revert" --> SHOP
-  VS -- "checks" --> GYMNS
-  GYMNS -- "HTTP journeys, SQL, Kafka lag" --> SHOP
-  VS --> VJ --> ST --> GEN
-  INST --> MS
-  ST --> MS
-  MS --> SU --> AB
-  INST --> AB
-  AB -- "inject · verify · snapshot/restore" --> CLUSTER
-  AB <-->|"prompt / tool calls"| LLM
-  AB -- "docker exec run_shell" --> SB
-  SB -- "kubectl" --> SHOP
-  SB -- "kubectl" --> SYS
-  AB --> RJ --> ROWS --> OUT
-  RJ --> JD
-  JD <-->|"answer key / grade"| LLM
-  JD --> OUT
+  classDef proc fill:#DBEAFE,stroke:#2563EB,color:#0B1F44,stroke-width:1.5px
+  classDef sandbox fill:#FFE4E6,stroke:#E11D48,color:#4C0519,stroke-width:1.5px
+  classDef ext fill:#EDE9FE,stroke:#7C3AED,color:#2E1065,stroke-width:1.5px
+  classDef k8s fill:#DCFCE7,stroke:#16A34A,color:#052E16,stroke-width:1.5px
+  style VM fill:transparent,stroke:#94A3B8,stroke-width:1.5px
+  style API fill:transparent,stroke:#94A3B8,stroke-width:1.5px
+  style K8S fill:transparent,stroke:#94A3B8,stroke-width:1.5px
 ```
 
-One benchmark episode, step by step:
+**One episode, step by step:**
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant B as agent_bench.py
-  participant C as Cluster (shop)
-  participant V as Verifier (probe pods)
-  participant M as Model API
-  participant S as Sandbox (agent-box)
+  participant B as 🤖 agent_bench.py
+  participant C as 🛒 Shop (cluster)
+  participant V as 🔎 Verifier
+  participant M as ☁️ Model API
+  participant S as 📦 Sandbox
 
-  B->>B: verify suite: every member's content_hash matches, still validated
-  B->>C: world healthy? snapshot everything the agent could change (bench/world.py)
-  B->>V: baseline checks PASS
-  B->>C: inject fault (gym/faults, exact undo log)
-  B->>V: checks FAIL (fault detected)
-  loop until the model stops, or 30 commands / 900 s of command time
-    B->>M: page prompt (symptoms only) + conversation so far
-    M-->>B: run_shell(command)
-    B->>S: docker exec (30 s timeout)
-    S->>C: kubectl (no access to gym-system)
-    S-->>B: output
+  rect rgba(37, 99, 235, 0.10)
+    Note over B,S: Setup
+    Note right of B: check suite hashes<br/>and validation status
+    B->>C: world healthy? snapshot it
+    B->>V: baseline checks PASS
+    B->>C: inject the fault (exact undo log)
+    B->>V: checks FAIL: fault detected
   end
-  M-->>B: final report (root cause + fix)
-  B->>V: checks PASS, still PASS after hold_s, every user journey passes (shop_health)
-  B->>C: restart durability targets
-  B->>V: checks PASS again (the fix is in the source of truth)
-  B->>B: safety: forbidden actions, collateral changes, made worse
-  B->>C: revert the fault exactly, restore the snapshot
-  B->>B: append row: suite, version, fingerprint, content_hash, tags, safety, tokens, git commit
+
+  rect rgba(124, 58, 237, 0.10)
+    Note over B,S: Agent loop (≤ 30 commands, 900 s)
+    loop until the model replies without a command
+      B->>M: page prompt (symptoms only) + history
+      M-->>B: run_shell(command)
+      B->>S: docker exec
+      S->>C: kubectl (restricted RBAC)
+      S-->>B: output
+    end
+    M-->>B: final report: root cause and fix
+  end
+
+  rect rgba(22, 163, 74, 0.10)
+    Note over B,S: Grading
+    B->>V: PASS, and still PASS after hold_s
+    B->>V: every user journey passes (shop_health)
+    B->>C: restart durability targets
+    B->>V: PASS again: the fix is durable
+    Note right of B: score safety: forbidden,<br/>collateral, made worse
+  end
+
+  rect rgba(217, 119, 6, 0.10)
+    Note over B,S: Cleanup and record
+    B->>C: revert the fault, restore the snapshot
+    Note right of B: append result row<br/>suite · hashes · safety · tokens
+  end
 ```
 
 | Component | Role |
