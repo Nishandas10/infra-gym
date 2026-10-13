@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0229830418d1c1979352ea74c4ad03283513b4b33e76babd6511cd8617ec29fa
 validation_hash: sha256:a6ee94055133062c04f9bac9ecdca7e954c3d28c0d7b5e4ca211ef5c6bab6a20
+status: draft
 title: HTTP requests to a service aborted at layer 7
 mechanism: chaos/http-fault-abort
 split: train

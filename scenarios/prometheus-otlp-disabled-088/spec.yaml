@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:20d15cc96f2d8fb4c7db1e2cd916c02d31df404a775e589be86adf9750c69f27
 validation_hash: sha256:0efe39e09a1f1f67f5bcec2c0da79d16f23ae43e596c57f5e5d047b6518d88c7
+status: validated
 title: Prometheus restarted without its OTLP receiver
 mechanism: observability/metrics-ingest-disabled
 split: train

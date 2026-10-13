@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:40c4b8801530833b8b3a88cafe40fce47e08473560a6d7e94691d01b73b96f72
 validation_hash: sha256:55485644d74f1c8e2f7d1763fa32a27b5aee4643f1519ee9fe94d9b8f0691f4a
+status: validated
 title: LimitRange max is lower than a container's limit
 mechanism: platform/limit-range-rejects
 split: train

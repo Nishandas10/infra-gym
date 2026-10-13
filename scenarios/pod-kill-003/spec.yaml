@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:9ad8243a21bf63754990ca788b573c47e2017564a2da1b89b32654b2b51bbab5
 validation_hash: sha256:548394667fd30d0ddebf71b7367c73719ea80b14cbd6b5cdc75dcce1a88e5c1d
+status: draft
 title: A service's pod is killed every 45 seconds
 mechanism: chaos/pod-kill-periodic
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4ab748ad2ed8df8f564bef5c89fafa375329cf097daccc732201e9fd557f4b2c
 validation_hash: sha256:af344162498b7af59f8a99e1822209d3b6f463af10f7ff16ead7078215c2d3a4
+status: validated
 title: 'Two faults on the checkout path: fixing the first one reveals the second'
 mechanism: hard/sequential-masked-faults
 split: hard

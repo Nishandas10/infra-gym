@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:a51b9a74f981243680d4d23db36f8860ede18e2d6d7057423b46964884b58896
 validation_hash: sha256:95c0fb5b7642ac36fbcdcbb70dd6af2e68fdcbef1e7f79f16449a605a34f8b48
+status: validated
 title: One service exports telemetry to a collector name that does not exist
 mechanism: observability/service-exporter-misconfigured
 split: train

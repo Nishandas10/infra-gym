@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:44e7db5cdfa4abdeacbe116a6b9f0b7ca91ee467c2829ea83038a3201fc4791a
 validation_hash: sha256:b66d7ba2ba1aaf0f4da132ef8d8b8e8639a7d163bfaab2f392abfa52cf28830b
+status: validated
 title: A mistyped cart datastore port hides a half-finished credential rotation behind it
 mechanism: hard/chained-config-then-credential
 split: hard

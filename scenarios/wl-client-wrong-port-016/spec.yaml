@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:868112e67c1975d2aba8128517854347a5995db733adabfdcd338cdef930584b
 validation_hash: sha256:4160e88fd3cdfc44e84fe9ff4710b193a089fa1ad1a64c20ff543e7e6590700d
+status: validated
 title: Client configured with the wrong port for a dependency
 mechanism: workload/client-dependency-port
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:6269c282b7c1f6749220a0eb73dc22b9b31794e774f234de993ea42d50345af3
 validation_hash: sha256:9bd6f54143c1f8e542c8d695fab4cc1e44a6d94c6396afd047a9893fc9416a66
+status: validated
 title: Payment service rejects every charge (paymentFailure)
 mechanism: app-flag/payment-failure
 split: train

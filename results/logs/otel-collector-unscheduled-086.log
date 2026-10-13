@@ -1,25 +1,33 @@
-14:08:33 === otel-collector-unscheduled-086 (workload_patch)
-14:08:33   0. world healthy?
-14:08:39   1. baseline must PASS
-14:08:39       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
-14:08:39       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-14:08:39   2. inject
-14:08:40   3. verifier must FAIL (<= 300s)
-14:08:40       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
-14:08:40       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-14:08:40   4. do-nothing agent: still FAIL after 30s?
-14:09:11       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
-14:09:11       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-14:09:11       failing in 2/2 checks during the hold
-14:09:11   5. reference solution
-14:09:11     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
-14:09:11       daemonset.apps/otel-collector-agent patched
-14:09:11     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-14:09:12       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
-14:09:12       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-14:09:12       daemon set "otel-collector-agent" successfully rolled out
-14:09:12   6. verifier must PASS (<= 300s)
-14:10:35       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
-14:10:35       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-14:10:35   7. restore exactly
-14:10:41   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 84, 'restore_s': 6}
+02:19:31 === otel-collector-unscheduled-086 (k8s.workload_patch)
+02:19:32   0. world healthy?
+02:19:40   1. baseline must PASS
+02:19:41       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+02:19:41       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+02:19:41   2. inject
+02:19:41   3. verifier must FAIL (<= 300s)
+02:19:42       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+02:19:42       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+02:19:42   4. do-nothing agent: still FAIL after 60s?
+02:20:42       [FAIL   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 0/0 pods ready for app.kubernetes.io/name=opentelemetry-collector; no pods exist
+02:20:42       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+02:20:42       failing in 5/5 checks during the hold
+02:20:42   5. reference solution
+02:20:42     $ kubectl patch daemonset otel-collector-agent --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/telemetry-tier"}]'
+02:20:42       daemonset.apps/otel-collector-agent patched
+02:20:42     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+02:20:54       Waiting for daemon set "otel-collector-agent" rollout to finish: 0 of 2 updated pods are available...
+02:20:54       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+02:20:54       daemon set "otel-collector-agent" successfully rolled out
+02:20:54   6. verifier must PASS (<= 300s)
+02:21:37       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+02:21:37       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+02:21:37   6b. invariants must PASS (shop_health)
+02:21:38       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+02:21:38       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
+02:21:38       [PASS   ] journey:cart - 2/2 ok, avg 75ms
+02:21:38       [PASS   ] journey:checkout - 2/2 ok, avg 114ms
+02:21:38   6c. the fix must survive a restart of daemonset/otel-collector-agent
+02:22:24       [PASS   ] pods_ready:app.kubernetes.io/name=opentelemetry-collector - 2/2 pods ready for app.kubernetes.io/name=opentelemetry-collector
+02:22:24       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+02:22:24   7. restore exactly
+02:22:33   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 43, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

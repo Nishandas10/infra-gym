@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:3a1d2bdcbe780259b5e25b9683e3ad47a59ab18336ff14a87b3a21e006ebda83
 validation_hash: sha256:c428c1bf3f2f24c05da2958e03d1801611e04edb9d2303eccaf2bb6491023bdd
+status: validated
 title: 'Bad config plus a paused Deployment: the fix does not roll out'
 mechanism: workload/paused-rollout-blocks-fix
 split: train

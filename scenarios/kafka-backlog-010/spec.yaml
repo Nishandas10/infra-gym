@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:643e220368ede11100fb638cbf5ddb6757eb5cdec225c9f7ab489a3dfb9855e8
 validation_hash: sha256:550eafc6ba3b8b84cc2b12f6fd72578445143e22d62c74d70c68ff708df5712d
+status: validated
 title: Kafka flooded and consumers slowed (kafkaQueueProblems)
 mechanism: app-flag/kafka-queue-overload
 split: train

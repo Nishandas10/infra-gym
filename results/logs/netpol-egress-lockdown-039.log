@@ -1,27 +1,36 @@
-13:57:08 === netpol-egress-lockdown-039 (create_objects)
-13:57:08   0. world healthy?
-13:57:14   1. baseline must PASS
-13:57:14       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
-13:57:14       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-13:57:14   2. inject
-13:57:17   3. verifier must FAIL (<= 240s)
-13:58:03       [FAIL   ] journey:checkout - 0/3 ok, avg 15033ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-13:58:03       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-13:58:03   4. do-nothing agent: still FAIL after 30s?
-13:59:34       [FAIL   ] journey:checkout - 0/3 ok, avg 11550ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-13:59:34       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-13:59:34       failing in 1/1 checks during the hold
-13:59:34   5. reference solution
-13:59:34     $ kubectl delete networkpolicy checkout-egress-lockdown
-13:59:34       networkpolicy.networking.k8s.io "checkout-egress-lockdown" deleted from default namespace
-13:59:34     $ kubectl rollout restart deployment/checkout
-13:59:34       deployment.apps/checkout restarted
-13:59:34     $ kubectl rollout status deployment/checkout --timeout=300s
-13:59:35       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-13:59:35       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-13:59:35       deployment "checkout" successfully rolled out
-13:59:35   6. verifier must PASS (<= 300s)
-13:59:47       [PASS   ] journey:checkout - 3/3 ok, avg 333ms
-13:59:47       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
-13:59:47   7. restore exactly
-13:59:53   => VALIDATED  {'world_ready_s': 6, 'detect_s': 46, 'recover_s': 12, 'restore_s': 6}
+02:39:11 === netpol-egress-lockdown-039 (k8s.create_objects)
+02:39:12   0. world healthy?
+02:39:21   1. baseline must PASS
+02:39:22       [PASS   ] journey:checkout - 3/3 ok, avg 89ms
+02:39:22       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+02:39:22   2. inject
+02:39:25   3. verifier must FAIL (<= 240s)
+02:40:11       [FAIL   ] journey:checkout - 0/3 ok, avg 15044ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+02:40:11       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+02:40:11   4. do-nothing agent: still FAIL after 60s?
+02:41:57       [FAIL   ] journey:checkout - 0/3 ok, avg 15054ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+02:41:57       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+02:41:57       failing in 1/1 checks during the hold
+02:41:57   5. reference solution
+02:41:57     $ kubectl delete networkpolicy checkout-egress-lockdown
+02:41:57       networkpolicy.networking.k8s.io "checkout-egress-lockdown" deleted from default namespace
+02:41:57     $ kubectl rollout restart deployment/checkout
+02:41:57       deployment.apps/checkout restarted
+02:41:57     $ kubectl rollout status deployment/checkout --timeout=300s
+02:42:00       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+02:42:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+02:42:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+02:42:00       deployment "checkout" successfully rolled out
+02:42:00   6. verifier must PASS (<= 300s)
+02:42:11       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
+02:42:11       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+02:42:11   6b. invariants must PASS (shop_health)
+02:42:13       [PASS   ] journey:browse - 2/2 ok, avg 46ms
+02:42:13       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
+02:42:13       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+02:42:13       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+02:42:13   6c. the fix must survive a restart of opentelemetry.io/name=checkout
+02:42:59       [PASS   ] journey:checkout - 3/3 ok, avg 133ms
+02:42:59       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+02:42:59   7. restore exactly
+02:43:09   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

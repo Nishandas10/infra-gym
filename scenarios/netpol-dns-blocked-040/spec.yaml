@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:b585882aaf6aed247370e82a91f86a612958df1da42949f415c051cffd04443c
 validation_hash: sha256:3f945d556b9ab6860c6ce0c0b2dbf9e5c70f63b5db8913eefbb90634f64dd43a
+status: validated
 title: Egress policy allows app ports but blocks DNS
 mechanism: network-policy/dns-egress-blocked
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:1aa26294110110553360dc543d232722be2c5901b3d7de9280bd5a4fb9dc5ff9
 validation_hash: sha256:bd7573662eb9d46ced7298d79482683f09ec1f653cce0a34f83f447bd57df166
+status: validated
 title: Validating webhook with failurePolicy=Fail and no backend
 mechanism: platform/admission-webhook-unavailable
 split: train

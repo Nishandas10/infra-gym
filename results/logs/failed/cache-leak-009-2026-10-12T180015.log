@@ -1,0 +1,38 @@
+18:00:15 === cache-leak-009 (app.flag)
+18:00:15   0. world healthy?
+18:00:22   1. baseline must PASS
+18:00:23       [PASS   ] journey:recommendations - 3/3 ok, avg 57ms
+18:00:23       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=47Mi (max 150Mi)
+18:00:23       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:00:23   2. inject
+18:00:24   3. verifier must FAIL (<= 1200s)
+18:07:02       [FAIL   ] journey:recommendations - 3/3 ok, avg 559ms (> 300ms)
+18:07:02       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=125Mi (max 150Mi)
+18:07:02       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:07:02   4. do-nothing agent: still FAIL after 630s?
+18:17:33       [PASS   ] journey:recommendations - 3/3 ok, avg 38ms
+18:17:33       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=42Mi (max 150Mi)
+18:17:33       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-556fd56449-bp5tb/recommendation restarted 79s ago (OOMKilled)
+18:17:33       failing in 39/39 checks during the hold
+18:17:33   5. reference solution
+18:17:33     $ python injectors/toggle_flag.py recommendationCacheFailure --off
+18:17:34       'recommendationCacheFailure' -> off (flagd is serving it now)
+18:17:34     $ kubectl rollout restart deployment/recommendation
+18:17:34       deployment.apps/recommendation restarted
+18:17:34     $ kubectl rollout status deployment/recommendation --timeout=180s
+18:17:35       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+18:17:35       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+18:17:35       deployment "recommendation" successfully rolled out
+18:17:35   6. verifier must PASS (<= 900s)
+18:32:45       [UNKNOWN] journey:recommendations - probe unavailable: no ready gym-probe pod in gym-system (run: python scripts/gym_setup.py)
+18:32:45       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=47Mi (max 150Mi)
+18:32:45       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+18:32:45   7. restore exactly
+18:37:51       [UNKNOWN] journey:browse - probe unavailable: no ready gym-probe pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51       [UNKNOWN] journey:recommendations - probe unavailable: no ready gym-probe pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51       [UNKNOWN] journey:cart - probe unavailable: no ready gym-probe pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51       [UNKNOWN] journey:checkout - probe unavailable: no ready gym-probe pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+18:37:51       [UNKNOWN] kafka_lag:accounting - KubeError: no ready gym-kafka-tools pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51       [UNKNOWN] kafka_lag:fraud-detection - KubeError: no ready gym-kafka-tools pod in gym-system (run: python scripts/gym_setup.py)
+18:37:51   => FIX_DID_NOT_RECOVER  {'world_ready_s': 7, 'detect_s': 398, 'recover_s': 911, 'restore_s': 305}

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:9b3146b3788a9a8b260a45f3e646302246af6da6aa89ab4acf99b25f8860eba6
 validation_hash: sha256:aa1cc2e2adc789f4989b34432838b8816a46a0c60e197aeb25404c0da75ab0bd
+status: validated
 title: Message broker scaled to zero (async pipeline stops silently)
 mechanism: datastore/message-broker-down
 split: train

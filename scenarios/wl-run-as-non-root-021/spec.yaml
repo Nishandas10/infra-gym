@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:823d9a604611159b4046e1a8dc33cb87fd00c9de8fd445ecfac308f03a128316
 validation_hash: sha256:60f0f2e366b03f9df78d7c53c593ad6f0b7361d90140ba351fefd1908c55b1b6
+status: validated
 title: runAsNonRoot on an image that runs as root -> CreateContainerConfigError
 mechanism: workload/security-context-run-as-non-root
 split: train

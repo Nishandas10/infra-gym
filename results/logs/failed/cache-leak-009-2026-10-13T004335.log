@@ -1,0 +1,13 @@
+00:43:35 === cache-leak-009 (app.flag)
+00:43:36   0. world healthy?
+00:43:47   1. baseline must PASS
+00:43:49       [PASS   ] journey:recommendations - 3/3 ok, avg 67ms
+00:43:49       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=51Mi (max 150Mi)
+00:43:49       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+00:43:49   2. inject
+00:43:50   3. verifier must FAIL (<= 1200s)
+01:03:55       [PASS   ] journey:recommendations - 3/3 ok, avg 51ms
+01:03:55       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=51Mi (max 150Mi)
+01:03:55       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+01:03:55   7. restore exactly
+01:04:03   => NOT_DETECTED  {'world_ready_s': 12, 'detect_s': 1205, 'restore_s': 9}

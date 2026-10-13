@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:d4117b57a3a5fa53f51f7275a7404fa1ccd93697e46af0618eeba2a73931b2e0
 validation_hash: sha256:7dbc05aad20b4878a3ab2b02c6740215600409a6d302e90de8d9660641c573af
+status: validated
 title: Memory limit far below what the service needs -> OOMKilled / CrashLoopBackOff
 mechanism: workload/oom-memory-limit
 split: train

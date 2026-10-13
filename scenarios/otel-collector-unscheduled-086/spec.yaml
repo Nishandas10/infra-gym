@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f458e1b430b74ceecd6afb356920dd0f6e4b20ba46d1b609943f525f9aba3a41
 validation_hash: sha256:03276ca202caaef6ea590c51da258b9e4159988bb2a8d76726a72a97e52ba9e2
+status: validated
 title: Collector DaemonSet has a nodeSelector that matches no node
 mechanism: observability/collector-not-running
 split: train

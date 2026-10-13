@@ -1,21 +1,11 @@
-20:34:08 === pay-fail-006 (app.flag)
-20:34:08   0. world healthy?
-20:34:15   1. baseline must PASS
-20:34:15       [PASS   ] journey:checkout - 3/3 ok, avg 62ms
-20:34:15       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-20:34:15   2. inject
-20:34:16   3. verifier must FAIL (<= 120s)
-20:34:16       [FAIL   ] journey:checkout - 0/3 ok, avg 42ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-20:34:16       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-20:34:16   4. do-nothing agent: still FAIL after 30s?
-20:34:47       [FAIL   ] journey:checkout - 0/3 ok, avg 70ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-20:34:47       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-20:34:47       failing in 2/2 checks during the hold
-20:34:47   5. reference solution
-20:34:47     $ python injectors/toggle_flag.py paymentFailure --off
-20:34:48       'paymentFailure' -> off (flagd is serving it now)
-20:34:48   6. verifier must PASS (<= 120s)
-20:34:49       [PASS   ] journey:checkout - 3/3 ok, avg 62ms
-20:34:49       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-20:34:49   7. restore exactly
-20:34:55   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 1, 'restore_s': 7}
+02:22:33 === pay-fail-006 (app.flag)
+02:22:34   0. world healthy?
+02:22:43   1. baseline must PASS
+02:22:45       [PASS   ] journey:checkout - 3/3 ok, avg 159ms
+02:22:45       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+02:22:45   2. inject
+02:22:45   3. verifier must FAIL (<= 120s)
+02:24:46       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+02:24:46       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+02:24:46   7. restore exactly
+02:24:58   => NOT_DETECTED  {'world_ready_s': 9, 'detect_s': 120, 'restore_s': 12}

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:061e837584f8e603e60988c4a71159b24debbe04589634b30f287db9c0ea9a4f
 validation_hash: sha256:848c5acf7df78498f2232c0b537f19d9b83e13653ad74df80597d25f50230a52
+status: validated
 title: Deployment scaled to zero replicas
 mechanism: workload/scaled-to-zero
 split: train

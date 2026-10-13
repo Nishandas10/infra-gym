@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:779f07847bb63ae2d1ce59119e31d18f2283c0912f92f0ae9dab7c97e77fca3d
 validation_hash: sha256:832f3d18d1f2eaf831400b311f61f73bacf0b16e0845e4e609198e71590f4d76
+status: validated
 title: A duplicate env entry from an old overlay silently overrides the correct value
 mechanism: hard/duplicate-env-definition
 split: hard

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:ac8ad257f95a83e48f689456aa89ca403a1136c97ffb3a21855eb5476a310469
 validation_hash: sha256:68c01215fe1348596594abba4d4ecc01e4abdcf8c189a56e1e9685fdccd833a0
+status: draft
 title: Network partition between two specific services
 mechanism: chaos/network-partition
 split: train

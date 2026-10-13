@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:b77625eaf99366f105c0ebf156eca4b2cadd5bac3b877133bc95acac4cbd0acd
 validation_hash: sha256:d56b7cedb7885abf78ec0c87a64e3b87a185d15558c89e8da9ef1d38be4a1b13
+status: validated
 title: NetworkPolicy blocks all traffic into a service
 mechanism: network-policy/ingress-deny
 split: train

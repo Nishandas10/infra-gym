@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:9f26ab35da86c1d756eb1c99b333ac8343a9a486d2f1da6cb8b5b93a48bd7c48
 validation_hash: sha256:3a102f9936ba6662aac3d1627f56c82a94d05faf54f6cc276388686f0a6f28fe
+status: validated
 title: Role connection limit set to zero
 mechanism: datastore/db-connection-limit
 split: train

@@ -1,26 +1,33 @@
-11:55:36 === hard-cart-chained-addr-auth-103 (composite)
-11:55:36   0. world healthy?
-11:55:43   1. baseline must PASS
-11:55:43       [PASS   ] journey:cart - 3/3 ok, avg 50ms
-11:55:43   2. inject
-11:55:44   3. verifier must FAIL (<= 300s)
-11:56:09       [FAIL   ] journey:cart - 0/3 ok, avg 8014ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-11:56:09   4. do-nothing agent: still FAIL after 60s?
-11:57:42       [FAIL   ] journey:cart - 0/3 ok, avg 8028ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-11:57:42       failing in 2/2 checks during the hold
-11:57:42   5. reference solution
-11:57:42     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
-11:57:42       deployment.apps/cart env updated
-11:57:42     $ kubectl exec deploy/valkey-cart -- valkey-cli -a "$(kubectl get secret valkey-cart-credentials -o jsonpath='{.data.password}' | base64 -d)" --no-auth-warning CONFIG SET requirepass ''
-11:57:42       OK
-11:57:42     $ kubectl rollout restart deployment/cart
-11:57:42       deployment.apps/cart restarted
-11:57:42     $ kubectl rollout status deployment/cart --timeout=300s
-11:57:44       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-11:57:44       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-11:57:44       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-11:57:44       deployment "cart" successfully rolled out
-11:57:44   6. verifier must PASS (<= 420s)
-11:58:08       [PASS   ] journey:cart - 3/3 ok, avg 39ms
-11:58:08   7. restore exactly
-12:00:43   => VALIDATED  {'world_ready_s': 6, 'detect_s': 25, 'recover_s': 24, 'restore_s': 154}
+00:20:37 === hard-cart-chained-addr-auth-103 (composite)
+00:20:38   0. world healthy?
+00:20:49   1. baseline must PASS
+00:20:50       [PASS   ] journey:cart - 3/3 ok, avg 64ms
+00:20:50   2. inject
+00:20:51   3. verifier must FAIL (<= 300s)
+00:20:52       [FAIL   ] journey:cart - 0/3 ok, avg 39ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+00:20:52   4. do-nothing agent: still FAIL after 60s?
+00:21:53       [FAIL   ] journey:cart - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+00:21:53       failing in 5/5 checks during the hold
+00:21:53   5. reference solution
+00:21:53     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+00:21:53       deployment.apps/cart env updated
+00:21:53     $ kubectl exec deploy/valkey-cart -- valkey-cli -a "$(kubectl get secret valkey-cart-credentials -o jsonpath='{.data.password}' | base64 -d)" --no-auth-warning CONFIG SET requirepass ''
+00:21:53       OK
+00:21:53     $ kubectl rollout restart deployment/cart
+00:21:54       deployment.apps/cart restarted
+00:21:54     $ kubectl rollout status deployment/cart --timeout=300s
+00:21:56       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+00:21:56       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+00:21:56       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+00:21:56       deployment "cart" successfully rolled out
+00:21:56   6. verifier must PASS (<= 420s)
+00:22:19       [PASS   ] journey:cart - 3/3 ok, avg 120ms
+00:22:19   6b. invariants must PASS (shop_health)
+00:22:32       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+00:22:32       [PASS   ] journey:recommendations - 2/2 ok, avg 74ms
+00:22:32       [PASS   ] journey:cart - 2/2 ok, avg 50ms
+00:22:32       [PASS   ] journey:checkout - 2/2 ok, avg 94ms
+00:22:32   6c. the fix must survive a restart of deployment/cart
+00:23:18       [PASS   ] journey:cart - 3/3 ok, avg 69ms
+00:23:18   7. restore exactly
+00:26:16   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 23, 'invariants_s': 13, 'durable_s': 1, 'restore_s': 177}

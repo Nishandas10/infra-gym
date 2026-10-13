@@ -1,23 +1,30 @@
-12:34:26 === compound-quota-blocks-fix-090 (composite)
-12:34:26   0. world healthy?
-12:34:32   1. baseline must PASS
-12:34:32       [PASS   ] journey:checkout - 3/3 ok, avg 49ms
-12:34:32   2. inject
-12:34:58   3. verifier must FAIL (<= 240s)
-12:34:58       [FAIL   ] journey:checkout - 0/3 ok, avg 47ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-12:34:58   4. do-nothing agent: still FAIL after 30s?
-12:35:28       [FAIL   ] journey:checkout - 0/3 ok, avg 42ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-12:35:28       failing in 2/2 checks during the hold
-12:35:28   5. reference solution
-12:35:28     $ kubectl delete resourcequota namespace-pod-quota
-12:35:29       resourcequota "namespace-pod-quota" deleted from default namespace
-12:35:29     $ kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
-12:35:29       deployment.apps/shipping env updated
-12:35:29     $ kubectl rollout status deployment/shipping --timeout=300s
-12:35:30       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
-12:35:30       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
-12:35:30       deployment "shipping" successfully rolled out
-12:35:30   6. verifier must PASS (<= 300s)
-12:35:41       [PASS   ] journey:checkout - 3/3 ok, avg 56ms
-12:35:41   7. restore exactly
-12:36:03   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 11, 'restore_s': 22}
+01:51:31 === compound-quota-blocks-fix-090 (composite)
+01:51:31   0. world healthy?
+01:51:42   1. baseline must PASS
+01:51:43       [PASS   ] journey:checkout - 3/3 ok, avg 152ms
+01:51:43   2. inject
+01:52:08   3. verifier must FAIL (<= 240s)
+01:52:09       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:52:09   4. do-nothing agent: still FAIL after 60s?
+01:53:09       [FAIL   ] journey:checkout - 0/3 ok, avg 51ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:53:09       failing in 5/5 checks during the hold
+01:53:09   5. reference solution
+01:53:09     $ kubectl delete resourcequota namespace-pod-quota
+01:53:10       resourcequota "namespace-pod-quota" deleted from default namespace
+01:53:10     $ kubectl set env deployment/shipping QUOTE_ADDR=http://quote:8080
+01:53:10       deployment.apps/shipping env updated
+01:53:10     $ kubectl rollout status deployment/shipping --timeout=300s
+01:53:11       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+01:53:11       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+01:53:11       deployment "shipping" successfully rolled out
+01:53:11   6. verifier must PASS (<= 300s)
+01:53:17       [PASS   ] journey:checkout - 3/3 ok, avg 1638ms
+01:53:17   6b. invariants must PASS (shop_health)
+01:53:17       [PASS   ] journey:browse - 2/2 ok, avg 18ms
+01:53:17       [PASS   ] journey:recommendations - 2/2 ok, avg 35ms
+01:53:17       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+01:53:17       [PASS   ] journey:checkout - 2/2 ok, avg 70ms
+01:53:17   6c. the fix must survive a restart of deployment/shipping
+01:54:03       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
+01:54:03   7. restore exactly
+01:54:31   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 5, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 27}

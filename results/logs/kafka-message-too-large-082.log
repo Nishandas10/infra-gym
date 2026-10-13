@@ -1,23 +1,28 @@
-13:33:44 === kafka-message-too-large-082 (exec_commands)
-13:33:44   0. world healthy?
-13:33:51   1. baseline must PASS
-13:33:52       [PASS   ] journey:checkout - 2/2 ok, avg 53ms
-13:33:52       [PASS   ] orders_recorded - accounting recorded the new order (462 -> 463 rows)
-13:33:52   2. inject
-13:33:54   3. verifier must FAIL (<= 240s)
-13:34:57       [PASS   ] journey:checkout - 2/2 ok, avg 51ms
-13:34:57       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 463 rows)
-13:34:57   4. do-nothing agent: still FAIL after 30s?
-13:37:14       [PASS   ] journey:checkout - 2/2 ok, avg 169ms
-13:37:14       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 463 rows)
-13:37:14       failing in 1/1 checks during the hold
-13:37:14   5. reference solution
-13:37:14     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
-13:37:17       Completed updating config for topic orders.
-13:37:17       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-13:37:17       [otel.javaagent 2026-10-07 13:37:15:192 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
-13:37:17   6. verifier must PASS (<= 300s)
-13:37:18       [PASS   ] journey:checkout - 2/2 ok, avg 169ms
-13:37:18       [PASS   ] orders_recorded - accounting recorded the new order (465 -> 466 rows)
-13:37:18   7. restore exactly
-13:39:48   => VALIDATED  {'world_ready_s': 6, 'detect_s': 63, 'recover_s': 1, 'restore_s': 146}
+02:31:47 === kafka-message-too-large-082 (runtime.exec)
+02:31:48   0. world healthy?
+02:31:56   1. baseline must PASS
+02:31:58       [PASS   ] journey:checkout - 2/2 ok, avg 94ms
+02:31:58       [PASS   ] orders_recorded - accounting recorded the new order (2562 -> 2563 rows)
+02:31:58   2. inject
+02:32:02   3. verifier must FAIL (<= 240s)
+02:33:07       [PASS   ] journey:checkout - 2/2 ok, avg 79ms
+02:33:07       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 2563 rows)
+02:33:07   4. do-nothing agent: still FAIL after 60s?
+02:35:30       [PASS   ] journey:checkout - 2/2 ok, avg 224ms
+02:35:30       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 2563 rows)
+02:35:30       failing in 1/1 checks during the hold
+02:35:30   5. reference solution
+02:35:30     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
+02:35:36       Completed updating config for topic orders.
+02:35:36       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+02:35:36       [otel.javaagent 2026-10-13 02:35:31:863 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
+02:35:36   6. verifier must PASS (<= 300s)
+02:35:38       [PASS   ] journey:checkout - 2/2 ok, avg 306ms
+02:35:38       [PASS   ] orders_recorded - accounting recorded the new order (2565 -> 2566 rows)
+02:35:38   6b. invariants must PASS (shop_health)
+02:35:40       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+02:35:40       [PASS   ] journey:recommendations - 2/2 ok, avg 74ms
+02:35:40       [PASS   ] journey:cart - 2/2 ok, avg 85ms
+02:35:40       [PASS   ] journey:checkout - 2/2 ok, avg 174ms
+02:35:40   7. restore exactly
+02:36:30   => VALIDATED  {'world_ready_s': 8, 'detect_s': 65, 'recover_s': 3, 'invariants_s': 2, 'restore_s': 43}

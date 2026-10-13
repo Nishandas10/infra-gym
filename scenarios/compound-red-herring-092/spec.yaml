@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0dc2bdbd641691c64d7bd1d47ed4bcd38c86974cc9b7f2894d67c98a36f8e0d0
 validation_hash: sha256:7faf7d88e8e2e862a867fb121d4b86672820858ce7fb1d9bbb244ecdbb28b21a
+status: validated
 title: A loud but irrelevant failing pod next to the real, quieter fault
 mechanism: compound/red-herring
 split: train

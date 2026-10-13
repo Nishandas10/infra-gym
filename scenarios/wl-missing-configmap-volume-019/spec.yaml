@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4f0ee949f1b4013a83166f1eaab66f9c535ba24bd21e5b0acf8590a1d02f42ba
 validation_hash: sha256:639c88a79838f4c3b6f15d63e48a0124c11188467ecbbd8f5e3c6dfad81f3ff9
+status: validated
 title: Pod mounts a ConfigMap that does not exist -> stuck ContainerCreating
 mechanism: workload/missing-configmap-volume
 split: train

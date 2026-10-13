@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4126b8c67acbb04c649fcecbf4b63554346b483ce37eb7ca75bfcc5b53073a2b
 validation_hash: sha256:42d8820fa30606efdbeee9f4189d512511a9b134d2e851d6fc283470038b0ddf
+status: validated
 title: Collector exports traces to the wrong port
 mechanism: observability/collector-exporter-misconfigured
 split: train

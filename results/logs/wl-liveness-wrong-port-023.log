@@ -1,30 +1,39 @@
-15:28:04 === wl-liveness-wrong-port-023 (workload_patch)
-15:28:04   0. world healthy?
-15:28:10   1. baseline must PASS
-15:28:10       [PASS   ] journey:browse - 4/4 ok, avg 13ms
-15:28:10       [PASS   ] journey:catalog - 4/4 ok, avg 13ms
-15:28:10       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
-15:28:10   2. inject
-15:28:10   3. verifier must FAIL (<= 240s)
-15:28:11       [PASS   ] journey:browse - 4/4 ok, avg 12ms
-15:28:11       [PASS   ] journey:catalog - 4/4 ok, avg 10ms
-15:28:11       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-vz96b is only 1s old
-15:28:11   4. do-nothing agent: still FAIL after 150s?
-15:30:41       [FAIL   ] journey:browse - 0/4 ok, avg 12ms; e.g. GET /api/products/2ZYFJ3GM2N -> 500 b'Internal Server Error'
-15:30:41       [FAIL   ] journey:catalog - 0/4 ok, avg 8ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-15:30:41       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-vz96b/product-catalog restarted 15s ago (Completed)
-15:30:41       failing in 3/3 checks during the hold
-15:30:41   5. reference solution
-15:30:41     $ kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
-15:30:42       deployment.apps/product-catalog patched
-15:30:42     $ kubectl rollout status deployment/product-catalog --timeout=300s
-15:30:43       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-15:30:43       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-15:30:43       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-15:30:43       deployment "product-catalog" successfully rolled out
-15:30:43   6. verifier must PASS (<= 360s)
-15:32:50       [PASS   ] journey:browse - 4/4 ok, avg 17ms
-15:32:50       [PASS   ] journey:catalog - 4/4 ok, avg 10ms
-15:32:50       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
-15:32:50   7. restore exactly
-15:32:56   => VALIDATED  {'world_ready_s': 6, 'detect_s': 1, 'recover_s': 127, 'restore_s': 6}
+03:26:19 === wl-liveness-wrong-port-023 (k8s.workload_patch)
+03:26:19   0. world healthy?
+03:26:27   1. baseline must PASS
+03:26:28       [PASS   ] journey:browse - 4/4 ok, avg 19ms
+03:26:28       [PASS   ] journey:catalog - 4/4 ok, avg 18ms
+03:26:28       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+03:26:28   2. inject
+03:26:28   3. verifier must FAIL (<= 240s)
+03:26:29       [PASS   ] journey:browse - 4/4 ok, avg 21ms
+03:26:29       [PASS   ] journey:catalog - 4/4 ok, avg 20ms
+03:26:29       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-h7996 is only 0s old
+03:26:29   4. do-nothing agent: still FAIL after 150s?
+03:29:00       [FAIL   ] journey:browse - 0/4 ok, avg 14ms; e.g. GET /api/products/OLJCESPC7Z -> 500 b'Internal Server Error'
+03:29:00       [FAIL   ] journey:catalog - 0/4 ok, avg 12ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+03:29:00       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-h7996/product-catalog restarted 56s ago (Completed)
+03:29:00       failing in 14/14 checks during the hold
+03:29:00   5. reference solution
+03:29:00     $ kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
+03:29:01       deployment.apps/product-catalog patched
+03:29:01     $ kubectl rollout status deployment/product-catalog --timeout=300s
+03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+03:29:03       deployment "product-catalog" successfully rolled out
+03:29:03   6. verifier must PASS (<= 360s)
+03:31:02       [PASS   ] journey:browse - 4/4 ok, avg 18ms
+03:31:02       [PASS   ] journey:catalog - 4/4 ok, avg 14ms
+03:31:02       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+03:31:02   6b. invariants must PASS (shop_health)
+03:31:03       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+03:31:03       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
+03:31:03       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+03:31:03       [PASS   ] journey:checkout - 2/2 ok, avg 72ms
+03:31:03   6c. the fix must survive a restart of deployment/product-catalog
+03:33:04       [PASS   ] journey:browse - 4/4 ok, avg 18ms
+03:33:04       [PASS   ] journey:catalog - 4/4 ok, avg 14ms
+03:33:04       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+03:33:04   7. restore exactly
+03:33:13   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 119, 'invariants_s': 1, 'durable_s': 76, 'restore_s': 8}

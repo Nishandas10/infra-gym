@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:651679d0b94b047c5089688649987a007a4cf91ae89d2779aa3c8bd41dae7418
 validation_hash: sha256:cbb7128afa52d8740d85e886793208821fbb9b578de0a38e5b0a0e6e60d123a0
+status: validated
 title: Cart service errors (cartFailure)
 mechanism: app-flag/cart-failure
 split: train

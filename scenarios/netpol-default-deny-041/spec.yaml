@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:64b5f855e2c0d6e4ae8045f661184bb7fa12230256d6225a733a1662bb1de96e
 validation_hash: sha256:8487bf480f08d25e322f7424545a7ce117a50cafb5c0e1c859a8dcb20201a9ab
+status: validated
 title: Namespace-wide default-deny ingress policy
 mechanism: network-policy/namespace-default-deny
 split: train

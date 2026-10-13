@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:1b31ebca2997d102883c36ca756691464a2a35876f3ba6afab4160fedb5e136c
 validation_hash: sha256:81ce05ae8dbe08a29dd22298d117152e1020f64ded0fb97a5bd9eb77ebce44bd
+status: validated
 title: Egress policy lets a service reach nothing but DNS
 mechanism: network-policy/egress-deny
 split: train

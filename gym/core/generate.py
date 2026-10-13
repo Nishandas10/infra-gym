@@ -26,6 +26,7 @@ import pathlib
 
 import yaml
 
+from . import status
 from .schema import Defaults, Instance, Template
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -142,8 +143,9 @@ def resolve_verifier(verifier, fault, defaults):
             "forbidden": list(defaults.forbidden) + extra}
 
 
-def resolve(raw, defaults, files):
-    """The instance dict: the template's own keys in its order, defaults filled in, hash added."""
+def resolve(raw, defaults, files, records=None):
+    """The instance dict: the template's own keys in its order, defaults filled in, hashes added, and
+    the validation status from `records` (gym/core/status.py load_records; none = draft)."""
     inst = json.loads(json.dumps(raw))
     inst["verifier"] = resolve_verifier(inst["verifier"], inst["fault"], defaults)
     validation = {**defaults.validation.model_dump(),
@@ -157,7 +159,7 @@ def resolve(raw, defaults, files):
         out[key] = value
         if key == "version":
             out["instance_of"] = {"template": raw["id"], "version": raw.get("version", 1), "params": {}}
-            out["content_hash"] = out["validation_hash"] = None
+            out["content_hash"] = out["validation_hash"] = out["status"] = None
         if key == "bench_eligible":   # keep the resolved defaults next to the other top-level settings
             out.update(resolved)
         if key == "reference":
@@ -165,6 +167,7 @@ def resolve(raw, defaults, files):
     out.update({k: v for k, v in resolved.items() if k not in out})
     out["validation_hash"] = validation_hash(out, files)
     out["content_hash"] = content_hash(out, files)
+    out["status"] = status.compute((records or {}).get(out["validation_hash"], []), defaults.status.model_dump()).status
     Instance.model_validate(out)
     return out
 
@@ -204,11 +207,11 @@ def answer_key(inst):
 
 
 # ---------------------------------------------------------------- building
-def build(tdir, defaults):
+def build(tdir, defaults, records=None):
     """{relative file name: text} for one instance folder."""
     raw, model = load_template(tdir)
     files = extra_files(tdir)
-    inst = resolve(raw, defaults, files)
+    inst = resolve(raw, defaults, files, records)
     hand_written = tdir / REFERENCE_FILE
     reference = hand_written.read_text() if hand_written.exists() else reference_markdown(inst)
     out = {"spec.yaml": HEADER.format(layer=model.tags.layer, id=model.id) + dump(inst), REFERENCE_FILE: reference}
@@ -216,11 +219,13 @@ def build(tdir, defaults):
     return model.id, out
 
 
-def build_all():
+def build_all(records=None):
+    """Every instance. Statuses come from results/validation.jsonl unless `records` is given."""
     defaults = load_defaults()
+    records = status.load_records() if records is None else records
     built, mechanisms = {}, {}
     for tdir in template_dirs():
-        sid, files = build(tdir, defaults)
+        sid, files = build(tdir, defaults, records)
         if sid in built:
             raise ValueError(f"duplicate scenario id {sid}")
         built[sid] = files
@@ -265,66 +270,59 @@ def write(built):
 
 
 # ------------------------------------------------------------------ catalog
-def latest_records():
-    path = REPO / "results" / "validation.jsonl"
-    recs = {}
-    if path.exists():
-        for line in path.read_text().splitlines():
-            try:
-                rec = json.loads(line)
-            except ValueError:
-                continue
-            recs[rec["id"]] = rec
-    return recs
-
-
-def catalog_markdown(built):
+def catalog_markdown(built, records=None):
     specs = [yaml.safe_load(files["spec.yaml"]) for files in built.values()]
-    recs = latest_records()
+    records = status.load_records() if records is None else records
+    rules = load_defaults().status.model_dump()
+    st = {s["id"]: status.compute(records.get(s["validation_hash"], []), rules) for s in specs}
     layers = {}
     for s in specs:
         layers.setdefault(s["tags"]["layer"], []).append(s)
-    validated = sum(1 for s in specs if recs.get(s["id"], {}).get("verdict") == "VALIDATED")
-    summary = ["| layer | scenarios | hard tier | bench-eligible | validated | median detect | median recover |",
-               "|---|---|---|---|---|---|---|"]
+    counts = {k: sum(x.status == k for x in st.values()) for k in status.STATUSES}
+    summary = ["| layer | scenarios | hard tier | bench-eligible | validated | quarantined | draft | median detect "
+               "| median recover |", "|---|---|---|---|---|---|---|---|---|"]
     for layer in sorted(layers):
         group = layers[layer]
-        ok = [recs[s["id"]] for s in group if recs.get(s["id"], {}).get("verdict") == "VALIDATED"]
 
         def med(key):
-            vals = sorted(r["timings"][key] for r in ok if key in r.get("timings", {}))
+            vals = sorted(st[s["id"]].timings[key] for s in group if key in st[s["id"]].timings)
             return f"{vals[len(vals) // 2]}s" if vals else "-"
         summary.append(f"| {layer} | {len(group)} | {sum(s['split'] == 'hard' for s in group)} | "
-                       f"{sum(s.get('bench_eligible', True) for s in group)} | {len(ok)} | "
-                       f"{med('detect_s')} | {med('recover_s')} |")
+                       f"{sum(s.get('bench_eligible', True) for s in group)} | "
+                       + " | ".join(str(sum(st[s["id"]].status == k for s in group)) for k in status.STATUSES)
+                       + f" | {med('detect_s')} | {med('recover_s')} |")
     axes = []
     for axis in ("symptom", "fix_type", "drivers", "injector"):
-        counts = {}
+        tally = {}
         for s in specs:
             values = s["tags"].get(axis) or []
             for v in (values if isinstance(values, list) else [values]):
-                counts[v] = counts.get(v, 0) + 1
-        axes.append(f"- **{axis}**: " + ", ".join(f"{k} {n}" for k, n in sorted(counts.items(), key=lambda x: -x[1])))
+                tally[v] = tally.get(v, 0) + 1
+        axes.append(f"- **{axis}**: " + ", ".join(f"{k} {n}" for k, n in sorted(tally.items(), key=lambda x: -x[1])))
     lines = ["# Scenario catalog", "",
              "Generated by `scripts/generate.py` from `templates/`. Do not edit.", "",
-             f"{len(specs)} scenarios, each a distinct root-cause mechanism "
-             f"({validated} validated end to end on the live cluster).", "",
+             f"{len(specs)} scenarios, each a distinct root-cause mechanism: {counts['validated']} validated, "
+             f"{counts['quarantined']} quarantined, {counts['draft']} draft.", "",
              *summary, "",
-             "Detect = time from injection until the verifier fails; recover = time from running the reference "
-             "solution until it passes again. Validation verdicts here are the latest run per scenario.", "",
+             f"Status comes from the validation runs of each scenario's current version (its `validation_hash`): "
+             f"validated = at least {rules['min_runs']} runs with at most {rules['max_failures']} failed, "
+             f"quarantined = more than {rules['max_failures']} failed, draft = fewer runs "
+             "(see `gym/core/status.py`). Detect = time from injection until the verifier fails; recover = time "
+             "from running the reference solution until it passes again (medians over validated runs).", "",
              "Tags (see `templates/taxonomy.yaml`):", "", *axes, "",
              "Uniqueness rule: a scenario counts only if its root-cause mechanism differs from every other one. "
              "Changing only numbers (memory size, latency, percentages), names or random seeds makes a variant, "
              "not a new scenario, so variants are not listed here.", "",
              "Validation = baseline healthy -> inject -> verifier FAIL -> still FAIL for a do-nothing agent "
-             "-> reference solution -> verifier PASS -> exact restore (see `scripts/validate_scenario.py`).", "",
-             "| id | layer | tier | symptom | fix | mechanism | title | bench | validation |",
-             "|---|---|---|---|---|---|---|---|---|"]
+             "-> reference solution -> verifier PASS -> every user journey passes -> still PASS after restarting "
+             "the durability targets -> exact restore (see `scripts/validate_scenario.py`).", "",
+             "| id | layer | tier | symptom | fix | mechanism | title | bench | status | runs |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for layer in sorted(layers):
         for s in sorted(layers[layer], key=lambda x: x["id"]):
-            t = s["tags"]
+            t, x = s["tags"], st[s["id"]]
             lines.append(f"| `{s['id']}` | {layer} | {s['split']} | {t['symptom']} | {', '.join(t['fix_type'])} | "
                          f"`{s['mechanism']}` | {s['title']} | {'yes' if s.get('bench_eligible', True) else 'no'} | "
-                         f"{recs.get(s['id'], {}).get('verdict', 'not run')} |")
+                         f"{x.status} | {x.summary()} |")
     lines.append("")
     return "\n".join(lines)

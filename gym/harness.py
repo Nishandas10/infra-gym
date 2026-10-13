@@ -17,8 +17,10 @@ Timings come from the instance (spec.validation, resolved from templates/default
 from __future__ import annotations
 
 import datetime
+import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -28,6 +30,7 @@ from . import checks, faults, kube
 from .spec import REPO, checks_of, fault_label, load
 
 RESULTS = REPO / "results" / "validation.jsonl"
+ENVIRONMENTS = REPO / "results" / "environments.jsonl"
 LOG_DIR = REPO / "results" / "logs"
 _logfile = None
 
@@ -72,6 +75,66 @@ def run_solution(commands):
             raise RuntimeError(f"solution command failed (exit {r.returncode}): {cmd}")
 
 
+def _run(cmd, timeout=60):
+    r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        raise RuntimeError(f"{' '.join(cmd)}: {(r.stderr or r.stdout).strip()[:200]}")
+    return r.stdout
+
+
+def git_state():
+    """The repo commit the run used, and whether code differed from it (results/ excluded)."""
+    try:
+        sha = _run(["git", "rev-parse", "HEAD"]).strip()
+        dirty = bool(_run(["git", "status", "--porcelain", "--", ".", ":(exclude)results"]).strip())
+        return sha, dirty
+    except Exception:
+        return None, None
+
+
+def environment():
+    """What the world ran: Helm chart, every workload image, Kubernetes, kubelet and kind versions.
+
+    Saved once per distinct value in results/environments.jsonl; a validation record points at it
+    by `env` (a hash of the content)."""
+    env = {}
+    try:
+        env["charts"] = sorted(f"{r['name']}={r['chart']} (app {r['app_version']})"
+                               for r in json.loads(_run(["helm", "list", "-n", kube.APP_NS, "-o", "json"])))
+    except Exception as e:
+        env["charts"] = f"unknown: {type(e).__name__}"
+    images = {}
+    for kind in ("deployments", "daemonsets", "statefulsets"):
+        for obj in kube.items(kind, namespace=kube.APP_NS):
+            spec = obj["spec"]["template"]["spec"]
+            images[f"{kind[:-1]}/{obj['metadata']['name']}"] = sorted(
+                c["image"] for c in spec.get("containers", []) + spec.get("initContainers", []))
+    env["images"] = images
+    env["kubernetes"] = json.loads(kube.kubectl("version", "-o", "json", namespace=None))["serverVersion"]["gitVersion"]
+    env["nodes"] = sorted({f"{n['status']['nodeInfo']['kubeletVersion']} {n['status']['nodeInfo']['containerRuntimeVersion']}"
+                           for n in kube.items("nodes", namespace=None)})
+    try:
+        env["kind"] = _run(["kind", "version"]).strip()
+    except Exception:
+        env["kind"] = None
+    env_id = "env:" + hashlib.sha256(json.dumps(env, sort_keys=True).encode()).hexdigest()[:16]
+    known = ENVIRONMENTS.read_text() if ENVIRONMENTS.exists() else ""
+    if f'"id": "{env_id}"' not in known:
+        ENVIRONMENTS.parent.mkdir(exist_ok=True)
+        with ENVIRONMENTS.open("a") as fh:
+            fh.write(json.dumps({"id": env_id, "first_seen": datetime.datetime.now().isoformat(timespec="seconds"),
+                                 **env}) + "\n")
+    return env_id
+
+
+def kube_context():
+    """The cluster the run talks to (kubectl's current context, from KUBECONFIG)."""
+    try:
+        return kube.kubectl("config", "current-context", namespace=None).strip()
+    except Exception:
+        return None
+
+
 def stable_age(spec_checks):
     """A stability check needs at least its own window to pass after recent restarts."""
     return max([c.get("min_age_s", 0) for c in spec_checks if c["type"] == "pods_stable"] or [0])
@@ -107,11 +170,17 @@ def validate(spec_path, world_timeout=300):
     min_age = stable_age(spec_checks)
     rec = {"id": sid, "type": fault_label(spec), "validation_hash": spec["validation_hash"],
            "content_hash": spec["content_hash"], "template_version": spec["instance_of"]["version"],
+           "git_sha": None, "git_dirty": None, "env": None, "context": kube_context(),
            "started": datetime.datetime.now().isoformat(timespec="seconds"),
            "timings": {}, "verdict": None, "notes": []}
     log(f"=== {sid} ({fault_label(spec)})")
     injected = False
     try:
+        rec["git_sha"], rec["git_dirty"] = git_state()
+        try:
+            rec["env"] = environment()
+        except Exception as e:   # a missing fingerprint must not stop the run; the record says why
+            rec["notes"].append(f"environment unknown: {type(e).__name__}: {e}"[:200])
         log("  0. world healthy?")
         ok, _, t = poll(checks.WORLD_HEALTHY, checks.PASS, world_timeout, quiet=True)
         rec["timings"]["world_ready_s"] = t
@@ -177,13 +246,23 @@ def validate(spec_path, world_timeout=300):
                 return rec
         rec["verdict"] = "VALIDATED"
         return rec
+    except KeyboardInterrupt:   # stopped by hand: revert below, and the record does not count as evidence
+        rec["verdict"] = "INTERRUPTED"
+        raise
     except Exception as e:
         rec["verdict"] = "ERROR"
         rec["notes"].append(f"{type(e).__name__}: {e}")
         log("  ERROR " + "".join(traceback.format_exception_only(e)).strip())
         return rec
     finally:
-        if injected:
+        now_ctx = kube_context()
+        if now_ctx != rec["context"]:   # e.g. `kind create cluster` switched the default context
+            # Reverting now would undo the fault on the wrong cluster: keep the undo log for a human.
+            rec["verdict"] = "ENV_CHANGED"
+            rec["notes"].append(f"cluster context changed during the run ({rec['context']} -> {now_ctx}); not reverted: "
+                                f"run injectors/inject.py --revert against {rec['context']}")
+            log(f"  ! {rec['notes'][-1]}")
+        if injected and rec["verdict"] != "ENV_CHANGED":
             log("  7. restore exactly")
             errors = faults.revert(spec)
             if errors:
@@ -201,3 +280,6 @@ def validate(spec_path, world_timeout=300):
         with RESULTS.open("a") as fh:
             fh.write(json.dumps(rec) + "\n")
         log(f"  => {rec['verdict']}  {rec['timings']}")
+        if rec["verdict"] != "VALIDATED":   # keep failure logs; the next run of this scenario overwrites {sid}.log
+            (LOG_DIR / "failed").mkdir(exist_ok=True)
+            shutil.copy(_logfile, LOG_DIR / "failed" / f"{sid}-{rec['started'].replace(':', '')}.log")

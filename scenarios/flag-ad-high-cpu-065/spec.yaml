@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:28b2e0b46cb025716744e7f5918310026a7d1f9bbc0d959f21bbe0e7dd238eda
 validation_hash: sha256:7301c1a3b1571517ca6cc8e2587ce069224348a928ad225f79cc494683de51bf
+status: validated
 title: Ad service burns CPU on every request (adHighCpu)
 mechanism: app-flag/ad-high-cpu
 split: train

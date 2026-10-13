@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:bc16bdcc96133e2f1a9730e0c8e0bcb575a3202abb88e80f4800a78f4592c279
 validation_hash: sha256:78ac2811cbbff29f1495d3647145fe550dfee4e51bc9e19fac64a2422a0eaa50
+status: validated
 title: A zero-trust allow-list on product-catalog forgets checkout; a 'risky' payment deploy takes the blame
 mechanism: hard/ingress-allowlist-omits-client-with-decoy-deploy
 split: hard

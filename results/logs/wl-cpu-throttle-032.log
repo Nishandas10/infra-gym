@@ -1,25 +1,33 @@
-14:52:38 === wl-cpu-throttle-032 (workload_patch)
-14:52:38   0. world healthy?
-14:52:44   1. baseline must PASS
-14:52:44       [PASS   ] journey:home - 3/3 ok, avg 13ms
-14:52:44       [PASS   ] journey:browse - 3/3 ok, avg 12ms
-14:52:44   2. inject
-14:52:44   3. verifier must FAIL (<= 240s)
-14:52:55       [FAIL   ] journey:home - 0/3 ok, avg 6ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-14:52:55       [FAIL   ] journey:browse - 0/3 ok, avg 7ms; e.g. GET /api/products/66VCHSJNUP -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-14:52:55   4. do-nothing agent: still FAIL after 30s?
-14:53:26       [FAIL   ] journey:home - 0/3 ok, avg 6ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-14:53:26       [FAIL   ] journey:browse - 0/3 ok, avg 8ms; e.g. GET /api/products/66VCHSJNUP -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-14:53:26       failing in 2/2 checks during the hold
-14:53:26   5. reference solution
-14:53:26     $ kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"}]'
-14:53:26       deployment.apps/frontend patched
-14:53:26     $ kubectl rollout status deployment/frontend --timeout=300s
-14:53:27       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-14:53:27       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-14:53:27       deployment "frontend" successfully rolled out
-14:53:27   6. verifier must PASS (<= 300s)
-14:53:38       [PASS   ] journey:home - 3/3 ok, avg 30ms
-14:53:38       [PASS   ] journey:browse - 3/3 ok, avg 23ms
-14:53:38   7. restore exactly
-14:53:44   => VALIDATED  {'world_ready_s': 6, 'detect_s': 11, 'recover_s': 11, 'restore_s': 6}
+03:08:09 === wl-cpu-throttle-032 (k8s.workload_patch)
+03:08:10   0. world healthy?
+03:08:20   1. baseline must PASS
+03:08:21       [PASS   ] journey:home - 3/3 ok, avg 22ms
+03:08:21       [PASS   ] journey:browse - 3/3 ok, avg 26ms
+03:08:21   2. inject
+03:08:21   3. verifier must FAIL (<= 240s)
+03:08:33       [FAIL   ] journey:home - 0/3 ok, avg 11ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+03:08:33       [FAIL   ] journey:browse - 0/3 ok, avg 40ms; e.g. GET /api/products/1YMWWN1N4O -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+03:08:33   4. do-nothing agent: still FAIL after 60s?
+03:09:33       [FAIL   ] journey:home - 0/3 ok, avg 10ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+03:09:33       [FAIL   ] journey:browse - 0/3 ok, avg 12ms; e.g. GET /api/products/2ZYFJ3GM2N -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+03:09:33       failing in 5/5 checks during the hold
+03:09:33   5. reference solution
+03:09:33     $ kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/resources/limits/cpu"}]'
+03:09:33       deployment.apps/frontend patched
+03:09:33     $ kubectl rollout status deployment/frontend --timeout=300s
+03:09:34       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+03:09:34       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+03:09:34       deployment "frontend" successfully rolled out
+03:09:34   6. verifier must PASS (<= 300s)
+03:09:46       [PASS   ] journey:home - 3/3 ok, avg 58ms
+03:09:46       [PASS   ] journey:browse - 3/3 ok, avg 29ms
+03:09:46   6b. invariants must PASS (shop_health)
+03:09:47       [PASS   ] journey:browse - 2/2 ok, avg 31ms
+03:09:47       [PASS   ] journey:recommendations - 2/2 ok, avg 82ms
+03:09:47       [PASS   ] journey:cart - 2/2 ok, avg 72ms
+03:09:47       [PASS   ] journey:checkout - 2/2 ok, avg 123ms
+03:09:47   6c. the fix must survive a restart of deployment/frontend
+03:10:33       [PASS   ] journey:home - 3/3 ok, avg 23ms
+03:10:33       [PASS   ] journey:browse - 3/3 ok, avg 31ms
+03:10:33   7. restore exactly
+03:10:43   => VALIDATED  {'world_ready_s': 10, 'detect_s': 12, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:fc2023c5e84acacfcd0d5534716b235ec48c2a474b675c6fc695fc82c7a93653
 validation_hash: sha256:ee63a86ba74d9de168b1201a948695b0d42d74000a6d805a1ce24809c57f0349
+status: validated
 title: Invalid configuration value makes the service crash at startup
 mechanism: workload/invalid-config-crash
 split: train

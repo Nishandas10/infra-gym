@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4875671285a8bc45f80441873a2ec272eac71252094e7bd879f04bf8c2a373e9
 validation_hash: sha256:e1d3afe25c14693a0938f04a3504b6f0ff3a17f25ff0f5187797424b0836b5b5
+status: validated
 title: Tiny ephemeral-storage limit -> pods evicted over and over
 mechanism: workload/ephemeral-storage-eviction
 split: train

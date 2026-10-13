@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:c458a2faec9aadd52b0d0cb0ccfee5fe2d3be0b9f6470ad0c031749eff5a0aa7
 validation_hash: sha256:292e31bcfeb1466946e7862b28fc2c794fdd856b31bbae5328e6de1d1ae553a3
+status: validated
 title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
 mechanism: hard/manual-endpoints-stale-ip
 split: hard

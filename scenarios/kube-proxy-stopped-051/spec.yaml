@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0b5ef5a4b04ec6837a3f4d1a17098f3cc3aeda6a289827a7954046c044a577f6
 validation_hash: sha256:bf026a35ccb4055188b160c2b04181cdc8c5c028dd708df109cf450c9927eef2
+status: validated
 title: kube-proxy removed; Service rules go stale when a pod moves
 mechanism: platform/service-proxy-down
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:294ac2c87c668bcb241f8df5f5a86c5c7d12e674bed10355cab0e342273e99a9
 validation_hash: sha256:5576f8ddf57dbe1692b4414612b2419d7dc4654bfc4886d699c9fa16a5d71367
+status: draft
 title: Network latency injected on one service
 mechanism: chaos/network-latency
 split: train

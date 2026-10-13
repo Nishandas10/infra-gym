@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:9ea6b7be09cc1b25b5c182c942e98d558a4fb869e4f991b9b4a0587bbdd65b1b
 validation_hash: sha256:2d0919dd5a1e3b76a5645a02ecf104d29dcee869a66d4809fbc783e016d0b759
+status: draft
 title: HTTP responses from a service replaced with garbage
 mechanism: chaos/http-response-corruption
 split: train

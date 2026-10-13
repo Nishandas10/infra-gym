@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:1a3ffde48d999faa37e6db69c42f6feb06a428b3d3fdffbbd6b2ca412dc9eff2
 validation_hash: sha256:3cfb91d3c4a2c05ef632fc4b7955bdca0acad7ad1e7095ff0439e577d65d225a
+status: validated
 title: Synthetic traffic flood against the homepage (loadGeneratorFloodHomepage)
 mechanism: app-flag/traffic-flood
 split: train

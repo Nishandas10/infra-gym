@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:04daa2ca6c7753a73ae85fac208be68f1e25132c73f884c234fe7b9a8585ad65
 validation_hash: sha256:7c839f9f400e520744cd2c076d72a7aa287b347fef644bcab4866d9a80ba898f
+status: validated
 title: Service object deleted
 mechanism: service/deleted
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:bfba409d4dea785bc2e3ffe14033a2a89ba6d80c512f308ff2b0a1a2f95df467
 validation_hash: sha256:2b8896efb7db542b2cb196b3f4bc5f11d904830020fc6732afb78e9b111d34e3
+status: validated
 title: Ad service triggers full garbage collections (adManualGc)
 mechanism: app-flag/ad-full-gc
 split: train

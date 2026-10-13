@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:bbb93ff8801798ae2112d772bad3872caed25d23631baa414d06a7454545e663
 validation_hash: sha256:e220560b2192ad9286cacc1b4c0bd5f06b288b8161f07269249561689ffad459
+status: validated
 title: hostAliases entry sends a dependency to a dead IP
 mechanism: workload/hostaliases-override
 split: train

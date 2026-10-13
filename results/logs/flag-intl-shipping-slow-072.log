@@ -1,17 +1,22 @@
-13:18:41 === flag-intl-shipping-slow-072 (feature_flag)
-13:18:41   0. world healthy?
-13:18:48   1. baseline must PASS
-13:18:48       [PASS   ] journey:checkout_intl - 2/2 ok, avg 83ms
-13:18:48   2. inject
-13:18:49   3. verifier must FAIL (<= 240s)
-13:19:09       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10068ms (> 5000ms)
-13:19:09   4. do-nothing agent: still FAIL after 30s?
-13:20:00       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10064ms (> 5000ms)
-13:20:00       failing in 1/1 checks during the hold
-13:20:00   5. reference solution
-13:20:00     $ python injectors/toggle_flag.py intlShippingSlowdown --off
-13:20:01       'intlShippingSlowdown' -> off (flagd is serving it now)
-13:20:01   6. verifier must PASS (<= 300s)
-13:20:02       [PASS   ] journey:checkout_intl - 2/2 ok, avg 58ms
-13:20:02   7. restore exactly
-13:20:08   => VALIDATED  {'world_ready_s': 7, 'detect_s': 20, 'recover_s': 0, 'restore_s': 6}
+02:12:08 === flag-intl-shipping-slow-072 (app.flag)
+02:12:08   0. world healthy?
+02:12:20   1. baseline must PASS
+02:12:20       [PASS   ] journey:checkout_intl - 2/2 ok, avg 92ms
+02:12:20   2. inject
+02:12:21   3. verifier must FAIL (<= 240s)
+02:12:42       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10118ms (> 5000ms)
+02:12:42   4. do-nothing agent: still FAIL after 60s?
+02:14:04       [FAIL   ] journey:checkout_intl - 2/2 ok, avg 10136ms (> 5000ms)
+02:14:04       failing in 2/2 checks during the hold
+02:14:04   5. reference solution
+02:14:04     $ python injectors/toggle_flag.py intlShippingSlowdown --off
+02:14:05       'intlShippingSlowdown' -> off (flagd is serving it now)
+02:14:05   6. verifier must PASS (<= 300s)
+02:14:06       [PASS   ] journey:checkout_intl - 2/2 ok, avg 94ms
+02:14:06   6b. invariants must PASS (shop_health)
+02:14:07       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+02:14:07       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+02:14:07       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+02:14:07       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+02:14:07   7. restore exactly
+02:14:16   => VALIDATED  {'world_ready_s': 12, 'detect_s': 21, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:d27cef8a508406f63bd4d6e849ae97b25a4b797d9116d5da8631c08d4b3a2ced
 validation_hash: sha256:7da50cad9cca78c4633b1113f1eb8eebc6fc1289768e67cebc5fecf3fa60f475
+status: validated
 title: International shipping quotes delayed (intlShippingSlowdown)
 mechanism: app-flag/intl-shipping-slowdown
 split: train

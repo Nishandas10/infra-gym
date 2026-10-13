@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4aff192e8263430346f508b0f002e9e4c5bbe340efe42e906ea58a975db0eed1
 validation_hash: sha256:12f0c17bf6e741d7eb128c984363fe8aa42b1f7e44f8984f0fa407f099ceab8a
+status: validated
 title: A loud telemetry outage hides the quiet scheduling failure that is actually hurting customers
 mechanism: hard/loud-telemetry-outage-masks-scheduling-fault
 split: hard

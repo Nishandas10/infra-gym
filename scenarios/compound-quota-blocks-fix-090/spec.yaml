@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:cc30d3c5298a3de21e2cf535e7161911d6e057bd727e99b11ed5ce05615b0e15
 validation_hash: sha256:8ea721e5f8e6489ec1e1d8c0362a3406c64088d47f19fb51b1cbf08e77eedd60
+status: validated
 title: Broken config plus a quota that blocks the rollout of the fix
 mechanism: compound/fix-blocked-by-quota
 split: train

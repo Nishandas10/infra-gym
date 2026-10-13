@@ -1,21 +1,26 @@
-14:17:25 === pg-connection-limit-080 (exec_commands)
-14:17:25   0. world healthy?
-14:17:31   1. baseline must PASS
-14:17:32       [PASS   ] journey:browse - 3/3 ok, avg 13ms
-14:17:32       [PASS   ] journey:catalog - 3/3 ok, avg 11ms
-14:17:32   2. inject
-14:17:32   3. verifier must FAIL (<= 240s)
-14:17:33       [FAIL   ] journey:browse - 0/3 ok, avg 18ms; e.g. GET /api/products/1YMWWN1N4O -> 500 b'Internal Server Error'
-14:17:33       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-14:17:33   4. do-nothing agent: still FAIL after 30s?
-14:18:03       [FAIL   ] journey:browse - 0/3 ok, avg 17ms; e.g. GET /api/products/0PUK6V6EV0 -> 500 b'Internal Server Error'
-14:18:03       [FAIL   ] journey:catalog - 0/3 ok, avg 15ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-14:18:03       failing in 2/2 checks during the hold
-14:18:03   5. reference solution
-14:18:03     $ kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
-14:18:03       ALTER ROLE
-14:18:03   6. verifier must PASS (<= 300s)
-14:18:04       [PASS   ] journey:browse - 3/3 ok, avg 14ms
-14:18:04       [PASS   ] journey:catalog - 3/3 ok, avg 10ms
-14:18:04   7. restore exactly
-14:18:10   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}
+02:50:05 === pg-connection-limit-080 (runtime.exec)
+02:50:06   0. world healthy?
+02:50:19   1. baseline must PASS
+02:50:20       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+02:50:20       [PASS   ] journey:catalog - 3/3 ok, avg 20ms
+02:50:20   2. inject
+02:50:20   3. verifier must FAIL (<= 240s)
+02:50:21       [FAIL   ] journey:browse - 0/3 ok, avg 32ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+02:50:21       [FAIL   ] journey:catalog - 0/3 ok, avg 29ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+02:50:21   4. do-nothing agent: still FAIL after 60s?
+02:51:22       [FAIL   ] journey:browse - 0/3 ok, avg 29ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+02:51:22       [FAIL   ] journey:catalog - 0/3 ok, avg 39ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+02:51:22       failing in 5/5 checks during the hold
+02:51:22   5. reference solution
+02:51:22     $ kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
+02:51:22       ALTER ROLE
+02:51:22   6. verifier must PASS (<= 300s)
+02:51:23       [PASS   ] journey:browse - 3/3 ok, avg 31ms
+02:51:23       [PASS   ] journey:catalog - 3/3 ok, avg 21ms
+02:51:23   6b. invariants must PASS (shop_health)
+02:51:24       [PASS   ] journey:browse - 2/2 ok, avg 32ms
+02:51:24       [PASS   ] journey:recommendations - 2/2 ok, avg 87ms
+02:51:24       [PASS   ] journey:cart - 2/2 ok, avg 58ms
+02:51:24       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
+02:51:24   7. restore exactly
+02:51:37   => VALIDATED  {'world_ready_s': 13, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 13}

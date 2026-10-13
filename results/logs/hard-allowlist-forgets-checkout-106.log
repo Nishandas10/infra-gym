@@ -1,21 +1,29 @@
-11:52:18 === hard-allowlist-forgets-checkout-106 (composite)
-11:52:18   0. world healthy?
-11:52:24   1. baseline must PASS
-11:52:25       [PASS   ] journey:checkout - 3/3 ok, avg 60ms
-11:52:25       [PASS   ] journey:browse - 3/3 ok, avg 16ms
-11:52:25   2. inject
-11:52:48   3. verifier must FAIL (<= 300s)
-11:53:33       [FAIL   ] journey:checkout - 0/3 ok, avg 6688ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-11:53:33       [FAIL   ] journey:browse - 0/3 ok, avg 8022ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
-11:53:33   4. do-nothing agent: still FAIL after 60s?
-11:55:01       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-11:55:01       [FAIL   ] journey:browse - 0/3 ok, avg 6357ms; e.g. GET /api/products/L9ECAV7KIM -> no response b'TimeoutError: timed out'
-11:55:01       failing in 2/2 checks during the hold
-11:55:01   5. reference solution
-11:55:01     $ kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
-11:55:02       networkpolicy.networking.k8s.io/product-catalog-allow-clients patched
-11:55:02   6. verifier must PASS (<= 420s)
-11:55:13       [PASS   ] journey:checkout - 3/3 ok, avg 77ms
-11:55:13       [PASS   ] journey:browse - 3/3 ok, avg 32ms
-11:55:13   7. restore exactly
-11:55:36   => VALIDATED  {'world_ready_s': 6, 'detect_s': 45, 'recover_s': 11, 'restore_s': 23}
+00:25:03 === hard-allowlist-forgets-checkout-106 (composite)
+00:25:04   0. world healthy?
+00:25:18   1. baseline must PASS
+00:25:20       [PASS   ] journey:checkout - 3/3 ok, avg 138ms
+00:25:20       [PASS   ] journey:browse - 3/3 ok, avg 68ms
+00:25:20   2. inject
+00:25:44   3. verifier must FAIL (<= 300s)
+00:25:47       [FAIL   ] journey:checkout - 0/3 ok, avg 194ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:25:47       [FAIL   ] journey:browse - 0/3 ok, avg 63ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
+00:25:47   4. do-nothing agent: still FAIL after 60s?
+00:26:48       [FAIL   ] journey:checkout - 0/3 ok, avg 72ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:26:48       [PASS   ] journey:browse - 3/3 ok, avg 30ms
+00:26:48       failing in 5/5 checks during the hold
+00:26:48   5. reference solution
+00:26:48     $ kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+00:26:48       networkpolicy.networking.k8s.io/product-catalog-allow-clients patched
+00:26:48   6. verifier must PASS (<= 420s)
+00:27:01       [PASS   ] journey:checkout - 3/3 ok, avg 153ms
+00:27:01       [PASS   ] journey:browse - 3/3 ok, avg 55ms
+00:27:01   6b. invariants must PASS (shop_health)
+00:27:03       [PASS   ] journey:browse - 2/2 ok, avg 60ms
+00:27:03       [PASS   ] journey:recommendations - 2/2 ok, avg 76ms
+00:27:03       [PASS   ] journey:cart - 2/2 ok, avg 74ms
+00:27:03       [PASS   ] journey:checkout - 2/2 ok, avg 130ms
+00:27:03   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
+00:27:49       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
+00:27:49       [PASS   ] journey:browse - 3/3 ok, avg 37ms
+00:27:49   7. restore exactly
+00:28:25   => VALIDATED  {'world_ready_s': 14, 'detect_s': 3, 'recover_s': 13, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 36}

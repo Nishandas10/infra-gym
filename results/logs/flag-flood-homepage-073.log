@@ -1,17 +1,22 @@
-13:13:44 === flag-flood-homepage-073 (feature_flag)
-13:13:44   0. world healthy?
-13:13:51   1. baseline must PASS
-13:14:22       [PASS   ] traffic:^/$ - 0/1 failed (0%), avg 14ms, 0.0 req/s over 30s for '^/$'
-13:14:22   2. inject
-13:14:22   3. verifier must FAIL (<= 180s)
-13:14:53       [FAIL   ] traffic:^/$ - 20.1 req/s for '^/$' over 30s (max 2.0)
-13:14:53   4. do-nothing agent: still FAIL after 30s?
-13:16:05       [FAIL   ] traffic:^/$ - 13.3 req/s for '^/$' over 30s (max 2.0)
-13:16:05       failing in 1/1 checks during the hold
-13:16:05   5. reference solution
-13:16:05     $ python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
-13:16:05       'loadGeneratorFloodHomepage' -> off (flagd is serving it now)
-13:16:05   6. verifier must PASS (<= 300s)
-13:16:36       [PASS   ] traffic:^/$ - 0/1 failed (0%), avg 18ms, 0.0 req/s over 30s for '^/$'
-13:16:36   7. restore exactly
-13:16:43   => VALIDATED  {'world_ready_s': 7, 'detect_s': 31, 'recover_s': 31, 'restore_s': 7}
+02:25:49 === flag-flood-homepage-073 (app.flag)
+02:25:50   0. world healthy?
+02:26:01   1. baseline must PASS
+02:26:32       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
+02:26:32   2. inject
+02:26:33   3. verifier must FAIL (<= 180s)
+02:27:04       [FAIL   ] traffic:^/$ - 10.0 req/s for '^/$' over 30s (max 2.0)
+02:27:04   4. do-nothing agent: still FAIL after 60s?
+02:28:56       [FAIL   ] traffic:^/$ - 14.3 req/s for '^/$' over 30s (max 2.0)
+02:28:56       failing in 2/2 checks during the hold
+02:28:56   5. reference solution
+02:28:56     $ python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
+02:28:58       'loadGeneratorFloodHomepage' -> off (flagd is serving it now)
+02:28:58   6. verifier must PASS (<= 300s)
+02:30:10       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
+02:30:10   6b. invariants must PASS (shop_health)
+02:30:11       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+02:30:11       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
+02:30:11       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+02:30:11       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
+02:30:11   7. restore exactly
+02:30:20   => VALIDATED  {'world_ready_s': 11, 'detect_s': 31, 'recover_s': 72, 'invariants_s': 1, 'restore_s': 9}

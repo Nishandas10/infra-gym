@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:31ea5c58d3ce6d3e0193c4b746a352265b1141a659f3593bac0388e4ff59253b
 validation_hash: sha256:81d0bb94f65f2a6a3acc8c87a9b26a5be68b0d60d64e405c5a194d873abfc0ca
+status: validated
 title: Recommendation cache leaks memory until OOM (recommendationCacheFailure)
 mechanism: app-flag/recommendation-cache-leak
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:3bd5aa9323e23e6583018ca5a1278444defad0fddab77e288a9943ae538fe704
 validation_hash: sha256:a7c1caa13d3c6e2359fb05fa88982f51fa44d5e05804fb516d1e8dd6befb239d
+status: validated
 title: Client configured with a dependency hostname that does not exist
 mechanism: workload/client-dependency-hostname
 split: train

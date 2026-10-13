@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:ef8b93cf6bcf7e5b70c5e5c3feb443bdd4f25b9e67cdb2aba03cce4b23c2c808
 validation_hash: sha256:83927a8e21b2b5e2215e86be1d99e1faca1e0e373db9255c4ee9976baa2e6a50
+status: validated
 title: Init container waits for a dependency name that never resolves
 mechanism: workload/init-container-blocked
 split: train

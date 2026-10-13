@@ -1,22 +1,29 @@
-14:55:12 === wl-dns-policy-none-029 (workload_patch)
-14:55:12   0. world healthy?
-14:55:18   1. baseline must PASS
-14:55:19       [PASS   ] journey:checkout - 3/3 ok, avg 52ms
-14:55:19   2. inject
-14:55:19   3. verifier must FAIL (<= 240s)
-14:56:05       [FAIL   ] journey:checkout - 0/3 ok, avg 15032ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-14:56:05   4. do-nothing agent: still FAIL after 30s?
-14:57:35       [FAIL   ] journey:checkout - 0/3 ok, avg 11555ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-14:57:35       failing in 1/1 checks during the hold
-14:57:35   5. reference solution
-14:57:35     $ kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
-14:57:35       deployment.apps/checkout patched
-14:57:35     $ kubectl rollout status deployment/checkout --timeout=300s
-14:58:07       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-14:58:07       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-14:58:07       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
-14:58:07       deployment "checkout" successfully rolled out
-14:58:07   6. verifier must PASS (<= 300s)
-14:58:19       [PASS   ] journey:checkout - 3/3 ok, avg 277ms
-14:58:19   7. restore exactly
-14:58:25   => VALIDATED  {'world_ready_s': 6, 'detect_s': 45, 'recover_s': 12, 'restore_s': 6}
+03:07:28 === wl-dns-policy-none-029 (k8s.workload_patch)
+03:07:29   0. world healthy?
+03:07:39   1. baseline must PASS
+03:07:39       [PASS   ] journey:checkout - 3/3 ok, avg 83ms
+03:07:39   2. inject
+03:07:40   3. verifier must FAIL (<= 240s)
+03:08:25       [FAIL   ] journey:checkout - 0/3 ok, avg 15041ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+03:08:25   4. do-nothing agent: still FAIL after 60s?
+03:09:53       [FAIL   ] journey:checkout - 0/3 ok, avg 9093ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+03:09:53       failing in 1/1 checks during the hold
+03:09:53   5. reference solution
+03:09:53     $ kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+03:09:53       deployment.apps/checkout patched
+03:09:53     $ kubectl rollout status deployment/checkout --timeout=300s
+03:10:27       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+03:10:27       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+03:10:27       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+03:10:27       deployment "checkout" successfully rolled out
+03:10:27   6. verifier must PASS (<= 300s)
+03:11:01       [PASS   ] journey:checkout - 3/3 ok, avg 487ms
+03:11:01   6b. invariants must PASS (shop_health)
+03:11:02       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+03:11:02       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+03:11:02       [PASS   ] journey:cart - 2/2 ok, avg 74ms
+03:11:02       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+03:11:02   6c. the fix must survive a restart of deployment/checkout
+03:11:49       [PASS   ] journey:checkout - 3/3 ok, avg 462ms
+03:11:49   7. restore exactly
+03:12:01   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 34, 'invariants_s': 1, 'durable_s': 2, 'restore_s': 11}

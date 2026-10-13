@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:a9d4628e03fa8f84d37fc691680715081cda333fddeca311f1c76c5f980365a9
 validation_hash: sha256:f3c1b12b095cc57a3a66575e028c4e4c4ebf9931e8ad05d3f50d0ff661de49f2
+status: validated
 title: nodeSelector matches no node -> Pending
 mechanism: workload/unschedulable-node-selector
 split: train

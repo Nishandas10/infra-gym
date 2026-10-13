@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:1c9f0b2a38158c89170f2a9837d359e4c2dc2231ac2ba2fc3926e53ec62b8a04
 validation_hash: sha256:d75050bf117455de751a693ca78c0ad64e1a58f96f2257d21d4b814bbd06e701
+status: validated
 title: Images served with an artificial delay (imageSlowLoad)
 mechanism: app-flag/image-slow-load
 split: train

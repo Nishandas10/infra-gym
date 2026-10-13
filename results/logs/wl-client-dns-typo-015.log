@@ -1,25 +1,34 @@
-14:47:32 === wl-client-dns-typo-015 (workload_patch)
-14:47:32   0. world healthy?
-14:47:39   1. baseline must PASS
-14:47:39       [PASS   ] journey:cart - 3/3 ok, avg 28ms
-14:47:39       [PASS   ] journey:checkout - 3/3 ok, avg 48ms
-14:47:39   2. inject
-14:47:39   3. verifier must FAIL (<= 240s)
-14:47:50       [FAIL   ] journey:cart - 0/3 ok, avg 19ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:47:50       [FAIL   ] journey:checkout - 0/3 ok, avg 12ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:47:50   4. do-nothing agent: still FAIL after 30s?
-14:48:21       [FAIL   ] journey:cart - 0/3 ok, avg 18ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:48:21       [FAIL   ] journey:checkout - 0/3 ok, avg 12ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:48:21       failing in 2/2 checks during the hold
-14:48:21   5. reference solution
-14:48:21     $ kubectl set env deployment/frontend CART_ADDR=cart:8080
-14:48:21       deployment.apps/frontend env updated
-14:48:21     $ kubectl rollout status deployment/frontend --timeout=300s
-14:48:22       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-14:48:22       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-14:48:22       deployment "frontend" successfully rolled out
-14:48:22   6. verifier must PASS (<= 300s)
-14:48:38       [PASS   ] journey:cart - 3/3 ok, avg 32ms
-14:48:38       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
-14:48:38   7. restore exactly
-14:48:44   => VALIDATED  {'world_ready_s': 6, 'detect_s': 11, 'recover_s': 16, 'restore_s': 6}
+02:40:33 === wl-client-dns-typo-015 (k8s.workload_patch)
+02:40:34   0. world healthy?
+02:40:42   1. baseline must PASS
+02:40:43       [PASS   ] journey:cart - 3/3 ok, avg 48ms
+02:40:43       [PASS   ] journey:checkout - 3/3 ok, avg 103ms
+02:40:43   2. inject
+02:40:43   3. verifier must FAIL (<= 240s)
+02:40:44       [PASS   ] journey:cart - 3/3 ok, avg 53ms
+02:40:44       [FAIL   ] journey:checkout - 2/3 ok, avg 81ms; e.g. POST /api/cart -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+02:40:44   4. do-nothing agent: still FAIL after 60s?
+02:41:45       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+02:41:45       [FAIL   ] journey:checkout - 0/3 ok, avg 14ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+02:41:45       failing in 5/5 checks during the hold
+02:41:45   5. reference solution
+02:41:45     $ kubectl set env deployment/frontend CART_ADDR=cart:8080
+02:41:45       deployment.apps/frontend env updated
+02:41:45     $ kubectl rollout status deployment/frontend --timeout=300s
+02:41:46       Waiting for deployment "frontend" rollout to finish: 0 out of 1 new replicas have been updated...
+02:41:46       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+02:41:46       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+02:41:46       deployment "frontend" successfully rolled out
+02:41:46   6. verifier must PASS (<= 300s)
+02:41:58       [PASS   ] journey:cart - 3/3 ok, avg 59ms
+02:41:58       [PASS   ] journey:checkout - 3/3 ok, avg 128ms
+02:41:58   6b. invariants must PASS (shop_health)
+02:41:59       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+02:41:59       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+02:41:59       [PASS   ] journey:cart - 2/2 ok, avg 76ms
+02:41:59       [PASS   ] journey:checkout - 2/2 ok, avg 108ms
+02:41:59   6c. the fix must survive a restart of deployment/frontend
+02:42:45       [PASS   ] journey:cart - 3/3 ok, avg 92ms
+02:42:45       [PASS   ] journey:checkout - 3/3 ok, avg 81ms
+02:42:45   7. restore exactly
+02:42:54   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}

@@ -107,7 +107,9 @@ python injectors/inject.py scenarios/pay-fail-006 --revert # always clean up exa
 ```bash
 python scripts/validate_scenario.py scenarios/net-delay-002
 python scripts/validate_scenario.py --all            # hours; stops if the cluster is left unhealthy
-python scripts/generate.py --index                   # refresh scenarios/CATALOG.md with verdicts
+python scripts/validate_scenario.py --eligible --fill 5 --hard-first   # the reliability gate (resumable)
+python scripts/generate.py                           # write the new statuses into scenarios/ and CATALOG.md
+python bench/quality_card.py                         # runs, flake rate and timings per scenario
 ```
 
 Each run proves: baseline healthy -> inject -> verifier FAILs -> still FAILs for
@@ -115,6 +117,17 @@ a do-nothing agent (60 s by default) -> the reference solution fixes it -> verif
 every user journey passes too (`shop_health`) -> the checks still pass after restarting the
 `durability` targets -> the world is restored exactly. Verdicts for the last two steps:
 `INVARIANT_FAILED`, `FIX_NOT_DURABLE`.
+
+Every run is appended to `results/validation.jsonl` with the scenario's `validation_hash`, the
+repo commit (`git_sha`, `git_dirty`) and an environment id (`env`: Helm chart, images, Kubernetes,
+kubelet and kind versions, stored once in `results/environments.jsonl`). Logs of failed runs are
+kept in `results/logs/failed/`.
+
+A scenario's **status** is computed from the runs of its current version only (matching
+`validation_hash`; `gym/core/status.py`, thresholds in `templates/defaults.yaml`): `validated`
+= at least 5 runs with at most 1 failure, `quarantined` = 2 or more failures, `draft` = fewer runs.
+Runs that found the world already broken (`ENV_UNHEALTHY`) do not count. Changing anything a run
+depends on resets the evidence. The benchmark only runs `validated` scenarios.
 
 ## What counts as a unique scenario
 

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:cac75f6c274f47f9da7d0d0fec6b67958eaad762c4558841dd7e9c0770afaab6
 validation_hash: sha256:03d49af05e6e90c382867350f9b0dacfd0c778ced22c5b273172ba86a8f75013
+status: validated
 title: Topic max message size below the size of real messages
 mechanism: datastore/queue-message-size-limit
 split: train

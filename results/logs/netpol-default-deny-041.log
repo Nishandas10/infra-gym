@@ -1,21 +1,26 @@
-13:52:30 === netpol-default-deny-041 (create_objects)
-13:52:30   0. world healthy?
-13:52:36   1. baseline must PASS
-13:52:36       [PASS   ] journey:home - 3/3 ok, avg 11ms
-13:52:36       [PASS   ] journey:browse - 3/3 ok, avg 13ms
-13:52:36   2. inject
-13:52:37   3. verifier must FAIL (<= 240s)
-13:53:25       [FAIL   ] journey:home - 0/3 ok, avg 8020ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
-13:53:25       [FAIL   ] journey:browse - 0/3 ok, avg 8013ms; e.g. GET /api/products/2ZYFJ3GM2N -> no response b'URLError: <urlopen error timed out>'
-13:53:25   4. do-nothing agent: still FAIL after 30s?
-13:55:12       [FAIL   ] journey:home - 0/3 ok, avg 8020ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
-13:55:12       [FAIL   ] journey:browse - 0/3 ok, avg 8015ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'URLError: <urlopen error timed out>'
-13:55:12       failing in 1/1 checks during the hold
-13:55:12   5. reference solution
-13:55:12     $ kubectl delete networkpolicy default-deny-ingress
-13:55:12       networkpolicy.networking.k8s.io "default-deny-ingress" deleted from default namespace
-13:55:12   6. verifier must PASS (<= 300s)
-13:55:13       [PASS   ] journey:home - 3/3 ok, avg 11ms
-13:55:13       [PASS   ] journey:browse - 3/3 ok, avg 16ms
-13:55:13   7. restore exactly
-13:55:19   => VALIDATED  {'world_ready_s': 6, 'detect_s': 48, 'recover_s': 0, 'restore_s': 6}
+02:36:30 === netpol-default-deny-041 (k8s.create_objects)
+02:36:31   0. world healthy?
+02:36:43   1. baseline must PASS
+02:36:44       [PASS   ] journey:home - 3/3 ok, avg 19ms
+02:36:44       [PASS   ] journey:browse - 3/3 ok, avg 28ms
+02:36:44   2. inject
+02:36:44   3. verifier must FAIL (<= 240s)
+02:37:33       [FAIL   ] journey:home - 0/3 ok, avg 8023ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
+02:37:33       [FAIL   ] journey:browse - 0/3 ok, avg 8022ms; e.g. GET /api/products/LS4PSXUNUM -> no response b'URLError: <urlopen error timed out>'
+02:37:33   4. do-nothing agent: still FAIL after 60s?
+02:39:22       [FAIL   ] journey:home - 0/3 ok, avg 8022ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
+02:39:22       [FAIL   ] journey:browse - 0/3 ok, avg 8025ms; e.g. GET /api/products/9SIQT8TOJO -> no response b'URLError: <urlopen error timed out>'
+02:39:22       failing in 1/1 checks during the hold
+02:39:22   5. reference solution
+02:39:22     $ kubectl delete networkpolicy default-deny-ingress
+02:39:22       networkpolicy.networking.k8s.io "default-deny-ingress" deleted from default namespace
+02:39:22   6. verifier must PASS (<= 300s)
+02:39:23       [PASS   ] journey:home - 3/3 ok, avg 20ms
+02:39:23       [PASS   ] journey:browse - 3/3 ok, avg 28ms
+02:39:23   6b. invariants must PASS (shop_health)
+02:39:24       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+02:39:24       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+02:39:24       [PASS   ] journey:cart - 2/2 ok, avg 55ms
+02:39:24       [PASS   ] journey:checkout - 2/2 ok, avg 136ms
+02:39:24   7. restore exactly
+02:39:33   => VALIDATED  {'world_ready_s': 12, 'detect_s': 49, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

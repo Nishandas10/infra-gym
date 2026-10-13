@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:6aa59f4b45f65edab68a9a46a483b98f5cfddfc3985c8c43de57bb2f936418a0
 validation_hash: sha256:f1ab8d2b0faaab561fd45ee83009452f7cecca9a12b8c8dca2fd075adebd030b
+status: validated
 title: CPU limit so low the service is throttled into slowness
 mechanism: workload/cpu-limit-throttling
 split: train

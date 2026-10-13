@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:2c14b201f76b31196d32964e505c57d14303b04ae5b8d2efecff9cdb81977327
 validation_hash: sha256:ffe976e54e23fec1e983c1cb80ec4ed4907c3a8afdaa6bd4a9ddf017171d1feb
+status: validated
 title: Cluster DNS scaled to zero
 mechanism: platform/cluster-dns-down
 split: train

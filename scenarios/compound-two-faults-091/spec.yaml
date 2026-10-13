@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:c272ce44befd99a4d3431f3623b52dd0dcbabd11b84dd3df51e00aa8e869b15d
 validation_hash: sha256:bd8b8c98d3c948fda3e352392d72baeb22af6cffda7dc69f5b88ed2b6c9b0c70
+status: validated
 title: Two unrelated faults at the same time
 mechanism: compound/independent-simultaneous-faults
 split: train

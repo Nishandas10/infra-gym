@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:147eefddb68c028d488cce1630f26968ee421bc787a7dcd07966bee7b7ad7023
 validation_hash: sha256:1608522660c2a852168b5741644f93360417ffa79b9bb60d72942479e2304aaa
+status: validated
 title: readOnlyRootFilesystem on a server that writes to disk -> crash
 mechanism: workload/read-only-root-filesystem
 split: train

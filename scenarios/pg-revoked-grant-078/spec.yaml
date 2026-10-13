@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:1563558be08f2a31f302302a8c7943dffd6d1b870579086992152a5993eb3dba
 validation_hash: sha256:161991043b2c9d567669f16bf4d9521b4dfccef84ac39d432a7ec9ef626ff520
+status: validated
 title: Database role lost SELECT on the table the service reads
 mechanism: datastore/db-permission-revoked
 split: train

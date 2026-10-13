@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4fa89754e998a1e90fba54fe51bc23f3e73da91bc83abc86164a8752bf347013
 validation_hash: sha256:567b65af34e94b57915173e773cd7277977f26d24e27e08bfc6ba37e7d790448
+status: validated
 title: Valkey clients paused -> writes hang
 mechanism: datastore/kv-clients-paused
 split: train

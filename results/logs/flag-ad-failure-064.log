@@ -1,17 +1,22 @@
-12:54:41 === flag-ad-failure-064 (feature_flag)
-12:54:41   0. world healthy?
-12:54:47   1. baseline must PASS
-12:54:48       [PASS   ] journey:ads - 30/30 ok, avg 18ms
-12:54:48   2. inject
-12:54:48   3. verifier must FAIL (<= 240s)
-12:55:01       [FAIL   ] journey:ads - 27/30 ok, avg 18ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-12:55:01   4. do-nothing agent: still FAIL after 30s?
-12:55:32       [FAIL   ] journey:ads - 29/30 ok, avg 18ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-12:55:32       failing in 2/2 checks during the hold
-12:55:32   5. reference solution
-12:55:32     $ python injectors/toggle_flag.py adFailure --off
-12:55:33       'adFailure' -> off (flagd is serving it now)
-12:55:33   6. verifier must PASS (<= 300s)
-12:55:34       [PASS   ] journey:ads - 30/30 ok, avg 17ms
-12:55:34   7. restore exactly
-12:55:40   => VALIDATED  {'world_ready_s': 6, 'detect_s': 12, 'recover_s': 1, 'restore_s': 6}
+02:16:47 === flag-ad-failure-064 (app.flag)
+02:16:48   0. world healthy?
+02:16:59   1. baseline must PASS
+02:17:25       [PASS   ] journey:ads - 30/30 ok, avg 29ms
+02:17:25   2. inject
+02:17:26   3. verifier must FAIL (<= 240s)
+02:17:27       [FAIL   ] journey:ads - 27/30 ok, avg 30ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+02:17:27   4. do-nothing agent: still FAIL after 60s?
+02:18:29       [FAIL   ] journey:ads - 27/30 ok, avg 29ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+02:18:29       failing in 5/5 checks during the hold
+02:18:29   5. reference solution
+02:18:29     $ python injectors/toggle_flag.py adFailure --off
+02:18:30       'adFailure' -> off (flagd is serving it now)
+02:18:30   6. verifier must PASS (<= 300s)
+02:18:32       [PASS   ] journey:ads - 30/30 ok, avg 32ms
+02:18:32   6b. invariants must PASS (shop_health)
+02:18:33       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+02:18:33       [PASS   ] journey:recommendations - 2/2 ok, avg 59ms
+02:18:33       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+02:18:33       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
+02:18:33   7. restore exactly
+02:18:42   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 2, 'invariants_s': 1, 'restore_s': 9}

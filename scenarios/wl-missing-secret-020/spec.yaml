@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:b405b742e8d658d427b6a65af06d46dfd76ec0294ae5623b685d9b824cfc64c8
 validation_hash: sha256:9c1c0b48447c3bcc3450f9239d8716681dfa5becb2c51cbe0f579dfd25ad8339
+status: validated
 title: Env var references a Secret that does not exist -> CreateContainerConfigError
 mechanism: workload/missing-secret-reference
 split: train

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:be4dd2adff2f3399924c3ee7db8cf750ba0615076ff86b7f53ee66f6c01a31d0
 validation_hash: sha256:6a78d5028042638605320fe604adebc6bfb0214ef97793b04d4cd0baec29dc31
+status: validated
 title: Checkout calls payment at a dead address (paymentUnreachable)
 mechanism: app-flag/payment-unreachable
 split: train

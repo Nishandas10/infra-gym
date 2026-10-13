@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f4a1011b694c89288470a10f0887d984af36fc9fe149653fb3ffb6139b84884b
 validation_hash: sha256:eea58d4afa622df6ff8b0647d835a716e465f50e67e56113c5338196cdf1ea75
+status: validated
 title: Ad service fails every request (feature flag adFailure)
 mechanism: app-flag/ad-failure
 split: train

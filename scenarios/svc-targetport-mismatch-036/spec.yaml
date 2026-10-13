@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4105b2cb9a6091b7c33b78aafc568bf93f69491c41278ce0bbd6e70fce0e574f
 validation_hash: sha256:b8e2d0eb7f02732b7037cf9608c04b52782581ecdd56538735344557d66665d6
+status: validated
 title: Service targetPort points at a port nothing listens on
 mechanism: service/target-port-mismatch
 split: train

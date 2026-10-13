@@ -1,0 +1,11 @@
+02:22:33 === pay-fail-006 (app.flag)
+02:22:34   0. world healthy?
+02:22:43   1. baseline must PASS
+02:22:45       [PASS   ] journey:checkout - 3/3 ok, avg 159ms
+02:22:45       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+02:22:45   2. inject
+02:22:45   3. verifier must FAIL (<= 120s)
+02:24:46       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+02:24:46       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+02:24:46   7. restore exactly
+02:24:58   => NOT_DETECTED  {'world_ready_s': 9, 'detect_s': 120, 'restore_s': 12}

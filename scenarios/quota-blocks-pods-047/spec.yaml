@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0c85e8aa516ae880c017076a0d76e2562c20b1332addc616fe168ab60f3f75f0
 validation_hash: sha256:3a110006a1faec995c62b83012c8dc2a84ea96b98c2994c9a2fc114d7de74cdc
+status: validated
 title: ResourceQuota lower than the namespace's pod count
 mechanism: platform/resource-quota-exhausted
 split: train

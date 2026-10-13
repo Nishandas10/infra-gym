@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:6d3a78cb894e9badf68463927e021462fc3eec4bc77ee0ab9cd0fd21f04797a3
 validation_hash: sha256:6c3585fe9b241e05e6e9b62e219ecd359ad6b930f352b688ea8e0ff112961c50
+status: validated
 title: Valkey password set; the client does not know it
 mechanism: datastore/kv-credential-mismatch
 split: train

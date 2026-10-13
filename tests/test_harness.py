@@ -32,8 +32,10 @@ class Clock:
 
 class World:
     """healthy -> faulted (inject) -> fixed (reference fix) -> restarted (durability)."""
-    def __init__(self, invariants_after_fix=checks.PASS, checks_after_restart=checks.PASS):
+    def __init__(self, invariants_after_fix=checks.PASS, checks_after_restart=checks.PASS, switch_context=False):
         self.phase = "healthy"
+        self.switch_context = switch_context   # the kube context changes once the fix is applied
+        self.reverted = False
         self.invariants_after_fix = invariants_after_fix
         self.checks_after_restart = checks_after_restart
         self.restarted = []
@@ -59,9 +61,14 @@ def world(monkeypatch, tmp_path):
         monkeypatch.setattr(harness, "time", Clock())
         monkeypatch.setattr(harness, "RESULTS", tmp_path / "validation.jsonl")
         monkeypatch.setattr(harness, "LOG_DIR", tmp_path / "logs")
+        monkeypatch.setattr(harness, "environment", lambda: "env:test")
+        monkeypatch.setattr(harness, "git_state", lambda: ("abc123", False))
+        switched = lambda: w.switch_context and w.phase not in ("healthy", "faulted")   # noqa: E731
+        monkeypatch.setattr(harness, "kube_context", lambda: "kind-other" if switched() else "kind-test")
         monkeypatch.setattr(checks, "run_checks", w.run_checks)
         monkeypatch.setattr(harness.faults, "inject", lambda spec, sdir: setattr(w, "phase", "faulted"))
-        monkeypatch.setattr(harness.faults, "revert", lambda spec: setattr(w, "phase", "restored") or [])
+        monkeypatch.setattr(harness.faults, "revert", lambda spec: setattr(w, "reverted", True) or
+                            setattr(w, "phase", "restored") or [])
         monkeypatch.setattr(harness, "run_solution", lambda commands: setattr(w, "phase", "fixed"))
 
         def restart(target, namespace):
@@ -78,6 +85,8 @@ def test_validated(world):
     assert rec["verdict"] == "VALIDATED", rec
     assert w.restarted == [("deployment/payment", "default")]
     assert {"recover_s", "invariants_s", "durable_s"} <= set(rec["timings"])
+    assert (rec["git_sha"], rec["env"]) == ("abc123", "env:test")
+    assert rec["validation_hash"] == harness.load(SPEC)[0]["validation_hash"]
 
 
 def test_a_fix_that_breaks_another_journey_fails_the_invariant(world):
@@ -97,3 +106,12 @@ def test_default_hold_is_60s(world):
     rec = harness.validate(SPEC)
     # 60 s hold, polled every 10 s: the last poll is skipped so the final check lands at 60 s
     assert rec["hold_fail_ratio"] == "5/5"
+
+
+def test_a_context_switch_voids_the_run_and_does_not_revert_the_wrong_cluster(world):
+    w = world(switch_context=True)
+    rec = harness.validate(SPEC)
+    assert rec["verdict"] == "ENV_CHANGED"
+    assert rec["context"] == "kind-test"
+    assert not w.reverted
+    assert any("not reverted" in n for n in rec["notes"])

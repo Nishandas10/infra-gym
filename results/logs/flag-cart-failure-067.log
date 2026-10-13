@@ -1,21 +1,26 @@
-12:59:15 === flag-cart-failure-067 (feature_flag)
-12:59:15   0. world healthy?
-12:59:22   1. baseline must PASS
-12:59:23       [PASS   ] journey:cart - 3/3 ok, avg 27ms
-12:59:23       [PASS   ] journey:checkout - 3/3 ok, avg 43ms
-12:59:23   2. inject
-12:59:23   3. verifier must FAIL (<= 240s)
-13:00:09       [PASS   ] journey:cart - 3/3 ok, avg 28ms
-13:00:09       [FAIL   ] journey:checkout - 0/3 ok, avg 15029ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-13:00:09   4. do-nothing agent: still FAIL after 30s?
-13:01:50       [PASS   ] journey:cart - 3/3 ok, avg 31ms
-13:01:50       [FAIL   ] journey:checkout - 0/3 ok, avg 15033ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-13:01:50       failing in 1/1 checks during the hold
-13:01:50   5. reference solution
-13:01:50     $ python injectors/toggle_flag.py cartFailure --off
-13:01:51       'cartFailure' -> off (flagd is serving it now)
-13:01:51   6. verifier must PASS (<= 300s)
-13:01:52       [PASS   ] journey:cart - 3/3 ok, avg 32ms
-13:01:52       [PASS   ] journey:checkout - 3/3 ok, avg 328ms
-13:01:52   7. restore exactly
-13:01:58   => VALIDATED  {'world_ready_s': 7, 'detect_s': 46, 'recover_s': 1, 'restore_s': 6}
+02:18:42 === flag-cart-failure-067 (app.flag)
+02:18:43   0. world healthy?
+02:18:51   1. baseline must PASS
+02:18:52       [PASS   ] journey:cart - 3/3 ok, avg 46ms
+02:18:52       [PASS   ] journey:checkout - 3/3 ok, avg 81ms
+02:18:52   2. inject
+02:18:53   3. verifier must FAIL (<= 240s)
+02:19:39       [PASS   ] journey:cart - 3/3 ok, avg 46ms
+02:19:39       [FAIL   ] journey:checkout - 0/3 ok, avg 15045ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+02:19:39   4. do-nothing agent: still FAIL after 60s?
+02:21:25       [PASS   ] journey:cart - 3/3 ok, avg 311ms
+02:21:25       [FAIL   ] journey:checkout - 0/3 ok, avg 15082ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+02:21:25       failing in 1/1 checks during the hold
+02:21:25   5. reference solution
+02:21:25     $ python injectors/toggle_flag.py cartFailure --off
+02:21:26       'cartFailure' -> off (flagd is serving it now)
+02:21:26   6. verifier must PASS (<= 300s)
+02:21:27       [PASS   ] journey:cart - 3/3 ok, avg 55ms
+02:21:27       [PASS   ] journey:checkout - 3/3 ok, avg 86ms
+02:21:27   6b. invariants must PASS (shop_health)
+02:21:28       [PASS   ] journey:browse - 2/2 ok, avg 23ms
+02:21:28       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+02:21:28       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+02:21:28       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
+02:21:28   7. restore exactly
+02:21:38   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

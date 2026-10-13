@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:3ed8dfc3be0578feecaf3015c78f26f09ebf2491a71d937068426c7761086248
 validation_hash: sha256:6a54fe8c0578bfe68d21246263b50c948799e8d8645e0e17984bfa1af0cd1612
+status: validated
 title: Half of card payments are declined; a live fix does not survive the next restart
 mechanism: hard/fault-in-source-config-live-fix-not-durable
 split: hard

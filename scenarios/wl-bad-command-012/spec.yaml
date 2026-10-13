@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:6baec4ae519d8c11c849df99cd8f0fd2faed6efad09c5f378e7e343d015cd7d6
 validation_hash: sha256:45a8f1eb52df18ed0f1a49b869c688cb708038a975ce798d974b4f7fb953aae3
+status: validated
 title: Container command points at a binary that does not exist
 mechanism: workload/bad-entrypoint
 split: train

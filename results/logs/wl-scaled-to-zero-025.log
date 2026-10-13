@@ -1,24 +1,32 @@
-15:42:33 === wl-scaled-to-zero-025 (workload_patch)
-15:42:33   0. world healthy?
-15:42:39   1. baseline must PASS
-15:42:39       [PASS   ] journey:checkout - 3/3 ok, avg 53ms
-15:42:39       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-15:42:39   2. inject
-15:42:40   3. verifier must FAIL (<= 240s)
-15:43:25       [FAIL   ] journey:checkout - 0/3 ok, avg 15031ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-15:43:25       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-15:43:25   4. do-nothing agent: still FAIL after 30s?
-15:44:54       [FAIL   ] journey:checkout - 0/3 ok, avg 10861ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-15:44:54       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-15:44:54       failing in 1/1 checks during the hold
-15:44:54   5. reference solution
-15:44:54     $ kubectl scale deployment checkout --replicas=1
-15:44:54       deployment.apps/checkout scaled
-15:44:54     $ kubectl rollout status deployment/checkout --timeout=300s
-15:44:55       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
-15:44:55       deployment "checkout" successfully rolled out
-15:44:55   6. verifier must PASS (<= 300s)
-15:45:07       [PASS   ] journey:checkout - 3/3 ok, avg 442ms
-15:45:07       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-15:45:07   7. restore exactly
-15:45:14   => VALIDATED  {'world_ready_s': 6, 'detect_s': 46, 'recover_s': 12, 'restore_s': 6}
+03:20:17 === wl-scaled-to-zero-025 (k8s.workload_patch)
+03:20:18   0. world healthy?
+03:20:28   1. baseline must PASS
+03:20:29       [PASS   ] journey:checkout - 3/3 ok, avg 125ms
+03:20:29       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+03:20:29   2. inject
+03:20:29   3. verifier must FAIL (<= 240s)
+03:21:15       [FAIL   ] journey:checkout - 0/3 ok, avg 15061ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+03:21:15       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+03:21:15   4. do-nothing agent: still FAIL after 60s?
+03:22:43       [FAIL   ] journey:checkout - 0/3 ok, avg 9224ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+03:22:43       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+03:22:43       failing in 1/1 checks during the hold
+03:22:43   5. reference solution
+03:22:43     $ kubectl scale deployment checkout --replicas=1
+03:22:43       deployment.apps/checkout scaled
+03:22:43     $ kubectl rollout status deployment/checkout --timeout=300s
+03:22:45       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+03:22:45       deployment "checkout" successfully rolled out
+03:22:45   6. verifier must PASS (<= 300s)
+03:22:57       [PASS   ] journey:checkout - 3/3 ok, avg 306ms
+03:22:57       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+03:22:57   6b. invariants must PASS (shop_health)
+03:22:58       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+03:22:58       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
+03:22:58       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+03:22:58       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+03:22:58   6c. the fix must survive a restart of deployment/checkout
+03:23:44       [PASS   ] journey:checkout - 3/3 ok, avg 104ms
+03:23:44       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+03:23:44   7. restore exactly
+03:23:53   => VALIDATED  {'world_ready_s': 10, 'detect_s': 46, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

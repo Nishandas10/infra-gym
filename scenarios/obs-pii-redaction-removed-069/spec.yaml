@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f9c6d5724da7aabe137bfd6b8a9bb72729baa1d6e58ffb3c667b4403c75955a2
 validation_hash: sha256:b54e565d06a14cdf84ee226968c1e017a2f60478b928623c0e36ac96466f80f6
+status: validated
 title: PII reaches the tracing backend after the redaction step was removed from the pipeline
 mechanism: observability/telemetry-redaction-removed
 split: train

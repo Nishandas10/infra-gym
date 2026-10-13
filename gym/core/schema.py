@@ -265,6 +265,7 @@ class Instance(Template):
     instance_of: InstanceOf
     content_hash: str      # everything that decides behaviour and grading (results, suites)
     validation_hash: str   # only what a live validation run depends on (validation status)
+    status: Literal["validated", "quarantined", "draft"]   # from evidence (gym/core/status.py); in no hash
     tools: list[str]
     budget: Budget
     verifier: ResolvedVerifier
@@ -278,10 +279,16 @@ class Instance(Template):
         return v
 
 
+class StatusRules(Strict):
+    min_runs: int = Field(gt=0)
+    max_failures: int = Field(ge=0)
+
+
 class Defaults(Strict):
     forbidden: list[str]
     invariants: list[str]
     validation: ResolvedValidation
+    status: StatusRules
     tools: list[str]
     budget: Budget
 

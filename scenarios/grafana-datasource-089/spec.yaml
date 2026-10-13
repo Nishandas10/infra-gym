@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:8ccfa3ebd7f30c2fae44aa0cef519fd59da59562be30963d95d1608d134f80d6
 validation_hash: sha256:b83e3a2b60b461b834b89012263f26368c525caa53bad500ff5489ceb2654d4f
+status: validated
 title: Grafana's Prometheus datasource points at the wrong port
 mechanism: observability/dashboard-datasource-misconfigured
 split: train

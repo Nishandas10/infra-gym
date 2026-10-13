@@ -1,0 +1,15 @@
+01:02:58 === pg-lock-held-081 (k8s.create_objects)
+01:02:58   0. world healthy?
+01:03:09   1. baseline must PASS
+01:03:09       [PASS   ] journey:browse - 3/3 ok, avg 32ms
+01:03:09       [PASS   ] journey:catalog - 3/3 ok, avg 28ms
+01:03:09   2. inject
+01:03:09   3. verifier must FAIL (<= 240s)
+01:03:57       [FAIL   ] journey:browse - 0/3 ok, avg 6016ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
+01:03:57       [FAIL   ] journey:catalog - 0/3 ok, avg 6021ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+01:03:57   4. do-nothing agent: still FAIL after 60s?
+01:04:58       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+01:04:58       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+01:04:58       failing in 2/2 checks during the hold
+01:04:58   7. restore exactly
+01:05:07   => SELF_HEALED  {'world_ready_s': 10, 'detect_s': 47, 'restore_s': 9}

@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:8162e6a6c178a91792a8f7cac774d60a2fa38b655cffa7eb654c206a745838ca
 validation_hash: sha256:abc8f7cbb56f737bf84e86823c6ced582f36d788481930f362060f5ec0c7a5c3
+status: validated
 title: All worker nodes cordoned; a pod cannot be rescheduled
 mechanism: platform/nodes-cordoned
 split: train

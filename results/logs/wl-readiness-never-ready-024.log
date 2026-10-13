@@ -1,26 +1,34 @@
-15:37:31 === wl-readiness-never-ready-024 (workload_patch)
-15:37:31   0. world healthy?
-15:37:37   1. baseline must PASS
-15:37:37       [PASS   ] journey:cart - 3/3 ok, avg 26ms
-15:37:37       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
-15:37:37   2. inject
-15:37:38   3. verifier must FAIL (<= 240s)
-15:38:02       [FAIL   ] journey:cart - 0/3 ok, avg 8022ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-15:38:02       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
-15:38:02   4. do-nothing agent: still FAIL after 30s?
-15:39:01       [FAIL   ] journey:cart - 0/3 ok, avg 8018ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-15:39:01       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
-15:39:01       failing in 1/1 checks during the hold
-15:39:01   5. reference solution
-15:39:01     $ kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
-15:39:01       deployment.apps/cart patched
-15:39:01     $ kubectl rollout status deployment/cart --timeout=300s
-15:39:03       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
-15:39:03       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
-15:39:03       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
-15:39:03       deployment "cart" successfully rolled out
-15:39:03   6. verifier must PASS (<= 300s)
-15:40:01       [PASS   ] journey:cart - 3/3 ok, avg 35ms
-15:40:01       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
-15:40:01   7. restore exactly
-15:40:08   => VALIDATED  {'world_ready_s': 6, 'detect_s': 25, 'recover_s': 58, 'restore_s': 6}
+03:17:41 === wl-readiness-never-ready-024 (k8s.workload_patch)
+03:17:42   0. world healthy?
+03:17:52   1. baseline must PASS
+03:17:53       [PASS   ] journey:cart - 3/3 ok, avg 42ms
+03:17:53       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
+03:17:53   2. inject
+03:17:53   3. verifier must FAIL (<= 240s)
+03:17:54       [FAIL   ] journey:cart - 0/3 ok, avg 19ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+03:17:54       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
+03:17:54   4. do-nothing agent: still FAIL after 60s?
+03:18:54       [FAIL   ] journey:cart - 0/3 ok, avg 16ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+03:18:54       [FAIL   ] endpoints:cart - service cart has 0 ready endpoint(s)
+03:18:54       failing in 5/5 checks during the hold
+03:18:54   5. reference solution
+03:18:54     $ kubectl patch deployment cart --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/readinessProbe"}]'
+03:18:54       deployment.apps/cart patched
+03:18:54     $ kubectl rollout status deployment/cart --timeout=300s
+03:18:56       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+03:18:56       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+03:18:56       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+03:18:56       deployment "cart" successfully rolled out
+03:18:56   6. verifier must PASS (<= 300s)
+03:19:19       [PASS   ] journey:cart - 3/3 ok, avg 64ms
+03:19:19       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
+03:19:19   6b. invariants must PASS (shop_health)
+03:19:20       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+03:19:20       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+03:19:20       [PASS   ] journey:cart - 2/2 ok, avg 59ms
+03:19:20       [PASS   ] journey:checkout - 2/2 ok, avg 94ms
+03:19:20   6c. the fix must survive a restart of deployment/cart
+03:20:06       [PASS   ] journey:cart - 3/3 ok, avg 85ms
+03:20:06       [PASS   ] endpoints:cart - service cart has 1 ready endpoint(s)
+03:20:06   7. restore exactly
+03:20:17   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

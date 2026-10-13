@@ -18,6 +18,8 @@ scenario has nothing to restart).
 
 - **Chaos Mesh scenarios are excluded** (`bench_eligible: false` in their templates). Their only
   fix is deleting the chaos object, which an SRE never does in a real incident.
+- **Only validated scenarios run** (`only_validated` in `config.yaml`): at least 5 validation runs of
+  the scenario's current version with at most 1 failure (`gym/core/status.py`).
 - **Every result row records the scenario's `content_hash`**, so results can be tied to the exact
   version of the scenario that ran.
 - **The model works in a container that cannot see this repo**, so it can't read reference

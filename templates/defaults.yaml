@@ -24,3 +24,8 @@ tools: [kubectl, helm, curl]
 
 # Agent budget per episode.
 budget: {max_steps: 30, wall_s: 900}
+
+# Validation status (gym/core/status.py), from the runs in results/validation.jsonl whose
+# validation_hash matches: validated = at least min_runs runs and at most max_failures failed;
+# quarantined = more than max_failures failed; draft = not enough runs yet.
+status: {min_runs: 5, max_failures: 1}

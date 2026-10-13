@@ -1,27 +1,33 @@
-13:01:58 === flag-email-memory-leak-068 (feature_flag)
-13:01:58   0. world healthy?
-13:02:04   1. baseline must PASS
-13:02:05       [PASS   ] journey:email - 3/3 ok, avg 19ms
-13:02:05       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-13:02:05   2. inject
-13:02:05   3. verifier must FAIL (<= 900s)
-13:02:30       [FAIL   ] journey:email - 0/3 ok, avg 8014ms; e.g. POST email/send_order_confirmation -> no response b'TimeoutError: timed out'
-13:02:30       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-13:02:30   4. do-nothing agent: still FAIL after 330s?
-13:08:24       [FAIL   ] journey:email - 0/3 ok, avg 8027ms; e.g. POST email/send_order_confirmation -> no response b'TimeoutError: timed out'
-13:08:24       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-13:08:24       failing in 8/8 checks during the hold
-13:08:24   5. reference solution
-13:08:24     $ python injectors/toggle_flag.py emailMemoryLeak --off
-13:08:25       'emailMemoryLeak' -> off (flagd is serving it now)
-13:08:25     $ kubectl rollout restart deployment/email
-13:08:25       deployment.apps/email restarted
-13:08:25     $ kubectl rollout status deployment/email --timeout=300s
-13:08:26       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-13:08:26       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-13:08:26       deployment "email" successfully rolled out
-13:08:26   6. verifier must PASS (<= 600s)
-13:13:37       [PASS   ] journey:email - 3/3 ok, avg 24ms
-13:13:37       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-13:13:37   7. restore exactly
-13:13:44   => VALIDATED  {'world_ready_s': 6, 'detect_s': 24, 'recover_s': 311, 'restore_s': 7}
+02:00:22 === flag-email-memory-leak-068 (app.flag)
+02:00:23   0. world healthy?
+02:00:34   1. baseline must PASS
+02:00:35       [PASS   ] journey:email - 3/3 ok, avg 34ms
+02:00:35       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+02:00:35   2. inject
+02:00:36   3. verifier must FAIL (<= 900s)
+02:00:38       [FAIL   ] journey:email - 0/3 ok, avg 368ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+02:00:38       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+02:00:38   4. do-nothing agent: still FAIL after 330s?
+02:06:53       [FAIL   ] journey:email - 0/3 ok, avg 8026ms; e.g. POST email/send_order_confirmation -> no response b'TimeoutError: timed out'
+02:06:53       [FAIL   ] pods_stable:opentelemetry.io/name=email - email-76947b484-fzgw9/email restarted 65s ago (OOMKilled)
+02:06:53       failing in 9/9 checks during the hold
+02:06:53   5. reference solution
+02:06:53     $ python injectors/toggle_flag.py emailMemoryLeak --off
+02:06:55       'emailMemoryLeak' -> off (flagd is serving it now)
+02:06:55     $ kubectl rollout restart deployment/email
+02:06:55       deployment.apps/email restarted
+02:06:55     $ kubectl rollout status deployment/email --timeout=300s
+02:06:56       Waiting for deployment "email" rollout to finish: 0 out of 1 new replicas have been updated...
+02:06:56       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+02:06:56       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+02:06:56       deployment "email" successfully rolled out
+02:06:56   6. verifier must PASS (<= 600s)
+02:11:57       [PASS   ] journey:email - 3/3 ok, avg 30ms
+02:11:57       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+02:11:57   6b. invariants must PASS (shop_health)
+02:11:58       [PASS   ] journey:browse - 2/2 ok, avg 47ms
+02:11:58       [PASS   ] journey:recommendations - 2/2 ok, avg 45ms
+02:11:58       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+02:11:58       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+02:11:58   7. restore exactly
+02:12:08   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 301, 'invariants_s': 1, 'restore_s': 9}

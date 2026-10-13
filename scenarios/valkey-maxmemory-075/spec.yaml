@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f0c394513923fd2f1929be1b0c7a11fa7c354c1b576b52fa093b5a324f97e262
 validation_hash: sha256:4b447bf6d2a79bd9ad22b13c48ec4af2d2386c713cbcc79d74fef6dcce827fe0
+status: validated
 title: Valkey memory cap reached with 'noeviction' -> writes rejected
 mechanism: datastore/kv-memory-cap-noeviction
 split: train

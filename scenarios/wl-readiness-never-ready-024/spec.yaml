@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:5f12d5f2d6997edb6a14a8e309fcba9c23da0bec720c0864f2cb4903e8a6a780
 validation_hash: sha256:4c627735f6722bc54c58caec624d19c8462260e06b79b164226903539b430ce6
+status: validated
 title: Readiness probe can never succeed -> no endpoints
 mechanism: workload/readiness-probe-misconfigured
 split: train

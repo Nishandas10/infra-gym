@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:641711e7a346c54cad53b7090f46fd0a4b78355f0fbcbf3b2c922cc2b2c2dec6
 validation_hash: sha256:34391676d59a0c2082203da413f9d4aa4b42a928a077753dfb6299b48caef7f1
+status: validated
 title: Memory request larger than any node -> Pending
 mechanism: workload/unschedulable-resource-request
 split: train

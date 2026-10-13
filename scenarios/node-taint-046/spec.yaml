@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:253930333593ba78ed70b1a34ce5632c99ec65dea21e2d82a3ecd23cdfa06bae
 validation_hash: sha256:84b49001c453852295dacbaeb79e07bcd661a44fe127f96c29062beabc010faf
+status: validated
 title: Worker nodes tainted; the replacement pod has no toleration
 mechanism: platform/nodes-tainted
 split: train

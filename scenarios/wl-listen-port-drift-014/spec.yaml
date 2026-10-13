@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:c57baa042e376fba82ddeaf6227a39980b31ec67d2910c67651152b55fba6307
 validation_hash: sha256:87757ac4527af4e577e85f436b21eed4854c89af7cad2aae7170009cce513a8e
+status: validated
 title: Service listens on a different port than its Kubernetes Service targets
 mechanism: workload/listen-port-drift
 split: train

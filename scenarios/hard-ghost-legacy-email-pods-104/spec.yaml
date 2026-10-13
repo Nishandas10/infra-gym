@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:cd45c68a76a7a7f8fd7606baa691f378b9c03ee8c7708c13c65a8728405c14e8
 validation_hash: sha256:6ae3c35fd5722d8ddc51b988a4d520bb4a9b25c7f83cccf0b1b8aed284c1cd1a
+status: validated
 title: Leftover legacy pods still match the email Service and swallow part of the traffic
 mechanism: hard/stale-workload-matches-service-selector
 split: hard

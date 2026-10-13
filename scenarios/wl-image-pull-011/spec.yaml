@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0f2e10164e0fcc88919827c3a3cb94ebce7c07484a3d1225c6c9768d553bedf9
 validation_hash: sha256:f5a2d8731a84350953fac034b43ff01df080f97f5633f3e53bb2af85dcf448d4
+status: validated
 title: Mistyped image tag -> ImagePullBackOff
 mechanism: workload/image-pull-failure
 split: train

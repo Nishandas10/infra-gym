@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:361cecaf4cfe48f3014c4521c4333b5dfeffd22a6a98caeb51b1d58040e7c020
 validation_hash: sha256:e9ae44a5205cede1d330da5ed24421585dc3f06beba900712a8d082a915c6dd5
+status: validated
 title: Memory limit below the JVM heap the broker is configured to use
 mechanism: workload/jvm-heap-exceeds-limit
 split: train

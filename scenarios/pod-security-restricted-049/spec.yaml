@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:4fc7ad5b306f59d4c70bfd5896ace0d59f1caeb9a92e77b541f8d3bb0419cbea
 validation_hash: sha256:c882bcafdf71ca982f15dd44e6af15c685284cfb042106212a6399058b81e85c
+status: validated
 title: Namespace switched to the 'restricted' Pod Security Standard
 mechanism: platform/pod-security-admission
 split: train

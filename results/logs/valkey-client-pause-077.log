@@ -1,17 +1,22 @@
-14:38:31 === valkey-client-pause-077 (exec_commands)
-14:38:31   0. world healthy?
-14:38:37   1. baseline must PASS
-14:38:38       [PASS   ] journey:cart - 3/3 ok, avg 26ms
-14:38:38   2. inject
-14:38:38   3. verifier must FAIL (<= 240s)
-14:38:56       [FAIL   ] journey:cart - 0/3 ok, avg 5884ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:38:56   4. do-nothing agent: still FAIL after 30s?
-14:39:39       [FAIL   ] journey:cart - 0/3 ok, avg 4230ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:39:39       failing in 1/1 checks during the hold
-14:39:39   5. reference solution
-14:39:39     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
-14:39:39       OK
-14:39:39   6. verifier must PASS (<= 300s)
-14:39:39       [PASS   ] journey:cart - 3/3 ok, avg 38ms
-14:39:39   7. restore exactly
-14:39:45   => VALIDATED  {'world_ready_s': 6, 'detect_s': 18, 'recover_s': 0, 'restore_s': 6}
+02:59:26 === valkey-client-pause-077 (runtime.exec)
+02:59:27   0. world healthy?
+02:59:36   1. baseline must PASS
+02:59:36       [PASS   ] journey:cart - 3/3 ok, avg 39ms
+02:59:36   2. inject
+02:59:36   3. verifier must FAIL (<= 240s)
+02:59:55       [FAIL   ] journey:cart - 0/3 ok, avg 5922ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+02:59:55   4. do-nothing agent: still FAIL after 60s?
+03:01:28       [FAIL   ] journey:cart - 0/3 ok, avg 5084ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+03:01:28       failing in 3/3 checks during the hold
+03:01:28   5. reference solution
+03:01:28     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+03:01:28       OK
+03:01:28   6. verifier must PASS (<= 300s)
+03:01:29       [PASS   ] journey:cart - 3/3 ok, avg 61ms
+03:01:29   6b. invariants must PASS (shop_health)
+03:01:30       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+03:01:30       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
+03:01:30       [PASS   ] journey:cart - 2/2 ok, avg 59ms
+03:01:30       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
+03:01:30   7. restore exactly
+03:01:40   => VALIDATED  {'world_ready_s': 9, 'detect_s': 18, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 10}

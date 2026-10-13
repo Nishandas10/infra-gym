@@ -1,17 +1,24 @@
-13:59:53 === netpol-ingress-deny-038 (create_objects)
-13:59:53   0. world healthy?
-13:59:59   1. baseline must PASS
-13:59:59       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
-13:59:59   2. inject
-14:00:03   3. verifier must FAIL (<= 240s)
-14:00:23       [FAIL   ] journey:checkout - 0/3 ok, avg 6688ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-14:00:23   4. do-nothing agent: still FAIL after 30s?
-14:00:53       [FAIL   ] journey:checkout - 0/3 ok, avg 41ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:00:53       failing in 2/2 checks during the hold
-14:00:53   5. reference solution
-14:00:53     $ kubectl delete networkpolicy payment-ingress-lockdown
-14:00:53       networkpolicy.networking.k8s.io "payment-ingress-lockdown" deleted from default namespace
-14:00:53   6. verifier must PASS (<= 300s)
-14:01:04       [PASS   ] journey:checkout - 3/3 ok, avg 71ms
-14:01:04   7. restore exactly
-14:01:11   => VALIDATED  {'world_ready_s': 6, 'detect_s': 20, 'recover_s': 11, 'restore_s': 6}
+02:39:33 === netpol-ingress-deny-038 (k8s.create_objects)
+02:39:33   0. world healthy?
+02:39:42   1. baseline must PASS
+02:39:43       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
+02:39:43   2. inject
+02:39:46   3. verifier must FAIL (<= 240s)
+02:40:07       [FAIL   ] journey:checkout - 0/3 ok, avg 6705ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+02:40:07   4. do-nothing agent: still FAIL after 60s?
+02:41:07       [FAIL   ] journey:checkout - 0/3 ok, avg 48ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:41:07       failing in 5/5 checks during the hold
+02:41:07   5. reference solution
+02:41:07     $ kubectl delete networkpolicy payment-ingress-lockdown
+02:41:07       networkpolicy.networking.k8s.io "payment-ingress-lockdown" deleted from default namespace
+02:41:07   6. verifier must PASS (<= 300s)
+02:41:19       [PASS   ] journey:checkout - 3/3 ok, avg 86ms
+02:41:19   6b. invariants must PASS (shop_health)
+02:41:20       [PASS   ] journey:browse - 2/2 ok, avg 54ms
+02:41:20       [PASS   ] journey:recommendations - 2/2 ok, avg 64ms
+02:41:20       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+02:41:20       [PASS   ] journey:checkout - 2/2 ok, avg 74ms
+02:41:20   6c. the fix must survive a restart of opentelemetry.io/name=payment
+02:42:05       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
+02:42:05   7. restore exactly
+02:42:15   => VALIDATED  {'world_ready_s': 8, 'detect_s': 21, 'recover_s': 11, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

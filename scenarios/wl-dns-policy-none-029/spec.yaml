@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:3fb7835c59ff499b69b103cbaa3b2926565dc254f81e24eaae402cb40c7cf92a
 validation_hash: sha256:894025bdc7efc7a7d2749d76ddb47f580c8c02172b67c4b114a14f93bb77e77d
+status: validated
 title: Pod DNS set to an unreachable nameserver
 mechanism: workload/pod-dns-config
 split: train

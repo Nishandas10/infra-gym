@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:193519046e022cee35beac1f1e0274798e29eb6dcd718d2413b1a725a9e13b8b
 validation_hash: sha256:1731ee3ea8c1509bff6cfe0444fe1d491d84bd92b062bc802b6c14ab05f9a9b2
+status: validated
 title: The ad service OOM-loops, and the obvious fix is rejected by a namespace LimitRange
 mechanism: hard/oom-fix-blocked-by-limitrange
 split: hard

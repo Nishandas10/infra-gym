@@ -1,17 +1,22 @@
-13:16:43 === flag-image-slow-load-071 (feature_flag)
-13:16:43   0. world healthy?
-13:16:50   1. baseline must PASS
-13:16:51       [PASS   ] journey:images_browser - 3/3 ok, avg 29ms
-13:16:51   2. inject
-13:16:51   3. verifier must FAIL (<= 240s)
-13:17:22       [FAIL   ] journey:images_browser - 3/3 ok, avg 10019ms (> 3000ms)
-13:17:22   4. do-nothing agent: still FAIL after 30s?
-13:18:33       [FAIL   ] journey:images_browser - 3/3 ok, avg 10041ms (> 3000ms)
-13:18:33       failing in 1/1 checks during the hold
-13:18:33   5. reference solution
-13:18:33     $ python injectors/toggle_flag.py imageSlowLoad --off
-13:18:34       'imageSlowLoad' -> off (flagd is serving it now)
-13:18:34   6. verifier must PASS (<= 300s)
-13:18:34       [PASS   ] journey:images_browser - 3/3 ok, avg 25ms
-13:18:34   7. restore exactly
-13:18:41   => VALIDATED  {'world_ready_s': 7, 'detect_s': 30, 'recover_s': 0, 'restore_s': 7}
+02:21:38 === flag-image-slow-load-071 (app.flag)
+02:21:38   0. world healthy?
+02:21:50   1. baseline must PASS
+02:21:50       [PASS   ] journey:images_browser - 3/3 ok, avg 26ms
+02:21:50   2. inject
+02:21:51   3. verifier must FAIL (<= 240s)
+02:22:22       [FAIL   ] journey:images_browser - 3/3 ok, avg 10038ms (> 3000ms)
+02:22:22   4. do-nothing agent: still FAIL after 60s?
+02:24:14       [FAIL   ] journey:images_browser - 3/3 ok, avg 10040ms (> 3000ms)
+02:24:14       failing in 2/2 checks during the hold
+02:24:14   5. reference solution
+02:24:14     $ python injectors/toggle_flag.py imageSlowLoad --off
+02:24:15       'imageSlowLoad' -> off (flagd is serving it now)
+02:24:15   6. verifier must PASS (<= 300s)
+02:24:15       [PASS   ] journey:images_browser - 3/3 ok, avg 28ms
+02:24:15   6b. invariants must PASS (shop_health)
+02:24:17       [PASS   ] journey:browse - 2/2 ok, avg 25ms
+02:24:17       [PASS   ] journey:recommendations - 2/2 ok, avg 76ms
+02:24:17       [PASS   ] journey:cart - 2/2 ok, avg 205ms
+02:24:17       [PASS   ] journey:checkout - 2/2 ok, avg 150ms
+02:24:17   7. restore exactly
+02:24:27   => VALIDATED  {'world_ready_s': 11, 'detect_s': 31, 'recover_s': 1, 'invariants_s': 2, 'restore_s': 9}

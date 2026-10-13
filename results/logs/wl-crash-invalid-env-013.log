@@ -1,26 +1,34 @@
-14:53:44 === wl-crash-invalid-env-013 (workload_patch)
-14:53:44   0. world healthy?
-14:53:50   1. baseline must PASS
-14:53:51       [PASS   ] journey:checkout - 3/3 ok, avg 56ms
-14:53:51       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-14:53:51   2. inject
-14:53:51   3. verifier must FAIL (<= 240s)
-14:54:06       [FAIL   ] journey:checkout - 0/3 ok, avg 5038ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:54:06       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-54c7dd6db7-s56lx (shipping: last exit Error)
-14:54:06   4. do-nothing agent: still FAIL after 30s?
-14:54:37       [FAIL   ] journey:checkout - 0/3 ok, avg 32ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:54:37       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-54c7dd6db7-s56lx (shipping: last exit Error)
-14:54:37       failing in 2/2 checks during the hold
-14:54:37   5. reference solution
-14:54:37     $ kubectl set env deployment/shipping SHIPPING_PORT=8080
-14:54:37       deployment.apps/shipping env updated
-14:54:37     $ kubectl rollout status deployment/shipping --timeout=300s
-14:54:39       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
-14:54:39       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
-14:54:39       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
-14:54:39       deployment "shipping" successfully rolled out
-14:54:39   6. verifier must PASS (<= 300s)
-14:54:50       [PASS   ] journey:checkout - 3/3 ok, avg 59ms
-14:54:50       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-14:54:50   7. restore exactly
-14:55:12   => VALIDATED  {'world_ready_s': 6, 'detect_s': 16, 'recover_s': 11, 'restore_s': 22}
+02:42:54 === wl-crash-invalid-env-013 (k8s.workload_patch)
+02:42:55   0. world healthy?
+02:43:04   1. baseline must PASS
+02:43:05       [PASS   ] journey:checkout - 3/3 ok, avg 85ms
+02:43:05       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+02:43:05   2. inject
+02:43:05   3. verifier must FAIL (<= 240s)
+02:43:21       [FAIL   ] journey:checkout - 0/3 ok, avg 5076ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:43:21       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-5b6dcb9c6f-k8fh6 (shipping: CrashLoopBackOff)
+02:43:21   4. do-nothing agent: still FAIL after 60s?
+02:44:21       [FAIL   ] journey:checkout - 0/3 ok, avg 47ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:44:21       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/1 pods ready for opentelemetry.io/name=shipping; shipping-5b6dcb9c6f-k8fh6 (shipping: last exit Error)
+02:44:21       failing in 5/5 checks during the hold
+02:44:21   5. reference solution
+02:44:21     $ kubectl set env deployment/shipping SHIPPING_PORT=8080
+02:44:22       deployment.apps/shipping env updated
+02:44:22     $ kubectl rollout status deployment/shipping --timeout=300s
+02:44:24       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+02:44:24       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
+02:44:24       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
+02:44:24       deployment "shipping" successfully rolled out
+02:44:24   6. verifier must PASS (<= 300s)
+02:44:36       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
+02:44:36       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+02:44:36   6b. invariants must PASS (shop_health)
+02:44:37       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+02:44:37       [PASS   ] journey:recommendations - 2/2 ok, avg 63ms
+02:44:37       [PASS   ] journey:cart - 2/2 ok, avg 50ms
+02:44:37       [PASS   ] journey:checkout - 2/2 ok, avg 116ms
+02:44:37   6c. the fix must survive a restart of deployment/shipping
+02:45:23       [PASS   ] journey:checkout - 3/3 ok, avg 149ms
+02:45:23       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+02:45:23   7. restore exactly
+02:45:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 16, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 30}

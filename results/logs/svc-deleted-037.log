@@ -1,20 +1,29 @@
-14:32:26 === svc-deleted-037 (delete_object)
-14:32:26   0. world healthy?
-14:32:32   1. baseline must PASS
-14:32:33       [PASS   ] journey:email - 3/3 ok, avg 23ms
-14:32:33   2. inject
-14:32:33   3. verifier must FAIL (<= 240s)
-14:32:33       [FAIL   ] journey:email - 0/3 ok, avg 7ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
-14:32:33   4. do-nothing agent: still FAIL after 30s?
-14:33:04       [FAIL   ] journey:email - 0/3 ok, avg 16ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
-14:33:04       failing in 2/2 checks during the hold
-14:33:04   5. reference solution
-14:33:04     $ bash scripts/reset_world.sh
-14:33:08         Firepit (Profiles)         http://localhost:8080/profiles/
-14:33:08         Grafana                    http://localhost:8080/grafana/
-14:33:08         Feature Flags UI           http://localhost:8080/feature/
-14:33:08       Reset complete.
-14:33:08   6. verifier must PASS (<= 480s)
-14:33:09       [PASS   ] journey:email - 3/3 ok, avg 15ms
-14:33:09   7. restore exactly
-14:33:15   => VALIDATED  {'world_ready_s': 7, 'detect_s': 0, 'recover_s': 0, 'restore_s': 7}
+02:57:55 === svc-deleted-037 (k8s.delete_object)
+02:57:56   0. world healthy?
+02:58:05   1. baseline must PASS
+02:58:06       [PASS   ] journey:email - 3/3 ok, avg 32ms
+02:58:06       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
+02:58:06   2. inject
+02:58:06   3. verifier must FAIL (<= 240s)
+02:58:07       [FAIL   ] journey:email - 0/3 ok, avg 21ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+02:58:07       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
+02:58:07   4. do-nothing agent: still FAIL after 60s?
+02:59:08       [FAIL   ] journey:email - 0/3 ok, avg 9ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+02:59:08       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
+02:59:08       failing in 5/5 checks during the hold
+02:59:08   5. reference solution
+02:59:08     $ bash scripts/reset_world.sh
+02:59:15         Firepit (Profiles)         http://localhost:8080/profiles/
+02:59:15         Grafana                    http://localhost:8080/grafana/
+02:59:15         Feature Flags UI           http://localhost:8080/feature/
+02:59:15       Reset complete.
+02:59:15   6. verifier must PASS (<= 480s)
+02:59:15       [PASS   ] journey:email - 3/3 ok, avg 24ms
+02:59:15       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
+02:59:15   6b. invariants must PASS (shop_health)
+02:59:16       [PASS   ] journey:browse - 2/2 ok, avg 39ms
+02:59:16       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+02:59:16       [PASS   ] journey:cart - 2/2 ok, avg 51ms
+02:59:16       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+02:59:16   7. restore exactly
+02:59:26   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 10}

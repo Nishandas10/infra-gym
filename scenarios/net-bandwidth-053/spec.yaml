@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:bbcdcfb8ab729afe1e8908230f8a2cc7c8517a3cfbe5de40ca73eb9a3d59b6d9
 validation_hash: sha256:08c741a7b1d449d8400abe3761f1ee3084f58c2cc5502155e170828b4c1a6935
+status: draft
 title: Bandwidth throttled to a trickle on the image server
 mechanism: chaos/network-bandwidth-limit
 split: train

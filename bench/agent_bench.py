@@ -33,6 +33,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
 from gym import checks, faults, harness, kube, toolbox  # noqa: E402
+from gym.core import status  # noqa: E402
 from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog  # noqa: E402
 import world  # noqa: E402
@@ -79,22 +80,11 @@ def load_config():
 
 
 # ------------------------------------------------------------------ scenarios
-def latest_verdicts():
-    verdicts = {}
-    path = REPO / "results" / "validation.jsonl"
-    if path.exists():
-        for line in open(path):
-            try:
-                r = json.loads(line)
-                verdicts[r["id"]] = r.get("verdict")
-            except (json.JSONDecodeError, KeyError):
-                continue
-    return verdicts
-
-
 def select_scenarios(cfg):
-    verdicts = latest_verdicts()
-    chosen = []
+    """Bench-eligible scenarios; with only_validated (the default), only those whose current version is
+    validated (gym/core/status.py: enough passing validation runs with this validation_hash)."""
+    records = status.load_records()
+    chosen, not_validated = [], []
     if cfg.get("exclude_fault_types"):
         log("config: exclude_fault_types is no longer used; scenarios marked bench_eligible: false "
             "(Chaos Mesh) are always excluded")
@@ -105,7 +95,8 @@ def select_scenarios(cfg):
             continue
         if cfg.get("only_golden") and not meta.get("golden"):
             continue
-        if cfg.get("only_validated", True) and verdicts.get(sid) != "VALIDATED":
+        if cfg.get("only_validated", True) and status.of_spec(spec, records).status != "validated":
+            not_validated.append(sid)
             continue
         if cfg.get("include") and sid not in cfg["include"]:
             continue
@@ -113,6 +104,9 @@ def select_scenarios(cfg):
             continue
         chosen.append({"id": sid, "spec": spec, "dir": sdir, "layer": layer_of(spec), "tier": tier_of(spec),
                        "fault_type": fault_label(spec)})
+    if not_validated:
+        log(f"{len(not_validated)} scenario(s) skipped: their current version is not validated yet "
+            "(python scripts/validate_scenario.py --eligible --fill 5)")
     return chosen
 
 

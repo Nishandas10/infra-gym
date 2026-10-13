@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:34e686c0d1d7cedf88afd4e59db8c7ed10960968322b5fae8d617ab5a8612d44
 validation_hash: sha256:7089bb977249cc0255c23177b19cdaabb7e2be21045d4c6be03ed1cbe14cd388
+status: validated
 title: Database password rotated without updating the clients
 mechanism: datastore/db-credential-rotation
 split: train

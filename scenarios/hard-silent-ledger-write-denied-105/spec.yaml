@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:ae2bc27280c2380597ec955ff7d2706cabd9936aa88e23d116fe0ef1ca79b2a3
 validation_hash: sha256:9c844a06a0cfdc1f161d82ba6c028738735cbe1106a4b891931f97638e80a1c3
+status: validated
 title: Orders disappear between checkout and the accounting ledger (write permission revoked)
 mechanism: hard/silent-async-write-permission
 split: hard

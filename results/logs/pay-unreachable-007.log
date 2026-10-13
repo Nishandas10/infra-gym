@@ -1,17 +1,22 @@
-14:16:41 === pay-unreachable-007 (feature_flag)
-14:16:41   0. world healthy?
-14:16:46   1. baseline must PASS
-14:16:47       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
-14:16:47   2. inject
-14:16:47   3. verifier must FAIL (<= 120s)
-14:16:48       [FAIL   ] journey:checkout - 0/3 ok, avg 42ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:16:48   4. do-nothing agent: still FAIL after 30s?
-14:17:18       [FAIL   ] journey:checkout - 0/3 ok, avg 60ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:17:18       failing in 2/2 checks during the hold
-14:17:18   5. reference solution
-14:17:18     $ python injectors/toggle_flag.py paymentUnreachable --off
-14:17:19       'paymentUnreachable' -> off (flagd is serving it now)
-14:17:19   6. verifier must PASS (<= 120s)
-14:17:20       [PASS   ] journey:checkout - 3/3 ok, avg 50ms
-14:17:20   7. restore exactly
-14:17:25   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}
+02:52:08 === pay-unreachable-007 (app.flag)
+02:52:09   0. world healthy?
+02:52:19   1. baseline must PASS
+02:52:20       [PASS   ] journey:checkout - 3/3 ok, avg 80ms
+02:52:20   2. inject
+02:52:21   3. verifier must FAIL (<= 120s)
+02:52:22       [FAIL   ] journey:checkout - 0/3 ok, avg 93ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:52:22   4. do-nothing agent: still FAIL after 60s?
+02:53:22       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:53:22       failing in 5/5 checks during the hold
+02:53:22   5. reference solution
+02:53:22     $ python injectors/toggle_flag.py paymentUnreachable --off
+02:53:23       'paymentUnreachable' -> off (flagd is serving it now)
+02:53:23   6. verifier must PASS (<= 120s)
+02:53:24       [PASS   ] journey:checkout - 3/3 ok, avg 76ms
+02:53:24   6b. invariants must PASS (shop_health)
+02:53:25       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+02:53:25       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
+02:53:25       [PASS   ] journey:cart - 2/2 ok, avg 33ms
+02:53:25       [PASS   ] journey:checkout - 2/2 ok, avg 74ms
+02:53:25   7. restore exactly
+02:53:34   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

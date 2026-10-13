@@ -9,6 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:50561972d2d8a3c82684b131b16780811e001b7b0127394cd3aa6e897ed3c4d2
 validation_hash: sha256:9cb73dadfa6d343d962538e339557a3fff9a2debd32774cb90e4724f87b3ff42
+status: validated
 title: A security-hardening egress policy forgets the database port; everything points at the database
 mechanism: hard/egress-allowlist-omits-dependency-port
 split: hard
