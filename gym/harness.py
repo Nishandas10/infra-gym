@@ -60,17 +60,30 @@ def poll(check_list, want, timeout, interval=10, quiet=False):
         time.sleep(interval)
 
 
+STALE_ROLLOUT_RETRIES = 6   # 10 s apart; see run_solution
+
+
 def run_solution(commands):
     # Reference fixes call repo scripts as `python ...`: make that the interpreter running the
     # harness (e.g. the venv's), even when the venv is not activated.
     env = dict(os.environ, PATH=os.pathsep.join([os.path.dirname(sys.executable), os.environ.get("PATH", "")]))
     for cmd in commands:
         log(f"    $ {cmd}")
-        r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True, timeout=900, env=env)
-        out = (r.stdout + r.stderr).strip()
-        if out:
-            for line in out.splitlines()[-4:]:
-                log(f"      {line[:160]}")
+        for attempt in range(STALE_ROLLOUT_RETRIES + 1):
+            r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True, timeout=900, env=env)
+            out = (r.stdout + r.stderr).strip()
+            if out:
+                for line in out.splitlines()[-4:]:
+                    log(f"      {line[:160]}")
+            # A fault left in place longer than the Deployment's progress deadline (600 s) marks its rollout
+            # ProgressDeadlineExceeded. Right after the fix, `rollout status` can still read that condition
+            # before the controller has started the new rollout, and fails at once: wait and ask again.
+            if r.returncode != 0 and "rollout status" in cmd and "exceeded its progress deadline" in out \
+                    and attempt < STALE_ROLLOUT_RETRIES:
+                log("      (stale progress-deadline condition from the fault's rollout; retrying)")
+                time.sleep(10)
+                continue
+            break
         if r.returncode != 0:
             raise RuntimeError(f"solution command failed (exit {r.returncode}): {cmd}")
 
@@ -157,7 +170,9 @@ def durability_check(spec, spec_checks, v):
     return ok, t
 
 
-def validate(spec_path, world_timeout=300):
+def validate(spec_path, world_timeout=300, hold_s=None):
+    """One validation run. hold_s overrides the do-nothing hold of step 4; a long hold (the agent's whole
+    wall-clock budget) proves the fault stays broken for as long as an episode can last."""
     global _logfile
     spec, sdir = load(spec_path)
     sid = spec["id"]
@@ -172,6 +187,7 @@ def validate(spec_path, world_timeout=300):
            "content_hash": spec["content_hash"], "template_version": spec["instance_of"]["version"],
            "git_sha": None, "git_dirty": None, "env": None, "context": kube_context(),
            "started": datetime.datetime.now().isoformat(timespec="seconds"),
+           "hold_mode": "long" if hold_s else "normal",
            "timings": {}, "verdict": None, "notes": []}
     log(f"=== {sid} ({fault_label(spec)})")
     injected = False
@@ -204,7 +220,8 @@ def validate(spec_path, world_timeout=300):
             return rec
         # The hold must outlast every stability window. Otherwise a pod that merely
         # got replaced (young) would count as a persistent failure.
-        hold = max(v["hold_s"], min_age + 30)
+        hold = max(hold_s or v["hold_s"], min_age + 30)
+        rec["hold_s"] = hold
         log(f"  4. do-nothing agent: still FAIL after {hold}s?")
         # Keep exercising the system during the hold, as real users would; some faults
         # (leaks) only get worse with traffic.

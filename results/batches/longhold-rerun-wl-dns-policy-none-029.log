@@ -1,0 +1,38 @@
+
+##### pass 1/1: 1 scenario(s)
+16:10:58 === wl-dns-policy-none-029 (k8s.workload_patch)
+16:10:59   0. world healthy?
+16:11:11   1. baseline must PASS
+16:11:12       [PASS   ] journey:checkout - 3/3 ok, avg 155ms
+16:11:12   2. inject
+16:11:12   3. verifier must FAIL (<= 240s)
+16:11:58       [FAIL   ] journey:checkout - 0/3 ok, avg 15056ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+16:11:58   4. do-nothing agent: still FAIL after 900s?
+16:26:59       [FAIL   ] journey:checkout - 0/3 ok, avg 44ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+16:26:59       failing in 78/78 checks during the hold
+16:26:59   5. reference solution
+16:26:59     $ kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+16:26:59       deployment.apps/checkout patched
+16:26:59     $ kubectl rollout status deployment/checkout --timeout=300s
+16:26:59       error: deployment "checkout" exceeded its progress deadline
+16:26:59       (stale progress-deadline condition from the fault's rollout; retrying)
+16:27:36       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+16:27:36       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+16:27:36       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+16:27:36       deployment "checkout" successfully rolled out
+16:27:36   6. verifier must PASS (<= 300s)
+16:30:08       [PASS   ] journey:checkout - 3/3 ok, avg 640ms
+16:30:08   6b. invariants must PASS (shop_health)
+16:30:09       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+16:30:09       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+16:30:09       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+16:30:09       [PASS   ] journey:checkout - 2/2 ok, avg 94ms
+16:30:09   6c. the fix must survive a restart of deployment/checkout
+16:30:55       [PASS   ] journey:checkout - 3/3 ok, avg 100ms
+16:30:55   7. restore exactly
+16:31:06   => VALIDATED  {'world_ready_s': 12, 'detect_s': 46, 'recover_s': 152, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}
+
+SUMMARY (this run | status of the current version)
+  wl-dns-policy-none-029                           VALIDATED                                | validated (6/6 validated, long hold passed)
+
+Run python scripts/generate.py to write the new statuses into scenarios/ and CATALOG.md.

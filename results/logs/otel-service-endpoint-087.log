@@ -1,29 +1,28 @@
-02:46:20 === otel-service-endpoint-087 (k8s.workload_patch)
-02:46:20   0. world healthy?
-02:46:30   1. baseline must PASS
-02:46:31       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-02:46:31   2. inject
-02:46:31   3. verifier must FAIL (<= 300s)
-02:47:25       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-02:47:25   4. do-nothing agent: still FAIL after 60s?
-02:48:25       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-02:48:25       failing in 5/5 checks during the hold
-02:48:25   5. reference solution
-02:48:25     $ kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
-02:48:26       deployment.apps/checkout env updated
-02:48:26     $ kubectl rollout status deployment/checkout --timeout=300s
-02:48:29       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-02:48:29       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-02:48:29       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-02:48:29       deployment "checkout" successfully rolled out
-02:48:29   6. verifier must PASS (<= 300s)
-02:48:40       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-02:48:40   6b. invariants must PASS (shop_health)
-02:48:42       [PASS   ] journey:browse - 2/2 ok, avg 66ms
-02:48:42       [PASS   ] journey:recommendations - 2/2 ok, avg 70ms
-02:48:42       [PASS   ] journey:cart - 2/2 ok, avg 83ms
-02:48:42       [PASS   ] journey:checkout - 2/2 ok, avg 220ms
-02:48:42   6c. the fix must survive a restart of deployment/checkout
-02:49:29       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-02:49:29   7. restore exactly
-02:50:05   => VALIDATED  {'world_ready_s': 10, 'detect_s': 53, 'recover_s': 11, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 36}
+11:43:32 === otel-service-endpoint-087 (k8s.workload_patch)
+11:43:32   0. world healthy?
+11:43:41   1. baseline must PASS
+11:43:42       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+11:43:42   2. inject
+11:43:42   3. verifier must FAIL (<= 300s)
+11:44:46       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+11:44:46   4. do-nothing agent: still FAIL after 900s?
+11:59:46       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+11:59:46       failing in 85/85 checks during the hold
+11:59:46   5. reference solution
+11:59:46     $ kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
+11:59:46       deployment.apps/checkout env updated
+11:59:46     $ kubectl rollout status deployment/checkout --timeout=300s
+11:59:49       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+11:59:49       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+11:59:49       deployment "checkout" successfully rolled out
+11:59:49   6. verifier must PASS (<= 300s)
+12:00:52       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+12:00:52   6b. invariants must PASS (shop_health)
+12:00:53       [PASS   ] journey:browse - 2/2 ok, avg 39ms
+12:00:53       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+12:00:53       [PASS   ] journey:cart - 2/2 ok, avg 56ms
+12:00:53       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+12:00:53   6c. the fix must survive a restart of deployment/checkout
+12:01:39       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+12:01:39   7. restore exactly
+12:02:08   => VALIDATED  {'world_ready_s': 9, 'detect_s': 64, 'recover_s': 63, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 29}

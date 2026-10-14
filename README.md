@@ -268,7 +268,16 @@ A scenario's **status** is computed from the runs of its current version only (m
 `validation_hash`; `gym/core/status.py`, thresholds in `templates/defaults.yaml`): `validated`
 = at least 5 runs with at most 1 failure, `quarantined` = 2 or more failures, `draft` = fewer runs.
 Runs that found the world already broken (`ENV_UNHEALTHY`) do not count. Changing anything a run
-depends on resets the evidence. Only `validated` scenarios can enter a suite.
+depends on resets the evidence.
+
+A normal run holds the fault for `hold_s` (60 s) before the reference fix, but an agent may work on it for up to
+`budget.wall_s` (15–30 min). `--long-hold` keeps the do-nothing hold going for that whole budget, so a scenario that
+heals itself (a crashed process that releases a lock, a lag that drains) is caught. Only `validated` scenarios with at
+least one passing long-hold run can enter a suite:
+
+```bash
+python scripts/validate_scenario.py --suite bench-v1-dev --long-hold   # resumable; skips members that already passed
+```
 
 ## Benchmark
 

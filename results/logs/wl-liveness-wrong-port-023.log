@@ -1,39 +1,39 @@
-03:26:19 === wl-liveness-wrong-port-023 (k8s.workload_patch)
-03:26:19   0. world healthy?
-03:26:27   1. baseline must PASS
-03:26:28       [PASS   ] journey:browse - 4/4 ok, avg 19ms
-03:26:28       [PASS   ] journey:catalog - 4/4 ok, avg 18ms
-03:26:28       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
-03:26:28   2. inject
-03:26:28   3. verifier must FAIL (<= 240s)
-03:26:29       [PASS   ] journey:browse - 4/4 ok, avg 21ms
-03:26:29       [PASS   ] journey:catalog - 4/4 ok, avg 20ms
-03:26:29       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-h7996 is only 0s old
-03:26:29   4. do-nothing agent: still FAIL after 150s?
-03:29:00       [FAIL   ] journey:browse - 0/4 ok, avg 14ms; e.g. GET /api/products/OLJCESPC7Z -> 500 b'Internal Server Error'
-03:29:00       [FAIL   ] journey:catalog - 0/4 ok, avg 12ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-03:29:00       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-67795d8b54-h7996/product-catalog restarted 56s ago (Completed)
-03:29:00       failing in 14/14 checks during the hold
-03:29:00   5. reference solution
-03:29:00     $ kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
-03:29:01       deployment.apps/product-catalog patched
-03:29:01     $ kubectl rollout status deployment/product-catalog --timeout=300s
-03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-03:29:03       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-03:29:03       deployment "product-catalog" successfully rolled out
-03:29:03   6. verifier must PASS (<= 360s)
-03:31:02       [PASS   ] journey:browse - 4/4 ok, avg 18ms
-03:31:02       [PASS   ] journey:catalog - 4/4 ok, avg 14ms
-03:31:02       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
-03:31:02   6b. invariants must PASS (shop_health)
-03:31:03       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-03:31:03       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
-03:31:03       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-03:31:03       [PASS   ] journey:checkout - 2/2 ok, avg 72ms
-03:31:03   6c. the fix must survive a restart of deployment/product-catalog
-03:33:04       [PASS   ] journey:browse - 4/4 ok, avg 18ms
-03:33:04       [PASS   ] journey:catalog - 4/4 ok, avg 14ms
-03:33:04       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
-03:33:04   7. restore exactly
-03:33:13   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 119, 'invariants_s': 1, 'durable_s': 76, 'restore_s': 8}
+13:49:01 === wl-liveness-wrong-port-023 (k8s.workload_patch)
+13:49:01   0. world healthy?
+13:49:11   1. baseline must PASS
+13:49:12       [PASS   ] journey:browse - 4/4 ok, avg 26ms
+13:49:12       [PASS   ] journey:catalog - 4/4 ok, avg 22ms
+13:49:12       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+13:49:12   2. inject
+13:49:12   3. verifier must FAIL (<= 240s)
+13:49:13       [PASS   ] journey:browse - 4/4 ok, avg 29ms
+13:49:13       [PASS   ] journey:catalog - 4/4 ok, avg 20ms
+13:49:13       [FAIL   ] pods_stable:opentelemetry.io/name=product-catalog - product-catalog-55b786bfdc-6zjln is only 1s old
+13:49:13   4. do-nothing agent: still FAIL after 900s?
+14:04:14       [FAIL   ] journey:browse - 0/4 ok, avg 16ms; e.g. GET /api/products/L9ECAV7KIM -> 500 b'Internal Server Error'
+14:04:14       [FAIL   ] journey:catalog - 0/4 ok, avg 18ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+14:04:14       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+14:04:14       failing in 71/72 checks during the hold
+14:04:14   5. reference solution
+14:04:14     $ kubectl patch deployment product-catalog --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/livenessProbe"}]'
+14:04:14       deployment.apps/product-catalog patched
+14:04:14     $ kubectl rollout status deployment/product-catalog --timeout=300s
+14:04:16       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+14:04:16       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+14:04:16       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+14:04:16       deployment "product-catalog" successfully rolled out
+14:04:16   6. verifier must PASS (<= 360s)
+14:06:17       [PASS   ] journey:browse - 4/4 ok, avg 33ms
+14:06:17       [PASS   ] journey:catalog - 4/4 ok, avg 16ms
+14:06:17       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+14:06:17   6b. invariants must PASS (shop_health)
+14:06:29       [PASS   ] journey:browse - 2/2 ok, avg 25ms
+14:06:29       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+14:06:29       [PASS   ] journey:cart - 2/2 ok, avg 52ms
+14:06:29       [PASS   ] journey:checkout - 2/2 ok, avg 153ms
+14:06:29   6c. the fix must survive a restart of deployment/product-catalog
+14:08:31       [PASS   ] journey:browse - 4/4 ok, avg 18ms
+14:08:31       [PASS   ] journey:catalog - 4/4 ok, avg 18ms
+14:08:31       [PASS   ] pods_stable:opentelemetry.io/name=product-catalog - 1 pod(s) stable for >= 120s (opentelemetry.io/name=product-catalog)
+14:08:31   7. restore exactly
+14:08:40   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 120, 'invariants_s': 12, 'durable_s': 77, 'restore_s': 9}

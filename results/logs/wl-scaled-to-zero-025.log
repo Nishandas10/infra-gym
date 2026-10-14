@@ -1,32 +1,33 @@
-03:20:17 === wl-scaled-to-zero-025 (k8s.workload_patch)
-03:20:18   0. world healthy?
-03:20:28   1. baseline must PASS
-03:20:29       [PASS   ] journey:checkout - 3/3 ok, avg 125ms
-03:20:29       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-03:20:29   2. inject
-03:20:29   3. verifier must FAIL (<= 240s)
-03:21:15       [FAIL   ] journey:checkout - 0/3 ok, avg 15061ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-03:21:15       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-03:21:15   4. do-nothing agent: still FAIL after 60s?
-03:22:43       [FAIL   ] journey:checkout - 0/3 ok, avg 9224ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-03:22:43       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-03:22:43       failing in 1/1 checks during the hold
-03:22:43   5. reference solution
-03:22:43     $ kubectl scale deployment checkout --replicas=1
-03:22:43       deployment.apps/checkout scaled
-03:22:43     $ kubectl rollout status deployment/checkout --timeout=300s
-03:22:45       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
-03:22:45       deployment "checkout" successfully rolled out
-03:22:45   6. verifier must PASS (<= 300s)
-03:22:57       [PASS   ] journey:checkout - 3/3 ok, avg 306ms
-03:22:57       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-03:22:57   6b. invariants must PASS (shop_health)
-03:22:58       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-03:22:58       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
-03:22:58       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-03:22:58       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
-03:22:58   6c. the fix must survive a restart of deployment/checkout
-03:23:44       [PASS   ] journey:checkout - 3/3 ok, avg 104ms
-03:23:44       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-03:23:44   7. restore exactly
-03:23:53   => VALIDATED  {'world_ready_s': 10, 'detect_s': 46, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+14:28:05 === wl-scaled-to-zero-025 (k8s.workload_patch)
+14:28:05   0. world healthy?
+14:28:14   1. baseline must PASS
+14:28:14       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
+14:28:14       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:28:14   2. inject
+14:28:15   3. verifier must FAIL (<= 240s)
+14:29:00       [FAIL   ] journey:checkout - 0/3 ok, avg 15039ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+14:29:00       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+14:29:00   4. do-nothing agent: still FAIL after 900s?
+14:44:01       [FAIL   ] journey:checkout - 0/3 ok, avg 38ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:44:01       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+14:44:01       failing in 77/77 checks during the hold
+14:44:01   5. reference solution
+14:44:01     $ kubectl scale deployment checkout --replicas=1
+14:44:01       deployment.apps/checkout scaled
+14:44:01     $ kubectl rollout status deployment/checkout --timeout=300s
+14:44:04       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+14:44:04       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+14:44:04       deployment "checkout" successfully rolled out
+14:44:04   6. verifier must PASS (<= 300s)
+14:44:06       [PASS   ] journey:checkout - 3/3 ok, avg 457ms
+14:44:06       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:44:06   6b. invariants must PASS (shop_health)
+14:44:07       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+14:44:07       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
+14:44:07       [PASS   ] journey:cart - 2/2 ok, avg 43ms
+14:44:07       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
+14:44:07   6c. the fix must survive a restart of deployment/checkout
+14:44:53       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+14:44:53       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:44:53   7. restore exactly
+14:45:02   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 2, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

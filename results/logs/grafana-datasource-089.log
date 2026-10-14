@@ -1,22 +1,22 @@
-02:30:20 === grafana-datasource-089 (k8s.configmap_edit)
-02:30:21   0. world healthy?
-02:30:29   1. baseline must PASS
-02:30:30       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 169ms
-02:30:30   2. inject
-02:30:30   3. verifier must FAIL (<= 300s)
-02:30:53       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12039ms (expected 200) 'TimeoutError: timed out'
-02:30:53   4. do-nothing agent: still FAIL after 60s?
-02:32:13       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12048ms (expected 200) 'TimeoutError: timed out'
-02:32:13       failing in 3/3 checks during the hold
-02:32:13   5. reference solution
-02:32:13     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -
-02:32:13       configmap/grafana-datasources replaced
-02:32:13   6. verifier must PASS (<= 300s)
-02:32:14       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 90ms
-02:32:14   6b. invariants must PASS (shop_health)
-02:32:15       [PASS   ] journey:browse - 2/2 ok, avg 38ms
-02:32:15       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
-02:32:15       [PASS   ] journey:cart - 2/2 ok, avg 39ms
-02:32:15       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
-02:32:15   7. restore exactly
-02:32:24   => VALIDATED  {'world_ready_s': 8, 'detect_s': 23, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+11:22:52 === grafana-datasource-089 (k8s.configmap_edit)
+11:22:53   0. world healthy?
+11:23:02   1. baseline must PASS
+11:23:03       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 670ms
+11:23:03   2. inject
+11:23:03   3. verifier must FAIL (<= 300s)
+11:23:26       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12038ms (expected 200) 'TimeoutError: timed out'
+11:23:26   4. do-nothing agent: still FAIL after 900s?
+11:38:38       [FAIL   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> no response in 12044ms (expected 200) 'TimeoutError: timed out'
+11:38:38       failing in 40/40 checks during the hold
+11:38:38   5. reference solution
+11:38:38     $ kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -
+11:38:39       configmap/grafana-datasources replaced
+11:38:39   6. verifier must PASS (<= 300s)
+11:38:39       [PASS   ] http:http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health - GET http://grafana.default.svc.cluster.local/grafana/api/datasources/uid/webstore-metrics/health -> 200 in 60ms
+11:38:39   6b. invariants must PASS (shop_health)
+11:38:40       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+11:38:40       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+11:38:40       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+11:38:40       [PASS   ] journey:checkout - 2/2 ok, avg 81ms
+11:38:40   7. restore exactly
+11:38:49   => VALIDATED  {'world_ready_s': 9, 'detect_s': 23, 'recover_s': 0, 'invariants_s': 1, 'restore_s': 9}

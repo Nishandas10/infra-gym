@@ -1,26 +1,26 @@
-02:24:58 === pg-lock-held-081 (k8s.create_objects)
-02:24:59   0. world healthy?
-02:25:09   1. baseline must PASS
-02:25:10       [PASS   ] journey:browse - 3/3 ok, avg 57ms
-02:25:10       [PASS   ] journey:catalog - 3/3 ok, avg 36ms
-02:25:10   2. inject
-02:25:10   3. verifier must FAIL (<= 240s)
-02:25:58       [FAIL   ] journey:browse - 0/3 ok, avg 6035ms; e.g. GET /api/products/L9ECAV7KIM -> no response b'TimeoutError: timed out'
-02:25:58       [FAIL   ] journey:catalog - 0/3 ok, avg 6028ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-02:25:58   4. do-nothing agent: still FAIL after 60s?
-02:27:34       [FAIL   ] journey:browse - 0/3 ok, avg 6021ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'TimeoutError: timed out'
-02:27:34       [FAIL   ] journey:catalog - 0/3 ok, avg 6015ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-02:27:34       failing in 1/2 checks during the hold
-02:27:34   5. reference solution
-02:27:34     $ kubectl delete deployment catalog-maintenance
-02:27:34       deployment.apps "catalog-maintenance" deleted from default namespace
-02:27:34   6. verifier must PASS (<= 300s)
-02:27:35       [PASS   ] journey:browse - 3/3 ok, avg 25ms
-02:27:35       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
-02:27:35   6b. invariants must PASS (shop_health)
-02:27:36       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-02:27:36       [PASS   ] journey:recommendations - 2/2 ok, avg 43ms
-02:27:36       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-02:27:36       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
-02:27:36   7. restore exactly
-02:27:44   => VALIDATED  {'world_ready_s': 10, 'detect_s': 48, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 8}
+06:52:04 === pg-lock-held-081 (k8s.create_objects)
+06:52:05   0. world healthy?
+06:52:13   1. baseline must PASS
+06:52:14       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+06:52:14       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+06:52:14   2. inject
+06:52:14   3. verifier must FAIL (<= 240s)
+06:53:02       [FAIL   ] journey:browse - 0/3 ok, avg 6032ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
+06:53:02       [FAIL   ] journey:catalog - 0/3 ok, avg 6015ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+06:53:02   4. do-nothing agent: still FAIL after 900s?
+07:08:10       [FAIL   ] journey:browse - 0/3 ok, avg 366ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
+07:08:10       [FAIL   ] journey:catalog - 0/3 ok, avg 2096ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+07:08:10       failing in 29/44 checks during the hold
+07:08:10   5. reference solution
+07:08:10     $ kubectl delete deployment catalog-maintenance
+07:08:10       deployment.apps "catalog-maintenance" deleted from default namespace
+07:08:10   6. verifier must PASS (<= 300s)
+07:09:28       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+07:09:28       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+07:09:28   6b. invariants must PASS (shop_health)
+07:09:29       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+07:09:29       [PASS   ] journey:recommendations - 2/2 ok, avg 59ms
+07:09:29       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+07:09:29       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+07:09:29   7. restore exactly
+07:09:38   => VALIDATED  {'world_ready_s': 8, 'detect_s': 47, 'recover_s': 79, 'invariants_s': 1, 'restore_s': 9}

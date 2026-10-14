@@ -1844,7 +1844,7 @@
   ],
   "prompt": "Customers cannot complete checkout: the payment step fails. Find the cause and fix it.",
   "solution": [
-   "kubectl delete cronjob payment-config-sync",
+   "kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s",
    "kubectl set env deployment/payment PAYMENT_PORT=8080",
    "kubectl rollout status deployment/payment --timeout=300s"
   ],
@@ -6480,7 +6480,7 @@
    "detect_timeout_s": 240,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300,
+   "recover_timeout_s": 600,
    "restart_settle_s": 45
   }
  },

@@ -1,0 +1,18 @@
+13:18:27 === wl-dns-policy-none-029 (k8s.workload_patch)
+13:18:27   0. world healthy?
+13:18:37   1. baseline must PASS
+13:18:37       [PASS   ] journey:checkout - 3/3 ok, avg 81ms
+13:18:37   2. inject
+13:18:37   3. verifier must FAIL (<= 240s)
+13:19:23       [FAIL   ] journey:checkout - 0/3 ok, avg 15038ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:19:23   4. do-nothing agent: still FAIL after 900s?
+13:34:24       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:34:24       failing in 78/78 checks during the hold
+13:34:24   5. reference solution
+13:34:24     $ kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+13:34:24       deployment.apps/checkout patched
+13:34:24     $ kubectl rollout status deployment/checkout --timeout=300s
+13:34:24       error: deployment "checkout" exceeded its progress deadline
+13:34:24   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/checkout --timeout=300s
+13:34:24   7. restore exactly
+13:36:08   => ERROR  {'world_ready_s': 9, 'detect_s': 46, 'restore_s': 104}

@@ -2,13 +2,13 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: wl-nodeselector-018
-version: 1
+version: 2
 instance_of:
   template: wl-nodeselector-018
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:a9d4628e03fa8f84d37fc691680715081cda333fddeca311f1c76c5f980365a9
-validation_hash: sha256:f3c1b12b095cc57a3a66575e028c4e4c4ebf9931e8ad05d3f50d0ff661de49f2
+content_hash: sha256:dc1b89b5674557cfbf2a6f35e1a1e1817c637aa299ffcc2fbb0b6b3d3ad5ee49
+validation_hash: sha256:664b4dbdcaa67c31d20aa5d11a412f3367e989e37e4d98ac2b4060f7431d4f7a
 status: validated
 title: nodeSelector matches no node -> Pending
 mechanism: workload/unschedulable-node-selector
@@ -81,6 +81,11 @@ validation:
   baseline_timeout_s: 120
   detect_timeout_s: 240
   hold_s: 60
-  recover_timeout_s: 300
+  recover_timeout_s: 600
   poll_s: 10
   restart_settle_s: 45
+notes:
+- 'v2 (2026-10-14): recover_timeout_s 600 (default 300). After a long hold the restarted ad JVM once stalled near
+  its memory limit without listening (ad has no readiness probe, so the pod still counted Ready), was OOM-killed
+  after about 6 minutes and then served normally. One such restart cycle is part of the world, not of this fault,
+  so the recovery window covers it.'

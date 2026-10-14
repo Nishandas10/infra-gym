@@ -1,27 +1,27 @@
-02:17:03 === compound-red-herring-092 (composite)
-02:17:04   0. world healthy?
-02:17:14   1. baseline must PASS
-02:17:15       [PASS   ] journey:checkout - 3/3 ok, avg 95ms
-02:17:15   2. inject
-02:17:16   3. verifier must FAIL (<= 240s)
-02:17:21       [FAIL   ] journey:checkout - 0/3 ok, avg 1723ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-02:17:21   4. do-nothing agent: still FAIL after 60s?
-02:18:22       [FAIL   ] journey:checkout - 0/3 ok, avg 58ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-02:18:22       failing in 5/5 checks during the hold
-02:18:22   5. reference solution
-02:18:22     $ kubectl scale deployment quote --replicas=1
-02:18:22       deployment.apps/quote scaled
-02:18:22     $ kubectl rollout status deployment/quote --timeout=300s
-02:18:23       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
-02:18:23       deployment "quote" successfully rolled out
-02:18:23   6. verifier must PASS (<= 300s)
-02:18:24       [PASS   ] journey:checkout - 3/3 ok, avg 168ms
-02:18:24   6b. invariants must PASS (shop_health)
-02:18:25       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-02:18:25       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
-02:18:25       [PASS   ] journey:cart - 2/2 ok, avg 71ms
-02:18:25       [PASS   ] journey:checkout - 2/2 ok, avg 110ms
-02:18:25   6c. the fix must survive a restart of deployment/quote
-02:19:11       [PASS   ] journey:checkout - 3/3 ok, avg 93ms
-02:19:11   7. restore exactly
-02:19:20   => VALIDATED  {'world_ready_s': 10, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+12:58:25 === compound-red-herring-092 (composite)
+12:58:26   0. world healthy?
+12:58:35   1. baseline must PASS
+12:58:35       [PASS   ] journey:checkout - 3/3 ok, avg 81ms
+12:58:35   2. inject
+12:58:36   3. verifier must FAIL (<= 240s)
+12:58:42       [FAIL   ] journey:checkout - 0/3 ok, avg 1722ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:58:42   4. do-nothing agent: still FAIL after 900s?
+13:13:42       [FAIL   ] journey:checkout - 0/3 ok, avg 51ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:13:42       failing in 83/83 checks during the hold
+13:13:42   5. reference solution
+13:13:42     $ kubectl scale deployment quote --replicas=1
+13:13:42       deployment.apps/quote scaled
+13:13:42     $ kubectl rollout status deployment/quote --timeout=300s
+13:13:43       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+13:13:43       deployment "quote" successfully rolled out
+13:13:43   6. verifier must PASS (<= 300s)
+13:13:55       [PASS   ] journey:checkout - 3/3 ok, avg 199ms
+13:13:55   6b. invariants must PASS (shop_health)
+13:13:56       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+13:13:56       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
+13:13:56       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+13:13:56       [PASS   ] journey:checkout - 2/2 ok, avg 101ms
+13:13:56   6c. the fix must survive a restart of deployment/quote
+13:14:42       [PASS   ] journey:checkout - 3/3 ok, avg 108ms
+13:14:42   7. restore exactly
+13:14:52   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

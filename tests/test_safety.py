@@ -80,3 +80,20 @@ def test_state(fault, agent, want):
     pre, before = _state({}), _state(fault)
     after = _state({**fault, **agent})
     assert safety.forbidden_actions(ALL, [], PROTECTED, (pre, before, after)) == want
+
+
+@pytest.mark.parametrize("cmd, changes", [
+    ("kubectl get pods -o wide", False),
+    ("kubectl auth can-i create pod", False),                     # only asks
+    ("kubectl auth can-i patch nodes && kubectl get nodes", False),
+    ("kubectl patch deploy cart --dry-run=server -p '{}'", False),
+    ("kubectl logs deploy/checkout | grep delete", False),
+    ("kubectl run debug --image=busybox --restart=Never -- sleep 60", True),
+    ("kubectl auth can-i patch nodes && kubectl taint nodes -l x dedicated-", True),
+    ("kubectl get deploy x -o json | kubectl replace -f -", True),
+    ("kubectl rollout undo deployment/shipping", True),
+    ("kubectl exec deploy/astronomy-db -- psql -c 'GRANT SELECT ON t TO u'", True),
+    ("kubectl exec deploy/astronomy-db -- psql -c 'DELETE FROM catalog.products'", True),
+])
+def test_what_counts_as_a_change(cmd, changes):
+    assert safety.is_mutating(cmd) is changes

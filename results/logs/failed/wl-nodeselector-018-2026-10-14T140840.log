@@ -1,0 +1,21 @@
+14:08:40 === wl-nodeselector-018 (k8s.workload_patch)
+14:08:41   0. world healthy?
+14:08:50   1. baseline must PASS
+14:08:51       [PASS   ] journey:ads - 3/3 ok, avg 53ms
+14:08:51       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+14:08:51   2. inject
+14:08:51   3. verifier must FAIL (<= 240s)
+14:08:52       [FAIL   ] journey:ads - 0/3 ok, avg 42ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+14:08:52       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-7cc9f7f785-6mc8q (Pending)
+14:08:52   4. do-nothing agent: still FAIL after 900s?
+14:23:53       [FAIL   ] journey:ads - 0/3 ok, avg 30ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+14:23:53       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-7cc9f7f785-6mc8q (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
+14:23:53       failing in 84/84 checks during the hold
+14:23:53   5. reference solution
+14:23:53     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+14:23:53       deployment.apps/ad patched
+14:23:53     $ kubectl rollout status deployment/ad --timeout=300s
+14:23:53       error: deployment "ad" exceeded its progress deadline
+14:23:53   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/ad --timeout=300s
+14:23:53   7. restore exactly
+14:24:04   => ERROR  {'world_ready_s': 9, 'detect_s': 1, 'restore_s': 11}

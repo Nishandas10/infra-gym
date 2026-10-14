@@ -1,29 +1,29 @@
-02:54:57 === prometheus-otlp-disabled-088 (k8s.workload_patch)
-02:54:58   0. world healthy?
-02:55:08   1. baseline must PASS
-02:55:08       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 3.69492
-02:55:08   2. inject
-02:55:08   3. verifier must FAIL (<= 300s)
-02:55:24       [UNKNOWN] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - prometheus query failed: HTTP 0
-02:55:24   4. do-nothing agent: still FAIL after 60s?
-02:56:25       [FAIL   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - no data for sum(rate(http_server_request_duration_seconds_count[1m]))
-02:56:25       failing in 5/5 checks during the hold
-02:56:25   5. reference solution
-02:56:25     $ kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
-02:56:25       deployment.apps/prometheus patched
-02:56:25     $ kubectl rollout status deployment/prometheus --timeout=240s
-02:56:58       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
-02:56:58       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
-02:56:58       Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
-02:56:58       deployment "prometheus" successfully rolled out
-02:56:58   6. verifier must PASS (<= 360s)
-02:56:58       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 0.435172
-02:56:58   6b. invariants must PASS (shop_health)
-02:56:59       [PASS   ] journey:browse - 2/2 ok, avg 44ms
-02:56:59       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
-02:56:59       [PASS   ] journey:cart - 2/2 ok, avg 70ms
-02:56:59       [PASS   ] journey:checkout - 2/2 ok, avg 118ms
-02:56:59   6c. the fix must survive a restart of deployment/prometheus
-02:57:45       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 2.81465
-02:57:45   7. restore exactly
-02:57:55   => VALIDATED  {'world_ready_s': 10, 'detect_s': 16, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+11:38:49 === prometheus-otlp-disabled-088 (k8s.workload_patch)
+11:38:50   0. world healthy?
+11:38:59   1. baseline must PASS
+11:38:59       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 3.72
+11:38:59   2. inject
+11:38:59   3. verifier must FAIL (<= 300s)
+11:39:15       [UNKNOWN] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - prometheus query failed: HTTP 0
+11:39:15   4. do-nothing agent: still FAIL after 900s?
+11:54:15       [FAIL   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - no data for sum(rate(http_server_request_duration_seconds_count[1m]))
+11:54:15       failing in 86/86 checks during the hold
+11:54:15   5. reference solution
+11:54:15     $ kubectl patch deployment prometheus --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--web.enable-otlp-receiver"}]'
+11:54:15       deployment.apps/prometheus patched
+11:54:15     $ kubectl rollout status deployment/prometheus --timeout=240s
+11:54:49       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+11:54:49       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+11:54:49       Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+11:54:49       deployment "prometheus" successfully rolled out
+11:54:49   6. verifier must PASS (<= 360s)
+11:54:49       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 0.509123
+11:54:49   6b. invariants must PASS (shop_health)
+11:54:50       [PASS   ] journey:browse - 2/2 ok, avg 38ms
+11:54:50       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
+11:54:50       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+11:54:50       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+11:54:50   6c. the fix must survive a restart of deployment/prometheus
+11:55:36       [PASS   ] prometheus:sum(rate(http_server_request_duration_seconds_count[1m])) - sum(rate(http_server_request_duration_seconds_count[1m])) = 2.76723
+11:55:36   7. restore exactly
+11:55:47   => VALIDATED  {'world_ready_s': 9, 'detect_s': 16, 'recover_s': 0, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}

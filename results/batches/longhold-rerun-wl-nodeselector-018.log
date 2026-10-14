@@ -1,0 +1,32 @@
+
+##### pass 1/1: 1 scenario(s)
+16:10:58 === wl-nodeselector-018 (k8s.workload_patch)
+16:10:59   0. world healthy?
+16:11:10   1. baseline must PASS
+16:11:11       [PASS   ] journey:ads - 3/3 ok, avg 29ms
+16:11:11       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:11:11   2. inject
+16:11:11   3. verifier must FAIL (<= 240s)
+16:11:12       [FAIL   ] journey:ads - 0/3 ok, avg 40ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:11:12       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+16:11:12   4. do-nothing agent: still FAIL after 900s?
+16:26:13       [FAIL   ] journey:ads - 0/3 ok, avg 32ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:26:13       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-67874fbb54-92rx6 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
+16:26:13       failing in 83/83 checks during the hold
+16:26:13   5. reference solution
+16:26:13     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+16:26:13       deployment.apps/ad patched
+16:26:13     $ kubectl rollout status deployment/ad --timeout=300s
+16:26:13       error: deployment "ad" exceeded its progress deadline
+16:26:13       (stale progress-deadline condition from the fault's rollout; retrying)
+16:26:23       deployment "ad" successfully rolled out
+16:26:23   6. verifier must PASS (<= 300s)
+16:31:57       [FAIL   ] journey:ads - 0/3 ok, avg 8051ms; e.g. GET /api/data -> no response b'TimeoutError: timed out'
+16:31:57       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:31:57   7. restore exactly
+16:32:09   => FIX_DID_NOT_RECOVER  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 334, 'restore_s': 12}
+
+SUMMARY (this run | status of the current version)
+  wl-nodeselector-018                              FIX_DID_NOT_RECOVER                      | validated (5/6 validated (FIX_DID_NOT_RECOVER 1))
+
+Run python scripts/generate.py to write the new statuses into scenarios/ and CATALOG.md.

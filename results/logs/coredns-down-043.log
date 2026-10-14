@@ -1,33 +1,34 @@
-01:54:31 === coredns-down-043 (k8s.workload_patch)
-01:54:31   0. world healthy?
-01:54:40   1. baseline must PASS
-01:54:40       [PASS   ] journey:home - 3/3 ok, avg 15ms
-01:54:40       [PASS   ] journey:browse - 3/3 ok, avg 39ms
-01:54:40   2. inject
-01:54:40   3. verifier must FAIL (<= 240s)
-01:55:22       [FAIL   ] journey:home - 0/3 ok, avg 5005ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
-01:55:22       [FAIL   ] journey:browse - 0/3 ok, avg 5006ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'URLError: <urlopen error [Errno -3] Try again>'
-01:55:22   4. do-nothing agent: still FAIL after 60s?
-01:57:13       [FAIL   ] journey:home - 0/3 ok, avg 5006ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
-01:57:13       [FAIL   ] journey:browse - 0/3 ok, avg 5008ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'URLError: <urlopen error [Errno -3] Try again>'
-01:57:13       failing in 2/2 checks during the hold
-01:57:13   5. reference solution
-01:57:13     $ kubectl -n kube-system scale deployment coredns --replicas=2
-01:57:14       deployment.apps/coredns scaled
-01:57:14     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
-01:57:24       Waiting for deployment "coredns" rollout to finish: 0 of 2 updated replicas are available...
-01:57:24       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
-01:57:24       deployment "coredns" successfully rolled out
-01:57:24   6. verifier must PASS (<= 300s)
-01:57:25       [PASS   ] journey:home - 3/3 ok, avg 19ms
-01:57:25       [PASS   ] journey:browse - 3/3 ok, avg 45ms
-01:57:25   6b. invariants must PASS (shop_health)
-01:57:26       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-01:57:26       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
-01:57:26       [PASS   ] journey:cart - 2/2 ok, avg 51ms
-01:57:26       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
-01:57:26   6c. the fix must survive a restart of deployment/coredns
-01:58:12       [PASS   ] journey:home - 3/3 ok, avg 25ms
-01:58:12       [PASS   ] journey:browse - 3/3 ok, avg 27ms
-01:58:12   7. restore exactly
-01:58:21   => VALIDATED  {'world_ready_s': 8, 'detect_s': 41, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+12:08:56 === coredns-down-043 (k8s.workload_patch)
+12:08:57   0. world healthy?
+12:09:06   1. baseline must PASS
+12:09:06       [PASS   ] journey:home - 3/3 ok, avg 18ms
+12:09:06       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+12:09:06   2. inject
+12:09:06   3. verifier must FAIL (<= 240s)
+12:09:48       [FAIL   ] journey:home - 0/3 ok, avg 5006ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+12:09:48       [FAIL   ] journey:browse - 0/3 ok, avg 5007ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+12:09:48   4. do-nothing agent: still FAIL after 900s?
+12:25:18       [FAIL   ] journey:home - 0/3 ok, avg 5005ms; e.g. GET / -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+12:25:18       [FAIL   ] journey:browse - 0/3 ok, avg 5007ms; e.g. GET /api/products/2ZYFJ3GM2N -> no response b'URLError: <urlopen error [Errno -3] Try again>'
+12:25:18       failing in 22/22 checks during the hold
+12:25:18   5. reference solution
+12:25:18     $ kubectl -n kube-system scale deployment coredns --replicas=2
+12:25:18       deployment.apps/coredns scaled
+12:25:18     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+12:25:30       Waiting for deployment "coredns" rollout to finish: 0 out of 2 new replicas have been updated...
+12:25:30       Waiting for deployment "coredns" rollout to finish: 0 of 2 updated replicas are available...
+12:25:30       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+12:25:30       deployment "coredns" successfully rolled out
+12:25:30   6. verifier must PASS (<= 300s)
+12:25:30       [PASS   ] journey:home - 3/3 ok, avg 20ms
+12:25:30       [PASS   ] journey:browse - 3/3 ok, avg 33ms
+12:25:30   6b. invariants must PASS (shop_health)
+12:25:31       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+12:25:31       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
+12:25:31       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+12:25:31       [PASS   ] journey:checkout - 2/2 ok, avg 101ms
+12:25:31   6c. the fix must survive a restart of deployment/coredns
+12:26:17       [PASS   ] journey:home - 3/3 ok, avg 17ms
+12:26:17       [PASS   ] journey:browse - 3/3 ok, avg 35ms
+12:26:17   7. restore exactly
+12:26:26   => VALIDATED  {'world_ready_s': 9, 'detect_s': 41, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

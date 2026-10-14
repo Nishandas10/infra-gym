@@ -2,13 +2,13 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: hard-fix-reverted-by-cronjob-101
-version: 1
+version: 2
 instance_of:
   template: hard-fix-reverted-by-cronjob-101
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:fe7af5f1ac1a064c031d601a9564f271e18b724d03b65853e18f2b1366c27f3a
-validation_hash: sha256:3ee0b67e16e97619ca57c184739a68aeae60a12c245515f747320dfcc1f8637b
+content_hash: sha256:8c3d87c143c998482df7ff32288d77026885991a78c045112044d72a6c80ec69
+validation_hash: sha256:728551df6388bc0e81cb5a6774175c51b64e5f72dd64e7d34e34d0e3b02ecaef
 status: validated
 title: Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute
 mechanism: hard/drift-reapplied-by-automation
@@ -164,10 +164,11 @@ ground_truth:
     get cronjobs,jobs` show payment-config-sync re-applying the bad value every minute.'
 reference:
   commands:
-  - kubectl delete cronjob payment-config-sync
+  - kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
-  fix: Stop the payment-config-sync CronJob (delete or suspend it) and set PAYMENT_PORT back to 8080.
+  fix: Stop the payment-config-sync CronJob (delete or suspend it, and make sure none of its Jobs is still running)
+    and set PAYMENT_PORT back to 8080.
   traps:
   - 'Fixing only the Deployment: passes for under a minute, then the verifier''s hold/stability check fails.'
   - 'Not verifying after the fix: the re-break happens after the agent declares success.'
@@ -178,6 +179,10 @@ validation:
   recover_timeout_s: 420
   poll_s: 10
   restart_settle_s: 45
+notes:
+- 'v2 (2026-10-14): the reference deletes the CronJob with --cascade=foreground. With a plain delete its Jobs are
+  removed in the background, so a Job pod already running could re-apply PAYMENT_PORT=8081 after the fix; a long-hold
+  validation run failed that way (FIX_DID_NOT_RECOVER) after 5 passing short-hold runs.'
 meta:
   tier: hard
   layers: 3

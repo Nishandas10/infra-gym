@@ -7,7 +7,12 @@ usage:
   python scripts/validate_scenario.py --eligible --repeat 5    every bench-eligible scenario 5 more times
   python scripts/validate_scenario.py --eligible --fill 5      top up to 5 runs of the current version
                                                                 (skips quarantined ones; resumable)
+  python scripts/validate_scenario.py --suite bench-v1-dev --long-hold
+                                                                one run per member whose do-nothing hold lasts
+                                                                the agent's whole budget (budget.wall_s); skips
+                                                                members that already passed one (resumable)
   options: --split hard|train   only that tier;  --hard-first   Hard tier first
+           --suite NAME   only the members of that suite (repeatable)
            --shard 2/3   only every 3rd scenario starting with the 2nd (one worker per cluster)
 
 Parallel: one world per worker. Give each worker its own cluster and shard, e.g.
@@ -28,8 +33,8 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from gym import harness, toolbox  # noqa: E402
-from gym.core import status  # noqa: E402
-from gym.spec import all_specs, load  # noqa: E402
+from gym.core import status, suites  # noqa: E402
+from gym.spec import REPO, all_specs, load  # noqa: E402
 
 BROKEN_WORLD = ("ENV_UNHEALTHY", "RESTORE_FAILED", "ENV_CHANGED")
 STOP = {"requested": False}
@@ -41,7 +46,10 @@ def request_stop(signum, frame):
 
 
 def select(args):
-    paths = [str(s) for s in all_specs()] if (args.all or args.eligible or args.split) else args.specs
+    paths = [str(s) for s in all_specs()] if (args.all or args.eligible or args.split) else list(args.specs)
+    for ref in args.suite or []:
+        paths += [str(REPO / "scenarios" / m.id) for m in suites.load(ref).instances]
+    paths = list(dict.fromkeys(paths))
     specs = [load(p)[0] | {"_path": p} for p in paths]
     if args.eligible:
         specs = [s for s in specs if s["bench_eligible"]]
@@ -53,6 +61,12 @@ def select(args):
         i, n = (int(x) for x in args.shard.split("/"))
         specs = specs[i - 1::n]
     return specs
+
+
+def needs_long_hold(spec, records):
+    """No VALIDATED long-hold run of this version yet (and not quarantined)."""
+    st = status.of_spec(spec, records)
+    return st.status != "quarantined" and not st.long_holds
 
 
 def still_needed(spec, want, records):
@@ -69,6 +83,10 @@ def main():
     p.add_argument("--split", choices=["hard", "train"], help="only this tier")
     p.add_argument("--hard-first", action="store_true", help="run the Hard tier first")
     p.add_argument("--shard", help="i/N: only this worker's share of the scenarios (disjoint across i)")
+    p.add_argument("--suite", action="append", help="only the members of this suite (name or path; repeatable)")
+    p.add_argument("--long-hold", action="store_true",
+                   help="hold for the agent's whole budget (budget.wall_s) instead of hold_s; one run per scenario "
+                        "that has no VALIDATED long-hold run yet")
     g = p.add_mutually_exclusive_group()
     g.add_argument("--repeat", type=int, default=1, help="runs per scenario (default 1)")
     g.add_argument("--fill", type=int, help="top each scenario up to this many runs of its current version")
@@ -77,7 +95,9 @@ def main():
     args = p.parse_args()
     specs = select(args)
     if not specs:
-        p.error("give scenario paths, or --all / --eligible / --split")
+        p.error("give scenario paths, or --all / --eligible / --split / --suite")
+    if args.long_hold and (args.fill or args.repeat != 1):
+        p.error("--long-hold runs each scenario once (until it has a passing long-hold run); drop --fill / --repeat")
     if args.shard and not os.environ.get("KUBECONFIG"):
         p.error("--shard needs its own KUBECONFIG (one cluster per worker): `kind create cluster` and others switch the "
                 "default context, which would send this worker's commands to another world")
@@ -88,7 +108,10 @@ def main():
     stop = False
     for n in range(passes):
         records = status.load_records()
-        todo = [s for s in specs if (still_needed(s, args.fill, records) > 0 if args.fill else True)]
+        if args.long_hold:
+            todo = [s for s in specs if needs_long_hold(s, records)]
+        else:
+            todo = [s for s in specs if (still_needed(s, args.fill, records) > 0 if args.fill else True)]
         if not todo:
             break
         print(f"\n##### pass {n + 1}/{passes}: {len(todo)} scenario(s)", flush=True)
@@ -96,7 +119,7 @@ def main():
             if STOP["requested"]:
                 stop = True
                 break
-            rec = harness.validate(s["_path"])
+            rec = harness.validate(s["_path"], hold_s=s["budget"]["wall_s"] if args.long_hold else None)
             verdicts[rec["id"]].append(rec["verdict"])
             broken_world = rec["verdict"] in BROKEN_WORLD or \
                 any("world not healthy" in x or "revert" in x.lower() for x in rec.get("notes", []))

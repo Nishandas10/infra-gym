@@ -1,34 +1,34 @@
-02:27:44 === pod-security-restricted-049 (k8s.object_patch)
-02:27:45   0. world healthy?
-02:27:54   1. baseline must PASS
-02:27:54       [PASS   ] journey:images - 3/3 ok, avg 38ms
-02:27:54       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-02:27:54   2. inject
-02:27:58   3. verifier must FAIL (<= 240s)
-02:28:03       [FAIL   ] journey:images - 0/3 ok, avg 1695ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connecti
-02:28:03       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
-02:28:03   4. do-nothing agent: still FAIL after 60s?
-02:29:04       [FAIL   ] journey:images - 0/3 ok, avg 24ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
-02:29:04       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
-02:29:04       failing in 5/5 checks during the hold
-02:29:04   5. reference solution
-02:29:04     $ kubectl label namespace default pod-security.kubernetes.io/enforce-
-02:29:04       namespace/default unlabeled
-02:29:04     $ kubectl rollout restart deployment/image-provider
-02:29:04       deployment.apps/image-provider restarted
-02:29:04     $ kubectl rollout status deployment/image-provider --timeout=300s
-02:29:05       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
-02:29:05       deployment "image-provider" successfully rolled out
-02:29:05   6. verifier must PASS (<= 300s)
-02:29:06       [PASS   ] journey:images - 3/3 ok, avg 29ms
-02:29:06       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-02:29:06   6b. invariants must PASS (shop_health)
-02:29:06       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-02:29:06       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
-02:29:06       [PASS   ] journey:cart - 2/2 ok, avg 44ms
-02:29:06       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
-02:29:06   6c. the fix must survive a restart of opentelemetry.io/name=image-provider
-02:29:52       [PASS   ] journey:images - 3/3 ok, avg 55ms
-02:29:52       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-02:29:52   7. restore exactly
-02:30:01   => VALIDATED  {'world_ready_s': 8, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+08:40:58 === pod-security-restricted-049 (k8s.object_patch)
+08:40:58   0. world healthy?
+08:41:06   1. baseline must PASS
+08:41:07       [PASS   ] journey:images - 3/3 ok, avg 35ms
+08:41:07       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:41:07   2. inject
+08:41:10   3. verifier must FAIL (<= 240s)
+08:41:16       [FAIL   ] journey:images - 0/3 ok, avg 1701ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+08:41:16       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+08:41:16   4. do-nothing agent: still FAIL after 900s?
+08:56:17       [FAIL   ] journey:images - 0/3 ok, avg 27ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+08:56:17       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+08:56:17       failing in 84/84 checks during the hold
+08:56:17   5. reference solution
+08:56:17     $ kubectl label namespace default pod-security.kubernetes.io/enforce-
+08:56:17       namespace/default unlabeled
+08:56:17     $ kubectl rollout restart deployment/image-provider
+08:56:17       deployment.apps/image-provider restarted
+08:56:17     $ kubectl rollout status deployment/image-provider --timeout=300s
+08:56:18       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
+08:56:18       deployment "image-provider" successfully rolled out
+08:56:18   6. verifier must PASS (<= 300s)
+08:56:19       [PASS   ] journey:images - 3/3 ok, avg 44ms
+08:56:19       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:56:19   6b. invariants must PASS (shop_health)
+08:56:20       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+08:56:20       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+08:56:20       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+08:56:20       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+08:56:20   6c. the fix must survive a restart of opentelemetry.io/name=image-provider
+08:57:05       [PASS   ] journey:images - 3/3 ok, avg 42ms
+08:57:05       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:57:05   7. restore exactly
+08:57:14   => VALIDATED  {'world_ready_s': 8, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}

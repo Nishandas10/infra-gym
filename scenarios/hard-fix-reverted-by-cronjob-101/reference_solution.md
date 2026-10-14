@@ -18,10 +18,10 @@
 
 ## Fix
 
-Stop the payment-config-sync CronJob (delete or suspend it) and set PAYMENT_PORT back to 8080.
+Stop the payment-config-sync CronJob (delete or suspend it, and make sure none of its Jobs is still running) and set PAYMENT_PORT back to 8080.
 
 ```bash
-kubectl delete cronjob payment-config-sync
+kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s
 kubectl set env deployment/payment PAYMENT_PORT=8080
 kubectl rollout status deployment/payment --timeout=300s
 ```

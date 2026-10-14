@@ -1,0 +1,29 @@
+16:35:15 === wl-nodeselector-018 (k8s.workload_patch)
+16:35:15 === wl-nodeselector-018 (k8s.workload_patch)
+16:35:15 === wl-nodeselector-018 (k8s.workload_patch)
+16:35:16   0. world healthy?
+16:35:16   0. world healthy?
+16:35:16   0. world healthy?
+16:35:29   1. baseline must PASS
+16:35:29   1. baseline must PASS
+16:35:29   1. baseline must PASS
+16:35:30       [PASS   ] journey:ads - 3/3 ok, avg 30ms
+16:35:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:35:30   2. inject
+16:35:30       [PASS   ] journey:ads - 3/3 ok, avg 46ms
+16:35:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:35:30   2. inject
+16:35:30   3. verifier must FAIL (<= 240s)
+16:35:30   3. verifier must FAIL (<= 240s)
+16:35:30       [PASS   ] journey:ads - 3/3 ok, avg 35ms
+16:35:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:35:30   2. inject
+16:35:30   ERROR RuntimeError: wl-nodeselector-018 is already injected; revert it first (or pass --force)
+16:35:30   7. restore exactly
+16:35:32       [FAIL   ] journey:ads - 0/3 ok, avg 57ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:35:32       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+16:35:32   4. do-nothing agent: still FAIL after 60s?
+16:35:32       [FAIL   ] journey:ads - 0/3 ok, avg 68ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:35:32       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+16:35:32   4. do-nothing agent: still FAIL after 60s?
+16:35:45   => ERROR  {'world_ready_s': 13, 'restore_s': 15}

@@ -1,6 +1,6 @@
 spec_version: 2
 id: hard-fix-reverted-by-cronjob-101
-version: 1
+version: 2
 title: Payment port misconfigured, and a config-sync CronJob re-applies the bad value every minute
 mechanism: hard/drift-reapplied-by-automation
 split: hard
@@ -142,10 +142,11 @@ ground_truth:
     get cronjobs,jobs` show payment-config-sync re-applying the bad value every minute.'
 reference:
   commands:
-  - kubectl delete cronjob payment-config-sync
+  - kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s
   - kubectl set env deployment/payment PAYMENT_PORT=8080
   - kubectl rollout status deployment/payment --timeout=300s
-  fix: Stop the payment-config-sync CronJob (delete or suspend it) and set PAYMENT_PORT back to 8080.
+  fix: Stop the payment-config-sync CronJob (delete or suspend it, and make sure none of its Jobs is still running)
+    and set PAYMENT_PORT back to 8080.
   traps:
   - 'Fixing only the Deployment: passes for under a minute, then the verifier''s hold/stability check fails.'
   - 'Not verifying after the fix: the re-break happens after the agent declares success.'
@@ -157,6 +158,10 @@ validation:
 budget:
   max_steps: 40
   wall_s: 1200
+notes:
+- "v2 (2026-10-14): the reference deletes the CronJob with --cascade=foreground. With a plain delete its Jobs are
+  removed in the background, so a Job pod already running could re-apply PAYMENT_PORT=8081 after the fix; a
+  long-hold validation run failed that way (FIX_DID_NOT_RECOVER) after 5 passing short-hold runs."
 meta:
   tier: hard
   layers: 3

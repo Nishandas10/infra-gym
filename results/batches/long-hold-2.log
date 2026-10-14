@@ -1,0 +1,811 @@
+
+##### pass 1/1: 26 scenario(s)
+06:35:02 === flag-cart-failure-067 (app.flag)
+06:35:04   0. world healthy?
+06:35:17   1. baseline must PASS
+06:35:18       [PASS   ] journey:cart - 3/3 ok, avg 53ms
+06:35:18       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
+06:35:18   2. inject
+06:35:19   3. verifier must FAIL (<= 240s)
+06:36:05       [PASS   ] journey:cart - 3/3 ok, avg 41ms
+06:36:05       [FAIL   ] journey:checkout - 0/3 ok, avg 15039ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+06:36:05   4. do-nothing agent: still FAIL after 900s?
+06:51:51       [PASS   ] journey:cart - 3/3 ok, avg 55ms
+06:51:51       [FAIL   ] journey:checkout - 0/3 ok, avg 15040ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+06:51:51       failing in 16/16 checks during the hold
+06:51:51   5. reference solution
+06:51:51     $ python injectors/toggle_flag.py cartFailure --off
+06:51:52       'cartFailure' -> off (flagd is serving it now)
+06:51:52   6. verifier must PASS (<= 300s)
+06:51:53       [PASS   ] journey:cart - 3/3 ok, avg 48ms
+06:51:53       [PASS   ] journey:checkout - 3/3 ok, avg 111ms
+06:51:53   6b. invariants must PASS (shop_health)
+06:51:56       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+06:51:56       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+06:51:56       [PASS   ] journey:cart - 2/2 ok, avg 985ms
+06:51:56       [PASS   ] journey:checkout - 2/2 ok, avg 108ms
+06:51:56   7. restore exactly
+06:52:04   => VALIDATED  {'world_ready_s': 13, 'detect_s': 46, 'recover_s': 1, 'invariants_s': 3, 'restore_s': 8}
+06:52:04 === pg-lock-held-081 (k8s.create_objects)
+06:52:05   0. world healthy?
+06:52:13   1. baseline must PASS
+06:52:14       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+06:52:14       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+06:52:14   2. inject
+06:52:14   3. verifier must FAIL (<= 240s)
+06:53:02       [FAIL   ] journey:browse - 0/3 ok, avg 6032ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
+06:53:02       [FAIL   ] journey:catalog - 0/3 ok, avg 6015ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+06:53:02   4. do-nothing agent: still FAIL after 900s?
+07:08:10       [FAIL   ] journey:browse - 0/3 ok, avg 366ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
+07:08:10       [FAIL   ] journey:catalog - 0/3 ok, avg 2096ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+07:08:10       failing in 29/44 checks during the hold
+07:08:10   5. reference solution
+07:08:10     $ kubectl delete deployment catalog-maintenance
+07:08:10       deployment.apps "catalog-maintenance" deleted from default namespace
+07:08:10   6. verifier must PASS (<= 300s)
+07:09:28       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+07:09:28       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+07:09:28   6b. invariants must PASS (shop_health)
+07:09:29       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+07:09:29       [PASS   ] journey:recommendations - 2/2 ok, avg 59ms
+07:09:29       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+07:09:29       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+07:09:29   7. restore exactly
+07:09:38   => VALIDATED  {'world_ready_s': 8, 'detect_s': 47, 'recover_s': 79, 'invariants_s': 1, 'restore_s': 9}
+07:09:39 === node-taint-046 (k8s.object_patch)
+07:09:39   0. world healthy?
+07:09:48   1. baseline must PASS
+07:09:48       [PASS   ] journey:currency - 3/3 ok, avg 57ms
+07:09:48       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+07:09:48   2. inject
+07:09:52   3. verifier must FAIL (<= 240s)
+07:10:17       [FAIL   ] journey:currency - 0/3 ok, avg 8021ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
+07:10:17       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-vrqhg (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+07:10:17   4. do-nothing agent: still FAIL after 900s?
+07:25:18       [FAIL   ] journey:currency - 0/3 ok, avg 32ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+07:25:18       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-vrqhg (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+07:25:18       failing in 75/75 checks during the hold
+07:25:18   5. reference solution
+07:25:18     $ kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
+07:25:18       node/ai-gym-2-worker untainted
+07:25:18       node/ai-gym-2-worker2 untainted
+07:25:18     $ kubectl rollout status deployment/currency --timeout=300s
+07:25:22       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+07:25:22       deployment "currency" successfully rolled out
+07:25:22   6. verifier must PASS (<= 300s)
+07:26:05       [PASS   ] journey:currency - 3/3 ok, avg 34ms
+07:26:05       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+07:26:05   6b. invariants must PASS (shop_health)
+07:26:28       [PASS   ] journey:browse - 2/2 ok, avg 27ms
+07:26:28       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+07:26:28       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+07:26:28       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+07:26:28   6c. the fix must survive a restart of opentelemetry.io/name=currency
+07:27:14       [PASS   ] journey:currency - 3/3 ok, avg 45ms
+07:27:14       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+07:27:14   7. restore exactly
+07:27:23   => VALIDATED  {'world_ready_s': 8, 'detect_s': 25, 'recover_s': 43, 'invariants_s': 23, 'durable_s': 1, 'restore_s': 9}
+07:27:23 === limitrange-rejects-048 (k8s.create_objects)
+07:27:24   0. world healthy?
+07:27:32   1. baseline must PASS
+07:27:33       [PASS   ] journey:ads - 3/3 ok, avg 26ms
+07:27:33       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:27:33   2. inject
+07:27:36   3. verifier must FAIL (<= 240s)
+07:27:37       [FAIL   ] journey:ads - 0/3 ok, avg 26ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+07:27:37       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+07:27:37   4. do-nothing agent: still FAIL after 900s?
+07:42:38       [FAIL   ] journey:ads - 0/3 ok, avg 24ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+07:42:38       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+07:42:38       failing in 84/84 checks during the hold
+07:42:38   5. reference solution
+07:42:38     $ kubectl delete limitrange container-memory-cap
+07:42:38       limitrange "container-memory-cap" deleted from default namespace
+07:42:38     $ kubectl rollout restart deployment/ad
+07:42:38       deployment.apps/ad restarted
+07:42:38     $ kubectl rollout status deployment/ad --timeout=300s
+07:42:39       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+07:42:39       deployment "ad" successfully rolled out
+07:42:39   6. verifier must PASS (<= 300s)
+07:44:15       [PASS   ] journey:ads - 3/3 ok, avg 137ms
+07:44:15       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:44:15   6b. invariants must PASS (shop_health)
+07:44:16       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+07:44:16       [PASS   ] journey:recommendations - 2/2 ok, avg 41ms
+07:44:16       [PASS   ] journey:cart - 2/2 ok, avg 39ms
+07:44:16       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+07:44:16   6c. the fix must survive a restart of opentelemetry.io/name=ad
+07:45:02       [PASS   ] journey:ads - 3/3 ok, avg 49ms
+07:45:02       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:45:02   7. restore exactly
+07:45:11   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 97, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+07:45:11 === k8s-oom-cascade-001 (k8s.memory_limit)
+07:45:12   0. world healthy?
+07:45:21   1. baseline must PASS
+07:45:25       [PASS   ] journey:cart - 3/3 ok, avg 1006ms
+07:45:25       [PASS   ] journey:checkout - 3/3 ok, avg 95ms
+07:45:25       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+07:45:25       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+07:45:25   2. inject
+07:45:25   3. verifier must FAIL (<= 600s)
+07:45:26       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+07:45:26       [FAIL   ] journey:checkout - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+07:45:26       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/0 pods ready for opentelemetry.io/name=cart; no pods exist
+07:45:26       [FAIL   ] pods_stable:opentelemetry.io/name=cart - no running pods for opentelemetry.io/name=cart
+07:45:26   4. do-nothing agent: still FAIL after 900s?
+08:00:27       [FAIL   ] journey:cart - 0/3 ok, avg 22ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+08:00:27       [FAIL   ] journey:checkout - 0/3 ok, avg 12ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+08:00:27       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-84fb74c8df-hkw9k (cart: CrashLoopBackOff)
+08:00:27       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+08:00:27       failing in 82/82 checks during the hold
+08:00:27   5. reference solution
+08:00:27     $ kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi
+08:00:27       deployment.apps/cart resource requirements updated
+08:00:27     $ kubectl rollout status deployment/cart --timeout=180s
+08:00:29       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+08:00:29       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+08:00:29       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+08:00:29       deployment "cart" successfully rolled out
+08:00:29   6. verifier must PASS (<= 360s)
+08:02:33       [PASS   ] journey:cart - 3/3 ok, avg 49ms
+08:02:33       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
+08:02:33       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+08:02:33       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+08:02:33   6b. invariants must PASS (shop_health)
+08:02:34       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+08:02:34       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+08:02:34       [PASS   ] journey:cart - 2/2 ok, avg 57ms
+08:02:34       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
+08:02:34   6c. the fix must survive a restart of deployment/cart
+08:04:38       [PASS   ] journey:cart - 3/3 ok, avg 40ms
+08:04:38       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
+08:04:38       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+08:04:38       [PASS   ] pods_stable:opentelemetry.io/name=cart - 1 pod(s) stable for >= 120s (opentelemetry.io/name=cart)
+08:04:38   7. restore exactly
+08:05:06   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 124, 'invariants_s': 1, 'durable_s': 79, 'restore_s': 28}
+08:05:06 === wl-image-pull-011 (k8s.workload_patch)
+08:05:07   0. world healthy?
+08:05:15   1. baseline must PASS
+08:05:16       [PASS   ] journey:currency - 3/3 ok, avg 28ms
+08:05:16       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
+08:05:16       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+08:05:16   2. inject
+08:05:16   3. verifier must FAIL (<= 240s)
+08:05:37       [FAIL   ] journey:currency - 0/3 ok, avg 22ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+08:05:37       [FAIL   ] journey:checkout - 0/3 ok, avg 6703ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+08:05:37       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-rlft6 (currency: ImagePullBackOff)
+08:05:37   4. do-nothing agent: still FAIL after 900s?
+08:20:38       [FAIL   ] journey:currency - 0/3 ok, avg 19ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+08:20:38       [FAIL   ] journey:checkout - 0/3 ok, avg 44ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+08:20:38       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-rlft6 (currency: ImagePullBackOff)
+08:20:38       failing in 83/83 checks during the hold
+08:20:38   5. reference solution
+08:20:38     $ kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
+08:20:38       deployment.apps/currency image updated
+08:20:38     $ kubectl rollout status deployment/currency --timeout=300s
+08:20:40       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+08:20:40       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+08:20:40       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+08:20:40       deployment "currency" successfully rolled out
+08:20:40   6. verifier must PASS (<= 300s)
+08:22:07       [PASS   ] journey:currency - 3/3 ok, avg 22ms
+08:22:07       [PASS   ] journey:checkout - 3/3 ok, avg 94ms
+08:22:07       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+08:22:07   6b. invariants must PASS (shop_health)
+08:22:08       [PASS   ] journey:browse - 2/2 ok, avg 18ms
+08:22:08       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+08:22:08       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+08:22:08       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
+08:22:08   6c. the fix must survive a restart of deployment/currency
+08:22:54       [PASS   ] journey:currency - 3/3 ok, avg 22ms
+08:22:54       [PASS   ] journey:checkout - 3/3 ok, avg 95ms
+08:22:54       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+08:22:55   7. restore exactly
+08:23:03   => VALIDATED  {'world_ready_s': 8, 'detect_s': 21, 'recover_s': 87, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+08:23:03 === wl-unschedulable-request-017 (k8s.workload_patch)
+08:23:04   0. world healthy?
+08:23:12   1. baseline must PASS
+08:23:13       [PASS   ] journey:recommendations - 3/3 ok, avg 39ms
+08:23:13       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+08:23:13   2. inject
+08:23:13   3. verifier must FAIL (<= 240s)
+08:23:13       [PASS   ] journey:recommendations - 3/3 ok, avg 42ms
+08:23:13       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/0 pods ready for opentelemetry.io/name=recommendation; no pods exist
+08:23:13   4. do-nothing agent: still FAIL after 900s?
+08:38:14       [FAIL   ] journey:recommendations - 0/3 ok, avg 19ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+08:38:14       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-6587dbddb6-qw87w (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
+08:38:14       failing in 84/84 checks during the hold
+08:38:14   5. reference solution
+08:38:14     $ kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi
+08:38:14       deployment.apps/recommendation resource requirements updated
+08:38:14     $ kubectl rollout status deployment/recommendation --timeout=300s
+08:38:15       Waiting for deployment "recommendation" rollout to finish: 0 out of 1 new replicas have been updated...
+08:38:15       Waiting for deployment "recommendation" rollout to finish: 0 out of 1 new replicas have been updated...
+08:38:15       Waiting for deployment "recommendation" rollout to finish: 0 of 1 updated replicas are available...
+08:38:15       deployment "recommendation" successfully rolled out
+08:38:15   6. verifier must PASS (<= 300s)
+08:40:02       [PASS   ] journey:recommendations - 3/3 ok, avg 61ms
+08:40:02       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+08:40:02   6b. invariants must PASS (shop_health)
+08:40:02       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+08:40:02       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
+08:40:02       [PASS   ] journey:cart - 2/2 ok, avg 39ms
+08:40:02       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+08:40:02   6c. the fix must survive a restart of deployment/recommendation
+08:40:48       [PASS   ] journey:recommendations - 3/3 ok, avg 54ms
+08:40:48       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+08:40:48   7. restore exactly
+08:40:58   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 106, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+08:40:58 === pod-security-restricted-049 (k8s.object_patch)
+08:40:58   0. world healthy?
+08:41:06   1. baseline must PASS
+08:41:07       [PASS   ] journey:images - 3/3 ok, avg 35ms
+08:41:07       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:41:07   2. inject
+08:41:10   3. verifier must FAIL (<= 240s)
+08:41:16       [FAIL   ] journey:images - 0/3 ok, avg 1701ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+08:41:16       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+08:41:16   4. do-nothing agent: still FAIL after 900s?
+08:56:17       [FAIL   ] journey:images - 0/3 ok, avg 27ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+08:56:17       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/0 pods ready for opentelemetry.io/name=image-provider; no pods exist
+08:56:17       failing in 84/84 checks during the hold
+08:56:17   5. reference solution
+08:56:17     $ kubectl label namespace default pod-security.kubernetes.io/enforce-
+08:56:17       namespace/default unlabeled
+08:56:17     $ kubectl rollout restart deployment/image-provider
+08:56:17       deployment.apps/image-provider restarted
+08:56:17     $ kubectl rollout status deployment/image-provider --timeout=300s
+08:56:18       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
+08:56:18       deployment "image-provider" successfully rolled out
+08:56:18   6. verifier must PASS (<= 300s)
+08:56:19       [PASS   ] journey:images - 3/3 ok, avg 44ms
+08:56:19       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:56:19   6b. invariants must PASS (shop_health)
+08:56:20       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+08:56:20       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+08:56:20       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+08:56:20       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+08:56:20   6c. the fix must survive a restart of opentelemetry.io/name=image-provider
+08:57:05       [PASS   ] journey:images - 3/3 ok, avg 42ms
+08:57:05       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+08:57:05   7. restore exactly
+08:57:14   => VALIDATED  {'world_ready_s': 8, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+08:57:14 === hard-flag-in-source-of-truth-111 (app.flag_source_config)
+08:57:14   0. world healthy?
+08:57:22   1. baseline must PASS
+08:57:24       [PASS   ] journey:checkout - 8/8 ok, avg 84ms
+08:57:24   2. inject
+08:57:55   3. verifier must FAIL (<= 300s)
+08:57:56       [FAIL   ] journey:checkout - 2/8 ok, avg 62ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+08:57:56   4. do-nothing agent: still FAIL after 1200s?
+09:17:58       [FAIL   ] journey:checkout - 6/8 ok, avg 84ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+09:17:58       failing in 106/107 checks during the hold
+09:17:58   5. reference solution
+09:17:58     $ python injectors/source_flag.py paymentFailure off
+09:18:24       paymentFailure -> off: loaded by flagd
+09:18:24   6. verifier must PASS (<= 420s)
+09:18:26       [PASS   ] journey:checkout - 8/8 ok, avg 104ms
+09:18:26   6b. invariants must PASS (shop_health)
+09:18:26       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+09:18:26       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+09:18:26       [PASS   ] journey:cart - 2/2 ok, avg 37ms
+09:18:26       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+09:18:26   6c. the fix must survive a restart of deployment/flagd
+09:19:13       [PASS   ] journey:checkout - 8/8 ok, avg 95ms
+09:19:13   7. restore exactly
+09:19:41   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 28}
+09:19:41 === hard-allowlist-forgets-checkout-106 (composite)
+09:19:42   0. world healthy?
+09:19:51   1. baseline must PASS
+09:19:52       [PASS   ] journey:checkout - 3/3 ok, avg 90ms
+09:19:52       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+09:19:52   2. inject
+09:20:15   3. verifier must FAIL (<= 300s)
+09:21:00       [FAIL   ] journey:checkout - 0/3 ok, avg 6691ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+09:21:00       [FAIL   ] journey:browse - 0/3 ok, avg 8028ms; e.g. GET /api/products/LS4PSXUNUM -> no response b'TimeoutError: timed out'
+09:21:00   4. do-nothing agent: still FAIL after 1200s?
+09:41:01       [FAIL   ] journey:checkout - 0/3 ok, avg 37ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+09:41:01       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+09:41:01       failing in 107/107 checks during the hold
+09:41:01   5. reference solution
+09:41:01     $ kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+09:41:01       networkpolicy.networking.k8s.io/product-catalog-allow-clients patched
+09:41:01   6. verifier must PASS (<= 420s)
+09:41:24       [PASS   ] journey:checkout - 3/3 ok, avg 109ms
+09:41:24       [PASS   ] journey:browse - 3/3 ok, avg 33ms
+09:41:24   6b. invariants must PASS (shop_health)
+09:41:24       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+09:41:24       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
+09:41:24       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+09:41:24       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+09:41:24   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
+09:42:10       [PASS   ] journey:checkout - 3/3 ok, avg 79ms
+09:42:10       [PASS   ] journey:browse - 3/3 ok, avg 29ms
+09:42:10   7. restore exactly
+09:42:38   => VALIDATED  {'world_ready_s': 9, 'detect_s': 45, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 27}
+09:42:38 === hard-pinned-endpoints-108 (composite)
+09:42:39   0. world healthy?
+09:42:48   1. baseline must PASS
+09:42:48       [PASS   ] journey:checkout - 4/4 ok, avg 88ms
+09:42:48   2. inject
+09:42:49   3. verifier must FAIL (<= 300s)
+09:43:11       [FAIL   ] journey:checkout - 0/4 ok, avg 5116ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+09:43:11   4. do-nothing agent: still FAIL after 1200s?
+10:03:29       [FAIL   ] journey:checkout - 1/4 ok, avg 3811ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:03:29       failing in 55/57 checks during the hold
+10:03:29   5. reference solution
+10:03:29     $ kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
+10:03:29       service/quote patched
+10:03:29     $ kubectl delete endpointslice quote-pinned
+10:03:29       endpointslice.discovery.k8s.io "quote-pinned" deleted from default namespace
+10:03:29   6. verifier must PASS (<= 420s)
+10:03:30       [PASS   ] journey:checkout - 4/4 ok, avg 132ms
+10:03:30   6b. invariants must PASS (shop_health)
+10:03:31       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+10:03:31       [PASS   ] journey:recommendations - 2/2 ok, avg 49ms
+10:03:31       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+10:03:31       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
+10:03:31   6c. the fix must survive a restart of deployment/quote
+10:04:17       [PASS   ] journey:checkout - 4/4 ok, avg 98ms
+10:04:17   7. restore exactly
+10:04:27   => VALIDATED  {'world_ready_s': 9, 'detect_s': 21, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+10:04:27 === hard-fix-reverted-by-cronjob-101 (composite)
+10:04:28   0. world healthy?
+10:04:37   1. baseline must PASS
+10:04:38       [PASS   ] journey:checkout - 3/3 ok, avg 89ms
+10:04:38       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:04:38   2. inject
+10:04:59   3. verifier must FAIL (<= 300s)
+10:04:59       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:04:59       [FAIL   ] pods_stable:opentelemetry.io/name=payment - payment-7b56ff468-vk5g8 is only 21s old
+10:04:59   4. do-nothing agent: still FAIL after 1200s?
+10:25:00       [FAIL   ] journey:checkout - 0/3 ok, avg 58ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:25:00       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:25:00       failing in 111/111 checks during the hold
+10:25:00   5. reference solution
+10:25:00     $ kubectl delete cronjob payment-config-sync
+10:25:00       cronjob.batch "payment-config-sync" deleted from default namespace
+10:25:00     $ kubectl set env deployment/payment PAYMENT_PORT=8080
+10:25:00       deployment.apps/payment env updated
+10:25:00     $ kubectl rollout status deployment/payment --timeout=300s
+10:25:01       Waiting for deployment spec update to be observed...
+10:25:01       Waiting for deployment spec update to be observed...
+10:25:01       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+10:25:01       deployment "payment" successfully rolled out
+10:25:01   6. verifier must PASS (<= 420s)
+10:32:11       [FAIL   ] journey:checkout - 0/3 ok, avg 54ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:32:11       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:32:11   7. restore exactly
+10:34:13   => FIX_DID_NOT_RECOVER  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 430, 'restore_s': 121}
+10:34:13 === flag-email-memory-leak-068 (app.flag)
+10:34:13   0. world healthy?
+10:34:22   1. baseline must PASS
+10:34:23       [PASS   ] journey:email - 3/3 ok, avg 32ms
+10:34:23       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+10:34:23   2. inject
+10:34:24   3. verifier must FAIL (<= 900s)
+10:34:24       [FAIL   ] journey:email - 0/3 ok, avg 72ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+10:34:24       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+10:34:24   4. do-nothing agent: still FAIL after 900s?
+10:49:25       [FAIL   ] journey:email - 0/3 ok, avg 8ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+10:49:25       [FAIL   ] pods_stable:opentelemetry.io/name=email - email-678846ffbb-shzsb/email restarted 146s ago (OOMKilled)
+10:49:25       failing in 57/57 checks during the hold
+10:49:25   5. reference solution
+10:49:25     $ python injectors/toggle_flag.py emailMemoryLeak --off
+10:49:26       'emailMemoryLeak' -> off (flagd is serving it now)
+10:49:26     $ kubectl rollout restart deployment/email
+10:49:26       deployment.apps/email restarted
+10:49:26     $ kubectl rollout status deployment/email --timeout=300s
+10:49:27       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+10:49:27       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+10:49:27       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+10:49:27       deployment "email" successfully rolled out
+10:49:27   6. verifier must PASS (<= 600s)
+10:54:41       [PASS   ] journey:email - 3/3 ok, avg 20ms
+10:54:41       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+10:54:41   6b. invariants must PASS (shop_health)
+10:54:42       [PASS   ] journey:browse - 2/2 ok, avg 30ms
+10:54:42       [PASS   ] journey:recommendations - 2/2 ok, avg 47ms
+10:54:42       [PASS   ] journey:cart - 2/2 ok, avg 43ms
+10:54:42       [PASS   ] journey:checkout - 2/2 ok, avg 91ms
+10:54:42   7. restore exactly
+10:54:51   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 313, 'invariants_s': 1, 'restore_s': 9}
+10:54:51 === pay-unreachable-007 (app.flag)
+10:54:52   0. world healthy?
+10:55:00   1. baseline must PASS
+10:55:01       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
+10:55:01   2. inject
+10:55:02   3. verifier must FAIL (<= 120s)
+10:55:02       [FAIL   ] journey:checkout - 0/3 ok, avg 98ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:55:02   4. do-nothing agent: still FAIL after 900s?
+11:10:03       [FAIL   ] journey:checkout - 0/3 ok, avg 78ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+11:10:03       failing in 83/83 checks during the hold
+11:10:03   5. reference solution
+11:10:03     $ python injectors/toggle_flag.py paymentUnreachable --off
+11:10:04       'paymentUnreachable' -> off (flagd is serving it now)
+11:10:04   6. verifier must PASS (<= 120s)
+11:10:05       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
+11:10:05   6b. invariants must PASS (shop_health)
+11:10:06       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+11:10:06       [PASS   ] journey:recommendations - 2/2 ok, avg 51ms
+11:10:06       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+11:10:06       [PASS   ] journey:checkout - 2/2 ok, avg 93ms
+11:10:06   7. restore exactly
+11:10:16   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+11:10:16 === pg-connection-limit-080 (runtime.exec)
+11:10:17   0. world healthy?
+11:10:26   1. baseline must PASS
+11:10:26       [PASS   ] journey:browse - 3/3 ok, avg 27ms
+11:10:26       [PASS   ] journey:catalog - 3/3 ok, avg 19ms
+11:10:26   2. inject
+11:10:27   3. verifier must FAIL (<= 240s)
+11:10:28       [FAIL   ] journey:browse - 0/3 ok, avg 32ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
+11:10:28       [FAIL   ] journey:catalog - 0/3 ok, avg 26ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+11:10:28   4. do-nothing agent: still FAIL after 900s?
+11:25:29       [FAIL   ] journey:browse - 0/3 ok, avg 44ms; e.g. GET /api/products/LS4PSXUNUM -> 500 b'Internal Server Error'
+11:25:29       [FAIL   ] journey:catalog - 0/3 ok, avg 27ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+11:25:29       failing in 83/83 checks during the hold
+11:25:29   5. reference solution
+11:25:29     $ kubectl exec deploy/astronomy-db -- psql -U postgres -c 'ALTER ROLE astronomy_user CONNECTION LIMIT -1'
+11:25:29       ALTER ROLE
+11:25:29   6. verifier must PASS (<= 300s)
+11:25:30       [PASS   ] journey:browse - 3/3 ok, avg 25ms
+11:25:30       [PASS   ] journey:catalog - 3/3 ok, avg 18ms
+11:25:30   6b. invariants must PASS (shop_health)
+11:25:31       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+11:25:31       [PASS   ] journey:recommendations - 2/2 ok, avg 51ms
+11:25:31       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+11:25:31       [PASS   ] journey:checkout - 2/2 ok, avg 116ms
+11:25:31   7. restore exactly
+11:25:40   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+11:25:40 === node-cordoned-045 (k8s.object_patch)
+11:25:41   0. world healthy?
+11:25:50   1. baseline must PASS
+11:25:51       [PASS   ] journey:cart - 3/3 ok, avg 58ms
+11:25:51       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+11:25:51   2. inject
+11:25:55   3. verifier must FAIL (<= 240s)
+11:25:55       [FAIL   ] journey:cart - 0/3 ok, avg 19ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+11:25:55       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-5c788db849-jwwgg (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+11:25:55   4. do-nothing agent: still FAIL after 900s?
+11:40:56       [FAIL   ] journey:cart - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+11:40:56       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-5c788db849-jwwgg (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+11:40:56       failing in 84/84 checks during the hold
+11:40:56   5. reference solution
+11:40:56     $ kubectl uncordon -l '!node-role.kubernetes.io/control-plane'
+11:40:56       node/ai-gym-2-worker uncordoned
+11:40:56       node/ai-gym-2-worker2 uncordoned
+11:40:56     $ kubectl rollout status deployment/cart --timeout=300s
+11:40:59       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+11:40:59       deployment "cart" successfully rolled out
+11:40:59   6. verifier must PASS (<= 300s)
+11:42:14       [PASS   ] journey:cart - 3/3 ok, avg 47ms
+11:42:14       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+11:42:14   6b. invariants must PASS (shop_health)
+11:42:36       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+11:42:36       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+11:42:36       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+11:42:36       [PASS   ] journey:checkout - 2/2 ok, avg 139ms
+11:42:36   6c. the fix must survive a restart of opentelemetry.io/name=cart
+11:43:22       [PASS   ] journey:cart - 3/3 ok, avg 56ms
+11:43:22       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+11:43:22   7. restore exactly
+11:43:32   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 75, 'invariants_s': 23, 'durable_s': 1, 'restore_s': 9}
+11:43:32 === otel-service-endpoint-087 (k8s.workload_patch)
+11:43:32   0. world healthy?
+11:43:41   1. baseline must PASS
+11:43:42       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+11:43:42   2. inject
+11:43:42   3. verifier must FAIL (<= 300s)
+11:44:46       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+11:44:46   4. do-nothing agent: still FAIL after 900s?
+11:59:46       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+11:59:46       failing in 85/85 checks during the hold
+11:59:46   5. reference solution
+11:59:46     $ kubectl set env deployment/checkout 'OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318'
+11:59:46       deployment.apps/checkout env updated
+11:59:46     $ kubectl rollout status deployment/checkout --timeout=300s
+11:59:49       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+11:59:49       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+11:59:49       deployment "checkout" successfully rolled out
+11:59:49   6. verifier must PASS (<= 300s)
+12:00:52       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+12:00:52   6b. invariants must PASS (shop_health)
+12:00:53       [PASS   ] journey:browse - 2/2 ok, avg 39ms
+12:00:53       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+12:00:53       [PASS   ] journey:cart - 2/2 ok, avg 56ms
+12:00:53       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+12:00:53   6c. the fix must survive a restart of deployment/checkout
+12:01:39       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+12:01:39   7. restore exactly
+12:02:08   => VALIDATED  {'world_ready_s': 9, 'detect_s': 64, 'recover_s': 63, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 29}
+12:02:08 === kube-proxy-stopped-051 (composite)
+12:02:09   0. world healthy?
+12:02:18   1. baseline must PASS
+12:02:19       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
+12:02:19       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+12:02:19   2. inject
+12:02:42   3. verifier must FAIL (<= 300s)
+12:02:43       [FAIL   ] journey:checkout - 0/3 ok, avg 76ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:02:43       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
+12:02:43   4. do-nothing agent: still FAIL after 900s?
+12:17:44       [FAIL   ] journey:checkout - 0/3 ok, avg 63ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+12:17:44       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
+12:17:44       failing in 83/83 checks during the hold
+12:17:44   5. reference solution
+12:17:44     $ kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
+12:17:44       daemonset.apps/kube-proxy patched
+12:17:44     $ kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
+12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 0 of 3 updated pods are available...
+12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 1 of 3 updated pods are available...
+12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 2 of 3 updated pods are available...
+12:17:45       daemon set "kube-proxy" successfully rolled out
+12:17:45   6. verifier must PASS (<= 300s)
+12:20:49       [PASS   ] journey:checkout - 3/3 ok, avg 111ms
+12:20:49       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+12:20:49   6b. invariants must PASS (shop_health)
+12:20:50       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+12:20:50       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
+12:20:50       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+12:20:50       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
+12:20:50   6c. the fix must survive a restart of daemonset/kube-proxy, opentelemetry.io/name=payment
+12:21:37       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+12:21:37       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+12:21:37   7. restore exactly
+12:21:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 184, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+12:21:46 === netpol-default-deny-041 (k8s.create_objects)
+12:21:47   0. world healthy?
+12:21:55   1. baseline must PASS
+12:21:56       [PASS   ] journey:home - 3/3 ok, avg 17ms
+12:21:56       [PASS   ] journey:browse - 3/3 ok, avg 25ms
+12:21:56   2. inject
+12:21:56   3. verifier must FAIL (<= 240s)
+12:22:44       [FAIL   ] journey:home - 0/3 ok, avg 8019ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
+12:22:44       [FAIL   ] journey:browse - 0/3 ok, avg 8021ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'URLError: <urlopen error timed out>'
+12:22:44   4. do-nothing agent: still FAIL after 900s?
+12:39:12       [FAIL   ] journey:home - 0/3 ok, avg 8023ms; e.g. GET / -> no response b'URLError: <urlopen error timed out>'
+12:39:12       [FAIL   ] journey:browse - 0/3 ok, avg 8022ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'URLError: <urlopen error timed out>'
+12:39:12       failing in 16/16 checks during the hold
+12:39:12   5. reference solution
+12:39:12     $ kubectl delete networkpolicy default-deny-ingress
+12:39:12       networkpolicy.networking.k8s.io "default-deny-ingress" deleted from default namespace
+12:39:12   6. verifier must PASS (<= 300s)
+12:39:13       [PASS   ] journey:home - 3/3 ok, avg 18ms
+12:39:13       [PASS   ] journey:browse - 3/3 ok, avg 21ms
+12:39:13   6b. invariants must PASS (shop_health)
+12:39:14       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+12:39:14       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
+12:39:14       [PASS   ] journey:cart - 2/2 ok, avg 36ms
+12:39:14       [PASS   ] journey:checkout - 2/2 ok, avg 81ms
+12:39:14   7. restore exactly
+12:39:23   => VALIDATED  {'world_ready_s': 8, 'detect_s': 49, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+12:39:23 === svc-selector-mismatch-035 (k8s.object_patch)
+12:39:23   0. world healthy?
+12:39:32   1. baseline must PASS
+12:39:33       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+12:39:33       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+12:39:33   2. inject
+12:39:48   3. verifier must FAIL (<= 240s)
+12:39:49       [FAIL   ] journey:browse - 0/3 ok, avg 48ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
+12:39:49       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+12:39:49   4. do-nothing agent: still FAIL after 900s?
+12:54:50       [FAIL   ] journey:browse - 0/3 ok, avg 19ms; e.g. GET /api/products/0PUK6V6EV0 -> 500 b'Internal Server Error'
+12:54:50       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+12:54:50       failing in 84/84 checks during the hold
+12:54:50   5. reference solution
+12:54:50     $ kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
+12:54:50       service/product-catalog patched
+12:54:50   6. verifier must PASS (<= 300s)
+12:56:47       [PASS   ] journey:browse - 3/3 ok, avg 37ms
+12:56:47       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+12:56:47   6b. invariants must PASS (shop_health)
+12:56:48       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+12:56:48       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
+12:56:48       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+12:56:48       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+12:56:48   6c. the fix must survive a restart of deployment/product-catalog
+12:59:13       [PASS   ] journey:browse - 3/3 ok, avg 36ms
+12:59:13       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+12:59:13   7. restore exactly
+13:01:59   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 117, 'invariants_s': 1, 'durable_s': 100, 'restore_s': 165}
+13:01:59 === wl-bad-command-012 (k8s.workload_patch)
+13:02:00   0. world healthy?
+13:02:09   1. baseline must PASS
+13:02:10       [PASS   ] journey:checkout - 3/3 ok, avg 107ms
+13:02:10       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+13:02:10   2. inject
+13:02:10   3. verifier must FAIL (<= 240s)
+13:02:16       [FAIL   ] journey:checkout - 0/3 ok, avg 1720ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:02:16       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-jmtrs (quote: RunContainerError)
+13:02:16   4. do-nothing agent: still FAIL after 900s?
+13:17:17       [FAIL   ] journey:checkout - 0/3 ok, avg 49ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:17:17       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-jmtrs (quote: CrashLoopBackOff)
+13:17:17       failing in 83/83 checks during the hold
+13:17:17   5. reference solution
+13:17:17     $ kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
+13:17:17       deployment.apps/quote patched
+13:17:17     $ kubectl rollout status deployment/quote --timeout=300s
+13:17:18       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+13:17:18       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+13:17:18       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+13:17:18       deployment "quote" successfully rolled out
+13:17:18   6. verifier must PASS (<= 300s)
+13:17:30       [PASS   ] journey:checkout - 3/3 ok, avg 137ms
+13:17:30       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+13:17:30   6b. invariants must PASS (shop_health)
+13:17:30       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+13:17:30       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
+13:17:30       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+13:17:30       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
+13:17:30   6c. the fix must survive a restart of deployment/quote
+13:18:17       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
+13:18:17       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+13:18:17   7. restore exactly
+13:18:27   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+13:18:27 === wl-dns-policy-none-029 (k8s.workload_patch)
+13:18:27   0. world healthy?
+13:18:37   1. baseline must PASS
+13:18:37       [PASS   ] journey:checkout - 3/3 ok, avg 81ms
+13:18:37   2. inject
+13:18:37   3. verifier must FAIL (<= 240s)
+13:19:23       [FAIL   ] journey:checkout - 0/3 ok, avg 15038ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:19:23   4. do-nothing agent: still FAIL after 900s?
+13:34:24       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+13:34:24       failing in 78/78 checks during the hold
+13:34:24   5. reference solution
+13:34:24     $ kubectl patch deployment checkout --type=json -p '[{"op":"replace","path":"/spec/template/spec/dnsPolicy","value":"ClusterFirst"},{"op":"remove","path":"/spec/template/spec/dnsConfig"}]'
+13:34:24       deployment.apps/checkout patched
+13:34:24     $ kubectl rollout status deployment/checkout --timeout=300s
+13:34:24       error: deployment "checkout" exceeded its progress deadline
+13:34:24   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/checkout --timeout=300s
+13:34:24   7. restore exactly
+13:36:08   => ERROR  {'world_ready_s': 9, 'detect_s': 46, 'restore_s': 104}
+13:36:08 === wl-init-container-stuck-026 (k8s.workload_patch)
+13:36:09   0. world healthy?
+13:36:18   1. baseline must PASS
+13:36:19       [PASS   ] journey:cart - 3/3 ok, avg 47ms
+13:36:19       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:36:19   2. inject
+13:36:19   3. verifier must FAIL (<= 240s)
+13:36:20       [FAIL   ] journey:cart - 0/3 ok, avg 24ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:36:20       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/0 pods ready for opentelemetry.io/name=cart; no pods exist
+13:36:20   4. do-nothing agent: still FAIL after 900s?
+13:51:21       [FAIL   ] journey:cart - 0/3 ok, avg 21ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+13:51:21       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-5785b698fb-lj562 (cart: PodInitializing)
+13:51:21       failing in 84/84 checks during the hold
+13:51:21   5. reference solution
+13:51:21     $ kubectl rollout undo deployment/cart
+13:51:21       deployment.apps/cart rolled back
+13:51:21     $ kubectl rollout status deployment/cart --timeout=300s
+13:51:54       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+13:51:54       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+13:51:54       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+13:51:54       deployment "cart" successfully rolled out
+13:51:54   6. verifier must PASS (<= 300s)
+13:53:41       [PASS   ] journey:cart - 3/3 ok, avg 74ms
+13:53:41       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:53:41   6b. invariants must PASS (shop_health)
+13:53:42       [PASS   ] journey:browse - 2/2 ok, avg 32ms
+13:53:42       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
+13:53:42       [PASS   ] journey:cart - 2/2 ok, avg 49ms
+13:53:42       [PASS   ] journey:checkout - 2/2 ok, avg 136ms
+13:53:42   6c. the fix must survive a restart of deployment/cart
+13:54:28       [PASS   ] journey:cart - 3/3 ok, avg 79ms
+13:54:28       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+13:54:28   7. restore exactly
+13:54:39   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 107, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+13:54:39 === wl-missing-configmap-volume-019 (k8s.workload_patch)
+13:54:39   0. world healthy?
+13:54:49   1. baseline must PASS
+13:54:54       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+13:54:54       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+13:54:54   2. inject
+13:54:54   3. verifier must FAIL (<= 240s)
+13:54:59       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/0 pods ready for opentelemetry.io/name=fraud-detection; no pods exist
+13:54:59       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+13:54:59   4. do-nothing agent: still FAIL after 900s?
+14:10:04       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/1 pods ready for opentelemetry.io/name=fraud-detection; fraud-detection-6bdf86599b-7nm75 (wait-for-kafka: PodInitializing)
+14:10:04       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 57)
+14:10:04       failing in 63/63 checks during the hold
+14:10:04   5. reference solution
+14:10:04     $ kubectl rollout undo deployment/fraud-detection
+14:10:04       deployment.apps/fraud-detection rolled back
+14:10:04     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+14:10:04       error: deployment "fraud-detection" exceeded its progress deadline
+14:10:04   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/fraud-detection --timeout=300s
+14:10:04   7. restore exactly
+14:10:36   => ERROR  {'world_ready_s': 10, 'detect_s': 6, 'restore_s': 32}
+14:10:36 === wl-paused-rollout-trap-030 (composite)
+14:10:37   0. world healthy?
+14:10:46   1. baseline must PASS
+14:10:47       [PASS   ] journey:cart - 3/3 ok, avg 49ms
+14:10:47   2. inject
+14:11:13   3. verifier must FAIL (<= 240s)
+14:11:13       [FAIL   ] journey:cart - 0/3 ok, avg 29ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+14:11:13   4. do-nothing agent: still FAIL after 900s?
+14:26:14       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+14:26:14       failing in 85/85 checks during the hold
+14:26:14   5. reference solution
+14:26:14     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+14:26:14       deployment.apps/cart env updated
+14:26:14     $ kubectl rollout resume deployment/cart
+14:26:14       deployment.apps/cart resumed
+14:26:14     $ kubectl rollout status deployment/cart --timeout=300s
+14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+14:26:16       deployment "cart" successfully rolled out
+14:26:16   6. verifier must PASS (<= 300s)
+14:26:49       [PASS   ] journey:cart - 3/3 ok, avg 64ms
+14:26:49   6b. invariants must PASS (shop_health)
+14:26:50       [PASS   ] journey:browse - 2/2 ok, avg 29ms
+14:26:50       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+14:26:50       [PASS   ] journey:cart - 2/2 ok, avg 56ms
+14:26:50       [PASS   ] journey:checkout - 2/2 ok, avg 132ms
+14:26:50   6c. the fix must survive a restart of deployment/cart
+14:27:36       [PASS   ] journey:cart - 3/3 ok, avg 52ms
+14:27:36   7. restore exactly
+14:28:04   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 33, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 28}
+14:28:05 === wl-scaled-to-zero-025 (k8s.workload_patch)
+14:28:05   0. world healthy?
+14:28:14   1. baseline must PASS
+14:28:14       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
+14:28:14       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:28:14   2. inject
+14:28:15   3. verifier must FAIL (<= 240s)
+14:29:00       [FAIL   ] journey:checkout - 0/3 ok, avg 15039ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+14:29:00       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+14:29:00   4. do-nothing agent: still FAIL after 900s?
+14:44:01       [FAIL   ] journey:checkout - 0/3 ok, avg 38ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:44:01       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+14:44:01       failing in 77/77 checks during the hold
+14:44:01   5. reference solution
+14:44:01     $ kubectl scale deployment checkout --replicas=1
+14:44:01       deployment.apps/checkout scaled
+14:44:01     $ kubectl rollout status deployment/checkout --timeout=300s
+14:44:04       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+14:44:04       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+14:44:04       deployment "checkout" successfully rolled out
+14:44:04   6. verifier must PASS (<= 300s)
+14:44:06       [PASS   ] journey:checkout - 3/3 ok, avg 457ms
+14:44:06       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:44:06   6b. invariants must PASS (shop_health)
+14:44:07       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+14:44:07       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
+14:44:07       [PASS   ] journey:cart - 2/2 ok, avg 43ms
+14:44:07       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
+14:44:07   6c. the fix must survive a restart of deployment/checkout
+14:44:53       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+14:44:53       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+14:44:53   7. restore exactly
+14:45:02   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 2, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+
+SUMMARY (this run | status of the current version)
+  flag-cart-failure-067                            VALIDATED                                | validated (6/6 validated, long hold passed)
+  pg-lock-held-081                                 VALIDATED                                | validated (5/6 validated (SELF_HEALED 1), long hold passed)
+  node-taint-046                                   VALIDATED                                | validated (6/6 validated, long hold passed)
+  limitrange-rejects-048                           VALIDATED                                | validated (6/6 validated, long hold passed)
+  k8s-oom-cascade-001                              VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-image-pull-011                                VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-unschedulable-request-017                     VALIDATED                                | validated (6/6 validated, long hold passed)
+  pod-security-restricted-049                      VALIDATED                                | validated (6/6 validated, long hold passed)
+  hard-flag-in-source-of-truth-111                 VALIDATED                                | validated (6/6 validated, long hold passed)
+  hard-allowlist-forgets-checkout-106              VALIDATED                                | validated (6/6 validated, long hold passed)
+  hard-pinned-endpoints-108                        VALIDATED                                | validated (6/6 validated, long hold passed)
+  hard-fix-reverted-by-cronjob-101                 FIX_DID_NOT_RECOVER                      | validated (5/6 validated (FIX_DID_NOT_RECOVER 1))
+  flag-email-memory-leak-068                       VALIDATED                                | validated (6/6 validated, long hold passed)
+  pay-unreachable-007                              VALIDATED                                | validated (6/6 validated, long hold passed)
+  pg-connection-limit-080                          VALIDATED                                | validated (6/6 validated, long hold passed)
+  node-cordoned-045                                VALIDATED                                | validated (6/6 validated, long hold passed)
+  otel-service-endpoint-087                        VALIDATED                                | validated (6/6 validated, long hold passed)
+  kube-proxy-stopped-051                           VALIDATED                                | validated (6/6 validated, long hold passed)
+  netpol-default-deny-041                          VALIDATED                                | validated (6/6 validated, long hold passed)
+  svc-selector-mismatch-035                        VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-bad-command-012                               VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-dns-policy-none-029                           ERROR                                    | validated (5/5 validated)
+  wl-init-container-stuck-026                      VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-missing-configmap-volume-019                  ERROR                                    | validated (5/6 validated (ERROR 1))
+  wl-paused-rollout-trap-030                       VALIDATED                                | validated (6/6 validated, long hold passed)
+  wl-scaled-to-zero-025                            VALIDATED                                | validated (6/6 validated, long hold passed)
+
+Run python scripts/generate.py to write the new statuses into scenarios/ and CATALOG.md.

@@ -5,10 +5,11 @@
   python scripts/make_suite.py --name hard-v1 --split hard --n 12
   python scripts/make_suite.py --name lite --n 10 --clean --fastest --exclude bench-v1-test
   python scripts/make_suite.py --check        every suite still matches the current instances (CI)
+  python scripts/make_suite.py --refreeze hard-v1   next version: same members at their current hashes
 
-Candidates are bench-eligible instances whose current version is validated (--clean: no failed
-validation run at all, i.e. 5/5). The candidates are grouped by --balance (default: layer) and each
-group gets its share of the n slots in proportion to its size (largest remainder; at least one each
+Candidates are bench-eligible instances whose current version is validated, including at least one
+passing long-hold run (scripts/validate_scenario.py --long-hold); with --clean, no failed validation
+run at all. The candidates are grouped by --balance (default: layer) and each group gets its share of the n slots in proportion to its size (largest remainder; at least one each
 when n allows). Within a group, instances are taken in seeded random order, preferring ones whose
 symptom and fix types the suite does not have yet; --fastest takes the ones with the shortest
 validation timings instead. --cap AXIS=VALUE:N admits at most N members carrying that tag value; slots
@@ -55,7 +56,7 @@ def candidates(insts, records, split, clean, exclude):
         if split != "all" and spec["split"] != split:
             continue
         st = status.of_spec(spec, records)
-        if st.status != "validated" or (clean and st.failures):
+        if st.status != "validated" or (clean and st.failures) or not st.long_holds:
             continue
         out.append({"id": sid, "spec": spec, "status": st, "seconds": episode_seconds(spec, st)})
     return out
@@ -172,9 +173,46 @@ def check():
     sys.exit(1 if bad else 0)
 
 
+def refreeze(ref, dry_run=False):
+    """The next version of a suite with the same members at their current hashes: for when members changed
+    (a fixed scenario) but the selection should not. Every member must still qualify for the suite."""
+    path, old = suites.find(ref), suites.load(ref)
+    insts, records = suites.instances(), status.load_records()
+    missing = [m.id for m in old.instances if m.id not in insts]
+    if missing:
+        sys.exit(f"members no longer exist: {missing}; make a new selection instead")
+    picked = [{"id": m.id, "spec": insts[m.id][0], "status": status.of_spec(insts[m.id][0], records)}
+              for m in old.instances]
+    changed = sorted(c["id"] for c, m in zip(picked, old.instances) if c["spec"]["content_hash"] != m.hash)
+    if not changed:
+        sys.exit(f"{old.name} v{old.version} still matches every member; nothing to refreeze")
+    clean = old.selection.get("clean")
+    unfit = [f"{c['id']}: {c['status'].summary()}" for c in picked
+             if c["status"].status != "validated" or not c["status"].long_holds or (clean and c["status"].failures)]
+    if unfit:
+        sys.exit("these members do not qualify any more (validate them, or make a new selection):\n  "
+                 + "\n  ".join(unfit))
+    suite = Suite.model_validate({
+        **old.model_dump(exclude={"version", "selection", "instances"}), "version": old.version + 1,
+        "selection": {**old.selection, "refrozen_from": old.version, "changed": changed},
+        "instances": [{"id": c["id"], "hash": c["spec"]["content_hash"]} for c in picked]})
+    balance = old.selection.get("balance", "layer")
+    by_group = collections.Counter(tag_values(c["spec"], balance)[0] for c in picked)
+    summary = (f"v{old.version} members at their current hashes (changed: {', '.join(changed)}); by {balance}: "
+               + ", ".join(f"{g} {by_group[g]}" for g in sorted(by_group)))
+    text = render(suite, picked, balance, summary)
+    if dry_run:
+        print(text)
+        return
+    path.write_text(text)
+    print(f"wrote {path}: {suite.name} v{suite.version}; {summary}")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--check", action="store_true", help="verify every suite against the current instances")
+    p.add_argument("--refreeze", metavar="SUITE",
+                   help="next version of this suite: same members, current hashes (after members were fixed)")
     p.add_argument("--name")
     p.add_argument("--version", type=int, default=1)
     p.add_argument("--n", type=int, help="how many instances")
@@ -195,6 +233,8 @@ def main():
     a = p.parse_args()
     if a.check:
         return check()
+    if a.refreeze:
+        return refreeze(a.refreeze, a.dry_run)
     if not a.name or not a.n:
         p.error("--name and --n are required (or use --check)")
 

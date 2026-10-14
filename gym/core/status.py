@@ -8,6 +8,10 @@ evidence over. With the thresholds in templates/defaults.yaml (`status`):
   quarantined  more than max_failures runs not VALIDATED (however many runs there are)
   draft        anything else: not enough runs yet
 
+A long-hold run (scripts/validate_scenario.py --long-hold) keeps the do-nothing hold going for the agent's
+whole wall-clock budget; it counts like any other run, and suites admit only instances with at least one
+VALIDATED long-hold run (gym/core/suites.py), so no scenario can heal itself during an episode.
+
 Not counted, because they say nothing about the scenario: runs that ended ENV_UNHEALTHY (the world
 was already broken before the scenario started), INTERRUPTED (stopped by hand) or ENV_CHANGED (the
 cluster context changed during the run), and runs listed in results/void.jsonl (one JSON object per
@@ -33,6 +37,7 @@ class Status:
     failures: int
     verdicts: dict            # verdict -> count, over the counted runs
     timings: dict             # median seconds over VALIDATED runs: detect_s, recover_s, ...
+    long_holds: int = 0       # VALIDATED runs whose do-nothing hold lasted the agent's whole budget
 
     @property
     def flake_rate(self):
@@ -42,7 +47,8 @@ class Status:
         if not self.runs:
             return "no runs"
         failed = ", ".join(f"{v} {n}" for v, n in sorted(self.verdicts.items()) if v != "VALIDATED")
-        return f"{self.runs - self.failures}/{self.runs} validated" + (f" ({failed})" if failed else "")
+        return (f"{self.runs - self.failures}/{self.runs} validated" + (f" ({failed})" if failed else "")
+                + (", long hold passed" if self.long_holds else ""))
 
 
 def _jsonl(path):
@@ -86,7 +92,8 @@ def compute(runs, rules):
     for key in sorted({k for r in ok for k in r.get("timings", {})}):
         vals = [r["timings"][key] for r in ok if key in r.get("timings", {})]
         timings[key] = round(statistics.median(vals))
-    return Status(status, len(counted), failures, dict(verdicts), timings)
+    long_holds = sum(r.get("hold_mode") == "long" for r in ok)
+    return Status(status, len(counted), failures, dict(verdicts), timings, long_holds)
 
 
 def of_spec(spec, records=None, rules=None):

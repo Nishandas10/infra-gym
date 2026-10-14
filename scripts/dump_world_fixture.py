@@ -67,7 +67,7 @@ def slim_pod(pod):
 
 
 def main():
-    if (REPO / ".gym_state").exists() and any((REPO / ".gym_state").glob("*.json")):
+    if (REPO / ".gym_state").exists() and any((REPO / ".gym_state").glob("**/*.json")):
         sys.exit("a fault is injected (.gym_state/ is not empty); revert it before taking the snapshot")
     objects = []
     for ns, kinds in NAMESPACED.items():

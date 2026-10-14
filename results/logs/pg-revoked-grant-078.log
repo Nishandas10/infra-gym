@@ -1,26 +1,26 @@
-02:51:37 === pg-revoked-grant-078 (runtime.exec)
-02:51:38   0. world healthy?
-02:51:50   1. baseline must PASS
-02:51:50       [PASS   ] journey:browse - 3/3 ok, avg 39ms
-02:51:50       [PASS   ] journey:catalog - 3/3 ok, avg 25ms
-02:51:50   2. inject
-02:51:51   3. verifier must FAIL (<= 240s)
-02:51:51       [FAIL   ] journey:browse - 0/3 ok, avg 27ms; e.g. GET /api/products/0PUK6V6EV0 -> 500 b'Internal Server Error'
-02:51:51       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-02:51:51   4. do-nothing agent: still FAIL after 60s?
-02:52:52       [FAIL   ] journey:browse - 0/3 ok, avg 25ms; e.g. GET /api/products/HQTGWGPNH4 -> 500 b'Internal Server Error'
-02:52:52       [FAIL   ] journey:catalog - 0/3 ok, avg 18ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-02:52:52       failing in 5/5 checks during the hold
-02:52:52   5. reference solution
-02:52:52     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'
-02:52:52       GRANT
-02:52:52   6. verifier must PASS (<= 300s)
-02:52:53       [PASS   ] journey:browse - 3/3 ok, avg 23ms
-02:52:53       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
-02:52:53   6b. invariants must PASS (shop_health)
-02:52:54       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-02:52:54       [PASS   ] journey:recommendations - 2/2 ok, avg 94ms
-02:52:54       [PASS   ] journey:cart - 2/2 ok, avg 54ms
-02:52:54       [PASS   ] journey:checkout - 2/2 ok, avg 117ms
-02:52:54   7. restore exactly
-02:53:04   => VALIDATED  {'world_ready_s': 12, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+07:24:24 === pg-revoked-grant-078 (runtime.exec)
+07:24:26   0. world healthy?
+07:24:42   1. baseline must PASS
+07:24:43       [PASS   ] journey:browse - 3/3 ok, avg 28ms
+07:24:43       [PASS   ] journey:catalog - 3/3 ok, avg 23ms
+07:24:43   2. inject
+07:24:43   3. verifier must FAIL (<= 240s)
+07:24:44       [FAIL   ] journey:browse - 0/3 ok, avg 34ms; e.g. GET /api/products/LS4PSXUNUM -> 500 b'Internal Server Error'
+07:24:44       [FAIL   ] journey:catalog - 0/3 ok, avg 17ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+07:24:44   4. do-nothing agent: still FAIL after 900s?
+07:39:45       [FAIL   ] journey:browse - 0/3 ok, avg 22ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
+07:39:45       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+07:39:45       failing in 84/84 checks during the hold
+07:39:45   5. reference solution
+07:39:45     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT SELECT ON catalog.products TO astronomy_user'
+07:39:45       GRANT
+07:39:45   6. verifier must PASS (<= 300s)
+07:39:45       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+07:39:45       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
+07:39:45   6b. invariants must PASS (shop_health)
+07:39:46       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+07:39:46       [PASS   ] journey:recommendations - 2/2 ok, avg 57ms
+07:39:46       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+07:39:46       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
+07:39:46   7. restore exactly
+07:39:55   => VALIDATED  {'world_ready_s': 16, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 8}

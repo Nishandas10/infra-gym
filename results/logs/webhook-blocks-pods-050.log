@@ -1,35 +1,34 @@
-03:01:40 === webhook-blocks-pods-050 (k8s.create_objects)
-03:01:41   0. world healthy?
-03:01:52   1. baseline must PASS
-03:01:53       [PASS   ] journey:email - 3/3 ok, avg 38ms
-03:01:53       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
-03:01:53   2. inject
-03:01:57   3. verifier must FAIL (<= 240s)
-03:02:06       [FAIL   ] journey:email - 0/3 ok, avg 2686ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error timed out>'
-03:02:06       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
-03:02:06   4. do-nothing agent: still FAIL after 60s?
-03:03:07       [FAIL   ] journey:email - 0/3 ok, avg 14ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
-03:03:07       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
-03:03:07       failing in 5/5 checks during the hold
-03:03:07   5. reference solution
-03:03:07     $ kubectl delete validatingwebhookconfiguration pod-policy-guard
-03:03:07       validatingwebhookconfiguration.admissionregistration.k8s.io "pod-policy-guard" deleted
-03:03:07     $ kubectl rollout restart deployment/email
-03:03:07       deployment.apps/email restarted
-03:03:07     $ kubectl rollout status deployment/email --timeout=300s
-03:03:09       Waiting for deployment "email" rollout to finish: 0 out of 1 new replicas have been updated...
-03:03:09       Waiting for deployment "email" rollout to finish: 0 of 1 updated replicas are available...
-03:03:09       deployment "email" successfully rolled out
-03:03:09   6. verifier must PASS (<= 300s)
-03:03:22       [PASS   ] journey:email - 3/3 ok, avg 38ms
-03:03:22       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
-03:03:22   6b. invariants must PASS (shop_health)
-03:03:24       [PASS   ] journey:browse - 2/2 ok, avg 82ms
-03:03:24       [PASS   ] journey:recommendations - 2/2 ok, avg 106ms
-03:03:24       [PASS   ] journey:cart - 2/2 ok, avg 128ms
-03:03:24       [PASS   ] journey:checkout - 2/2 ok, avg 210ms
-03:03:24   6c. the fix must survive a restart of opentelemetry.io/name=email
-03:04:10       [PASS   ] journey:email - 3/3 ok, avg 30ms
-03:04:10       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
-03:04:10   7. restore exactly
-03:04:22   => VALIDATED  {'world_ready_s': 12, 'detect_s': 9, 'recover_s': 13, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 11}
+12:26:26 === webhook-blocks-pods-050 (k8s.create_objects)
+12:26:27   0. world healthy?
+12:26:36   1. baseline must PASS
+12:26:36       [PASS   ] journey:email - 3/3 ok, avg 24ms
+12:26:36       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+12:26:36   2. inject
+12:26:40   3. verifier must FAIL (<= 240s)
+12:26:48       [FAIL   ] journey:email - 0/3 ok, avg 2691ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error timed out>'
+12:26:48       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+12:26:48   4. do-nothing agent: still FAIL after 900s?
+12:41:49       [FAIL   ] journey:email - 0/3 ok, avg 9ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+12:41:49       [FAIL   ] pods_ready:opentelemetry.io/name=email - 0/0 pods ready for opentelemetry.io/name=email; no pods exist
+12:41:49       failing in 84/84 checks during the hold
+12:41:49   5. reference solution
+12:41:49     $ kubectl delete validatingwebhookconfiguration pod-policy-guard
+12:41:49       validatingwebhookconfiguration.admissionregistration.k8s.io "pod-policy-guard" deleted
+12:41:49     $ kubectl rollout restart deployment/email
+12:41:49       deployment.apps/email restarted
+12:41:49     $ kubectl rollout status deployment/email --timeout=300s
+12:41:50       Waiting for deployment "email" rollout to finish: 0 of 1 updated replicas are available...
+12:41:50       deployment "email" successfully rolled out
+12:41:50   6. verifier must PASS (<= 300s)
+12:42:01       [PASS   ] journey:email - 3/3 ok, avg 31ms
+12:42:01       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+12:42:01   6b. invariants must PASS (shop_health)
+12:42:02       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+12:42:02       [PASS   ] journey:recommendations - 2/2 ok, avg 49ms
+12:42:02       [PASS   ] journey:cart - 2/2 ok, avg 54ms
+12:42:02       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
+12:42:02   6c. the fix must survive a restart of opentelemetry.io/name=email
+12:42:48       [PASS   ] journey:email - 3/3 ok, avg 38ms
+12:42:48       [PASS   ] pods_ready:opentelemetry.io/name=email - 1/1 pods ready for opentelemetry.io/name=email
+12:42:48   7. restore exactly
+12:42:57   => VALIDATED  {'world_ready_s': 9, 'detect_s': 9, 'recover_s': 11, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

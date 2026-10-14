@@ -1,18 +1,28 @@
 """Per-scenario undo log, so every injection can be reverted exactly.
 
 Each fault records what it changed before changing it. Reverting replays those
-records in reverse order. The log lives in .gym_state/<scenario-id>.json, so
-a revert still works from a new terminal or after a crash.
+records in reverse order. The log lives in .gym_state/<cluster>/<scenario-id>.json, so a revert
+still works from a new terminal or after a crash. <cluster> is the KUBECONFIG file's name (`default` without
+one), so the same scenario can run on several clusters at once without one run reverting another's fault.
 """
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import re
 import subprocess
 
 from . import kube
 
 STATE_DIR = pathlib.Path(__file__).resolve().parents[1] / ".gym_state"
+
+
+def cluster_key():
+    """Which cluster this process works on: its KUBECONFIG file's name (one per parallel worker)."""
+    cfg = os.environ.get("KUBECONFIG", "").split(os.pathsep)[0]
+    return re.sub(r"[^\w.-]", "_", pathlib.Path(cfg).name) if cfg else "default"
+
 
 # Server-managed fields that must not be sent back when recreating an object.
 _RUNTIME_META = ("uid", "resourceVersion", "creationTimestamp", "generation", "managedFields", "selfLink")
@@ -35,7 +45,10 @@ def clean_manifest(obj):
 class UndoLog:
     def __init__(self, scenario_id):
         self.scenario_id = scenario_id
-        self.path = STATE_DIR / f"{scenario_id}.json"
+        self.path = STATE_DIR / cluster_key() / f"{scenario_id}.json"
+        legacy = STATE_DIR / f"{scenario_id}.json"     # written before logs were kept per cluster
+        if not self.path.exists() and legacy.exists() and cluster_key() == "default":
+            self.path = legacy
         self.actions = json.loads(self.path.read_text()) if self.path.exists() else []
 
     @property
@@ -43,7 +56,7 @@ class UndoLog:
         return bool(self.actions)
 
     def _save(self):
-        STATE_DIR.mkdir(exist_ok=True)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(self.actions, indent=1))
 
     def add(self, action):

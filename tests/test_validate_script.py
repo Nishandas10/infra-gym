@@ -7,7 +7,7 @@ from scripts.validate_scenario import select
 
 
 def args(**kw):
-    base = dict(specs=[], all=False, eligible=True, split=None, hard_first=True, shard=None)
+    base = dict(specs=[], all=False, eligible=True, split=None, hard_first=True, shard=None, suite=None)
     return argparse.Namespace(**{**base, **kw})
 
 
@@ -19,3 +19,9 @@ def test_shards_are_disjoint_and_complete():
     assert max(map(len, shards)) - min(map(len, shards)) <= 1
     hard = {s["id"] for s in select(args(split="hard"))}
     assert all(len(hard & set(shard)) >= 4 for shard in shards)   # Hard tier spread over every worker
+
+
+def test_suite_selects_its_members():
+    from gym.core import suites
+    picked = [s["id"] for s in select(args(eligible=False, suite=["lite"]))]
+    assert picked and set(picked) == {m.id for m in suites.load("lite").instances}

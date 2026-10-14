@@ -1,29 +1,29 @@
-02:57:55 === svc-deleted-037 (k8s.delete_object)
-02:57:56   0. world healthy?
-02:58:05   1. baseline must PASS
-02:58:06       [PASS   ] journey:email - 3/3 ok, avg 32ms
-02:58:06       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
-02:58:06   2. inject
-02:58:06   3. verifier must FAIL (<= 240s)
-02:58:07       [FAIL   ] journey:email - 0/3 ok, avg 21ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
-02:58:07       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
-02:58:07   4. do-nothing agent: still FAIL after 60s?
-02:59:08       [FAIL   ] journey:email - 0/3 ok, avg 9ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
-02:59:08       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
-02:59:08       failing in 5/5 checks during the hold
-02:59:08   5. reference solution
-02:59:08     $ bash scripts/reset_world.sh
-02:59:15         Firepit (Profiles)         http://localhost:8080/profiles/
-02:59:15         Grafana                    http://localhost:8080/grafana/
-02:59:15         Feature Flags UI           http://localhost:8080/feature/
-02:59:15       Reset complete.
-02:59:15   6. verifier must PASS (<= 480s)
-02:59:15       [PASS   ] journey:email - 3/3 ok, avg 24ms
-02:59:15       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
-02:59:15   6b. invariants must PASS (shop_health)
-02:59:16       [PASS   ] journey:browse - 2/2 ok, avg 39ms
-02:59:16       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
-02:59:16       [PASS   ] journey:cart - 2/2 ok, avg 51ms
-02:59:16       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
-02:59:16   7. restore exactly
-02:59:26   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 10}
+12:42:57 === svc-deleted-037 (k8s.delete_object)
+12:42:58   0. world healthy?
+12:43:07   1. baseline must PASS
+12:43:08       [PASS   ] journey:email - 3/3 ok, avg 18ms
+12:43:08       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
+12:43:08   2. inject
+12:43:08   3. verifier must FAIL (<= 240s)
+12:43:08       [FAIL   ] journey:email - 0/3 ok, avg 8ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+12:43:08       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
+12:43:08   4. do-nothing agent: still FAIL after 900s?
+12:58:09       [FAIL   ] journey:email - 0/3 ok, avg 12ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno -2] Name does not resolve>'
+12:58:09       [FAIL   ] endpoints:email - service email has 0 ready endpoint(s)
+12:58:09       failing in 84/84 checks during the hold
+12:58:09   5. reference solution
+12:58:09     $ bash scripts/reset_world.sh
+12:58:15         Firepit (Profiles)         http://localhost:8080/profiles/
+12:58:15         Grafana                    http://localhost:8080/grafana/
+12:58:15         Feature Flags UI           http://localhost:8080/feature/
+12:58:15       Reset complete.
+12:58:15   6. verifier must PASS (<= 480s)
+12:58:15       [PASS   ] journey:email - 3/3 ok, avg 16ms
+12:58:15       [PASS   ] endpoints:email - service email has 1 ready endpoint(s)
+12:58:15   6b. invariants must PASS (shop_health)
+12:58:16       [PASS   ] journey:browse - 2/2 ok, avg 42ms
+12:58:16       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
+12:58:16       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+12:58:16       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+12:58:16   7. restore exactly
+12:58:25   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

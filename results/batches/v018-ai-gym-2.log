@@ -1,0 +1,77 @@
+
+##### pass 1/2: 1 scenario(s)
+16:35:15 === wl-nodeselector-018 (k8s.workload_patch)
+16:35:16   0. world healthy?
+16:35:29   1. baseline must PASS
+16:35:30       [PASS   ] journey:ads - 3/3 ok, avg 30ms
+16:35:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:35:30   2. inject
+16:35:30   3. verifier must FAIL (<= 240s)
+16:35:32       [FAIL   ] journey:ads - 0/3 ok, avg 57ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:35:32       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+16:35:32   4. do-nothing agent: still FAIL after 60s?
+16:36:33       [FAIL   ] journey:ads - 0/3 ok, avg 44ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:36:33       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-84b799d5f8-cgp5z (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
+16:36:33       failing in 5/5 checks during the hold
+16:36:33   5. reference solution
+16:36:33     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+16:36:33       deployment.apps/ad patched
+16:36:33     $ kubectl rollout status deployment/ad --timeout=300s
+16:36:34       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+16:36:35       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+16:36:35       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+16:36:35       deployment "ad" successfully rolled out
+16:36:35   6. verifier must PASS (<= 600s)
+16:37:56       [PASS   ] journey:ads - 3/3 ok, avg 268ms
+16:37:56       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:37:56   6b. invariants must PASS (shop_health)
+16:37:57       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+16:37:57       [PASS   ] journey:recommendations - 2/2 ok, avg 68ms
+16:37:57       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+16:37:57       [PASS   ] journey:checkout - 2/2 ok, avg 81ms
+16:37:57   6c. the fix must survive a restart of deployment/ad
+16:38:43       [PASS   ] journey:ads - 3/3 ok, avg 61ms
+16:38:43       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:38:43   7. restore exactly
+16:39:04   => VALIDATED  {'world_ready_s': 13, 'detect_s': 1, 'recover_s': 81, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 21}
+
+##### pass 2/2: 1 scenario(s)
+16:39:04 === wl-nodeselector-018 (k8s.workload_patch)
+16:39:07   0. world healthy?
+16:39:18   1. baseline must PASS
+16:39:19       [PASS   ] journey:ads - 3/3 ok, avg 54ms
+16:39:19       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:39:19   2. inject
+16:39:19   3. verifier must FAIL (<= 240s)
+16:39:20       [PASS   ] journey:ads - 3/3 ok, avg 45ms
+16:39:20       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/0 pods ready for opentelemetry.io/name=ad; no pods exist
+16:39:20   4. do-nothing agent: still FAIL after 60s?
+16:40:21       [FAIL   ] journey:ads - 0/3 ok, avg 32ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+16:40:21       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-84b799d5f8-xgl78 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) didn't match Pod's )
+16:40:21       failing in 5/5 checks during the hold
+16:40:21   5. reference solution
+16:40:21     $ kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
+16:40:21       deployment.apps/ad patched
+16:40:21     $ kubectl rollout status deployment/ad --timeout=300s
+16:40:22       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+16:40:22       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+16:40:22       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+16:40:22       deployment "ad" successfully rolled out
+16:40:22   6. verifier must PASS (<= 600s)
+16:41:40       [PASS   ] journey:ads - 3/3 ok, avg 36ms
+16:41:40       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:41:40   6b. invariants must PASS (shop_health)
+16:41:41       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+16:41:41       [PASS   ] journey:recommendations - 2/2 ok, avg 47ms
+16:41:41       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+16:41:41       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+16:41:41   6c. the fix must survive a restart of deployment/ad
+16:42:27       [PASS   ] journey:ads - 3/3 ok, avg 47ms
+16:42:27       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:42:27   7. restore exactly
+16:42:36   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 77, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+
+SUMMARY (this run | status of the current version)
+  wl-nodeselector-018                              VALIDATED VALIDATED                      | draft (3/4 validated (ERROR 1))
+
+Run python scripts/generate.py to write the new statuses into scenarios/ and CATALOG.md.

@@ -1,0 +1,28 @@
+10:04:27 === hard-fix-reverted-by-cronjob-101 (composite)
+10:04:28   0. world healthy?
+10:04:37   1. baseline must PASS
+10:04:38       [PASS   ] journey:checkout - 3/3 ok, avg 89ms
+10:04:38       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:04:38   2. inject
+10:04:59   3. verifier must FAIL (<= 300s)
+10:04:59       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:04:59       [FAIL   ] pods_stable:opentelemetry.io/name=payment - payment-7b56ff468-vk5g8 is only 21s old
+10:04:59   4. do-nothing agent: still FAIL after 1200s?
+10:25:00       [FAIL   ] journey:checkout - 0/3 ok, avg 58ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:25:00       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:25:00       failing in 111/111 checks during the hold
+10:25:00   5. reference solution
+10:25:00     $ kubectl delete cronjob payment-config-sync
+10:25:00       cronjob.batch "payment-config-sync" deleted from default namespace
+10:25:00     $ kubectl set env deployment/payment PAYMENT_PORT=8080
+10:25:00       deployment.apps/payment env updated
+10:25:00     $ kubectl rollout status deployment/payment --timeout=300s
+10:25:01       Waiting for deployment spec update to be observed...
+10:25:01       Waiting for deployment spec update to be observed...
+10:25:01       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+10:25:01       deployment "payment" successfully rolled out
+10:25:01   6. verifier must PASS (<= 420s)
+10:32:11       [FAIL   ] journey:checkout - 0/3 ok, avg 54ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:32:11       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+10:32:11   7. restore exactly
+10:34:13   => FIX_DID_NOT_RECOVER  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 430, 'restore_s': 121}

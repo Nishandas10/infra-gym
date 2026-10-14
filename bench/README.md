@@ -14,12 +14,20 @@ sandbox -> verifier PASS, and PASS again after `hold_s` -> every user journey pa
 action was taken (`invariants_ok` and `durable` are recorded; `durable` is null when the
 scenario has nothing to restart).
 
+A shop check that still passed during the fault but fails after the agent counts as **made worse** only if the
+agent changed something: a change command (`safety.is_mutating`: `kubectl apply/patch/set/delete/run/...`, `rollout
+undo/restart`, SQL and Valkey writes; `auth can-i` and dry runs do not count), a collateral change, a restart or a
+touched decoy. Otherwise the fault itself spread (a cascade, or intermittent damage), which is recorded as
+`fault_spread` and not blamed on the agent.
+
 ## Fairness and safety rules
 
 - **Chaos Mesh scenarios are excluded** (`bench_eligible: false` in their templates). Their only
   fix is deleting the chaos object, which an SRE never does in a real incident.
 - **Only validated scenarios run** (`only_validated` in `config.yaml`): at least 5 validation runs of
-  the scenario's current version with at most 1 failure (`gym/core/status.py`).
+  the scenario's current version with at most 1 failure (`gym/core/status.py`). Suite members must also have
+  passed a **long-hold** run: a do-nothing agent still fails after the agent's whole wall-clock budget
+  (`scripts/validate_scenario.py --suite S --long-hold`), so no scenario can heal itself mid-episode.
 - **Every result row records the suite and the scenario's `content_hash`** (see Suites), so results can be tied to the exact
   version of the scenario that ran.
 - **The model works in a container that cannot see this repo**, so it can't read reference
@@ -59,7 +67,8 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 
 - `python bench/agent_bench.py run --suite bench-v1-dev` refuses to start if any member's current `content_hash`
   differs from the suite (the scenario changed after the suite was frozen) or a member is no longer validated.
-  Fix it by freezing a new suite version, not by editing the suite file.
+  Fix it by freezing a new suite version, not by editing the suite file: `python scripts/make_suite.py --refreeze S`
+  keeps the members, takes their current hashes and records which changed (each must still qualify).
 - `python scripts/make_suite.py --check` verifies every suite against the current instances (CI runs the same check
   in `tests/test_suites.py`).
 - `python scripts/make_suite.py --name X --n N [--split train|hard] [--clean] [--cap fix_type=flag:4] [--exclude S] [--fastest]`
@@ -70,7 +79,7 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--hint-level page|ticket|hinted]
+    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted]
     python bench/leaderboard.py --suite S [--common]
 
 Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
@@ -86,6 +95,8 @@ do not count in the suite's reports. Every result row records:
 Results: `bench/results/results.jsonl` (one line per episode), plus full transcripts in
 `bench/results/transcripts/<model>/<scenario>__a<N>__<episode>.json`. Re-running `run` resumes where it stopped: an
 episode is done when that model and attempt already ran this exact instance (`content_hash`) at this hint level.
+`--rerun --only a,b` runs those scenarios again even if finished; the newest row of an episode replaces the older one
+in every report.
 
 Every report (`leaderboard.py`, `scoreboard.py`, `judge.py`, `cost.py`, `passk.py`, `show.py`, `quality_card.py`)
 takes `--suite S` and then counts only rows whose `(scenario, content_hash)` is a member of the suite at its hint

@@ -1,6 +1,6 @@
 spec_version: 2
 id: wl-nodeselector-018
-version: 1
+version: 2
 title: nodeSelector matches no node -> Pending
 mechanism: workload/unschedulable-node-selector
 split: train
@@ -51,3 +51,10 @@ reference:
   commands:
   - kubectl patch deployment ad --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector"}]'
   - kubectl rollout status deployment/ad --timeout=300s
+validation:
+  recover_timeout_s: 600
+notes:
+- 'v2 (2026-10-14): recover_timeout_s 600 (default 300). After a long hold the restarted ad JVM once stalled near its
+  memory limit without listening (ad has no readiness probe, so the pod still counted Ready), was OOM-killed after
+  about 6 minutes and then served normally. One such restart cycle is part of the world, not of this fault, so the
+  recovery window covers it.'

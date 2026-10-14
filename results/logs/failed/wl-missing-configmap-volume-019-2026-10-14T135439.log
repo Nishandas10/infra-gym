@@ -1,0 +1,21 @@
+13:54:39 === wl-missing-configmap-volume-019 (k8s.workload_patch)
+13:54:39   0. world healthy?
+13:54:49   1. baseline must PASS
+13:54:54       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+13:54:54       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+13:54:54   2. inject
+13:54:54   3. verifier must FAIL (<= 240s)
+13:54:59       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/0 pods ready for opentelemetry.io/name=fraud-detection; no pods exist
+13:54:59       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+13:54:59   4. do-nothing agent: still FAIL after 900s?
+14:10:04       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/1 pods ready for opentelemetry.io/name=fraud-detection; fraud-detection-6bdf86599b-7nm75 (wait-for-kafka: PodInitializing)
+14:10:04       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 57)
+14:10:04       failing in 63/63 checks during the hold
+14:10:04   5. reference solution
+14:10:04     $ kubectl rollout undo deployment/fraud-detection
+14:10:04       deployment.apps/fraud-detection rolled back
+14:10:04     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+14:10:04       error: deployment "fraud-detection" exceeded its progress deadline
+14:10:04   ERROR RuntimeError: solution command failed (exit 1): kubectl rollout status deployment/fraud-detection --timeout=300s
+14:10:04   7. restore exactly
+14:10:36   => ERROR  {'world_ready_s': 10, 'detect_s': 6, 'restore_s': 32}

@@ -205,12 +205,23 @@ def c_kafka_lag(group, max_lag=50, **_):
     text = r.stdout + r.stderr
     if r.returncode != 0 or "does not exist" in text:
         return UNKNOWN, f"cannot read consumer group {group}: {text.strip()[:200]}"
+    return kafka_lag_status(group, text, max_lag)
+
+
+def kafka_lag_status(group, text, max_lag):
+    """Lag of a consumer group from `kafka-consumer-groups.sh --describe` output. A partition with no
+    committed offset (CURRENT-OFFSET and LAG are "-") has consumed nothing, so its lag is the whole
+    log; counting it as 0 let a stuck consumer pass."""
     # Columns: GROUP TOPIC PARTITION CURRENT-OFFSET LOG-END-OFFSET LAG CONSUMER-ID HOST CLIENT-ID
     lag = 0
     for line in text.splitlines():
         parts = line.split()
-        if len(parts) >= 6 and parts[0] == group and parts[5].isdigit():
+        if len(parts) < 6 or parts[0] != group:
+            continue
+        if parts[5].isdigit():
             lag += int(parts[5])
+        elif parts[3] == "-" and parts[4].isdigit():
+            lag += int(parts[4])
     if "has no active members" in text:
         return FAIL, f"consumer group {group} has no active members (lag {lag})"
     status = PASS if lag <= max_lag else FAIL

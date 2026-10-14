@@ -10,6 +10,8 @@ the suite. verify() compares them with the current instances: a template change 
 member behaves or is graded changes its content_hash, and the bench refuses to run the suite until a
 new suite version is frozen. Benchmark rows record the suite's name, version and fingerprint and the
 instance's hash, so every result traces back to exactly what ran.
+Every member must also have passed a long-hold validation run (the fault still breaks the system after a
+do-nothing agent has used its whole budget), so a scenario cannot heal itself during an episode.
 """
 from __future__ import annotations
 
@@ -88,7 +90,7 @@ def instances():
 @dataclasses.dataclass
 class Problem:
     id: str
-    kind: str      # missing | hash | not_eligible | quarantined | not_validated
+    kind: str      # missing | hash | not_eligible | quarantined | not_validated | no_long_hold
     detail: str
 
     def __str__(self):
@@ -116,4 +118,7 @@ def verify(suite, insts=None, records=None):
         if st.status != "validated":
             kind = "quarantined" if st.status == "quarantined" else "not_validated"
             out.append(Problem(m.id, kind, f"{st.status} ({st.summary()})"))
+        elif not st.long_holds:
+            out.append(Problem(m.id, "no_long_hold", "no VALIDATED long-hold run: it may heal itself during an episode "
+                                                    "(scripts/validate_scenario.py --suite NAME --long-hold)"))
     return out

@@ -106,6 +106,14 @@ def test_default_hold_is_60s(world):
     rec = harness.validate(SPEC)
     # 60 s hold, polled every 10 s: the last poll is skipped so the final check lands at 60 s
     assert rec["hold_fail_ratio"] == "5/5"
+    assert (rec["hold_mode"], rec["hold_s"]) == ("normal", 60)
+
+
+def test_long_hold_lasts_the_given_budget(world):
+    world()
+    rec = harness.validate(SPEC, hold_s=900)
+    assert rec["verdict"] == "VALIDATED"
+    assert (rec["hold_mode"], rec["hold_s"], rec["hold_fail_ratio"]) == ("long", 900, "89/89")
 
 
 def test_a_context_switch_voids_the_run_and_does_not_revert_the_wrong_cluster(world):
@@ -115,3 +123,29 @@ def test_a_context_switch_voids_the_run_and_does_not_revert_the_wrong_cluster(wo
     assert rec["context"] == "kind-test"
     assert not w.reverted
     assert any("not reverted" in n for n in rec["notes"])
+
+
+def test_a_stale_progress_deadline_is_retried(monkeypatch):
+    """After a long hold the fault's rollout is past its progress deadline; `rollout status` right after the fix
+    can still read that and fail at once (wl-dns-policy-none-029). The harness asks again instead of failing."""
+    import subprocess
+    import types
+    answers = [(1, 'error: deployment "checkout" exceeded its progress deadline'), (0, "successfully rolled out")]
+    calls = []
+
+    def fake_run(argv, **kw):
+        calls.append(argv[-1])
+        code, out = answers.pop(0) if "rollout status" in argv[-1] else (0, "patched")
+        return types.SimpleNamespace(returncode=code, stdout=out, stderr="")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(harness.time, "sleep", lambda s: None)
+    harness.run_solution(["kubectl patch deployment checkout -p '{}'", "kubectl rollout status deployment/checkout"])
+    assert calls.count("kubectl rollout status deployment/checkout") == 2
+
+
+def test_other_solution_failures_are_not_retried(monkeypatch):
+    import subprocess
+    import types
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: types.SimpleNamespace(returncode=1, stdout="boom", stderr=""))
+    with pytest.raises(RuntimeError, match="solution command failed"):
+        harness.run_solution(["kubectl rollout status deployment/checkout"])

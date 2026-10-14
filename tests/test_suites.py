@@ -7,6 +7,7 @@ import pathlib
 import sys
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from gym.core import status, suites
@@ -83,14 +84,25 @@ def test_schema_rejects_duplicates_and_bad_hashes():
         suite([("a-001", "abc")])
 
 
+def evidence(sid, long_hold=True):
+    """Five VALIDATED runs of the instance's current version, the last one a long hold if asked."""
+    vhash = INSTS[sid][0]["validation_hash"]
+    runs = [{"id": sid, "validation_hash": vhash, "verdict": "VALIDATED", "hold_mode": "normal"} for _ in range(5)]
+    runs[-1]["hold_mode"] = "long" if long_hold else "normal"
+    return {vhash: runs}
+
+
 def test_verify_reports_each_problem():
     sid = "wl-listen-port-drift-014"
-    assert not suites.verify(suite([(sid, current(sid))]), INSTS, RECORDS)
-    kinds = [p.kind for p in suites.verify(suite([(sid, H), ("no-such-thing-999", H)]), INSTS, RECORDS)]
+    ok = evidence(sid)
+    assert not suites.verify(suite([(sid, current(sid))]), INSTS, ok)
+    kinds = [p.kind for p in suites.verify(suite([(sid, H), ("no-such-thing-999", H)]), INSTS, ok)]
     assert kinds == ["hash", "missing"]
     chaos = next(i for i, (s, _) in INSTS.items() if not s["bench_eligible"])
-    assert [p.kind for p in suites.verify(suite([(chaos, current(chaos))]), INSTS, RECORDS)] == ["not_eligible"]
+    assert [p.kind for p in suites.verify(suite([(chaos, current(chaos))]), INSTS, ok)] == ["not_eligible"]
     assert [p.kind for p in suites.verify(suite([(sid, current(sid))]), INSTS, {})] == ["not_validated"]
+    short = evidence(sid, long_hold=False)
+    assert [p.kind for p in suites.verify(suite([(sid, current(sid))]), INSTS, short)] == ["no_long_hold"]
 
 
 def test_private_suite_inside_the_public_folder_is_refused(tmp_path, monkeypatch):
@@ -171,3 +183,29 @@ def test_private_results_stay_out_of_the_public_folder():
     priv = suite([("a-001", H)], visibility="private")
     assert rows.results_dir(priv) == suites.private_root() / "results"
     assert rows.results_dir(suite([("a-001", H)])) == rows.RESULTS
+
+
+def test_refreeze_keeps_the_members_and_takes_their_current_hashes(tmp_path, monkeypatch):
+    lite = suites.load("lite")
+    raw = yaml.safe_load((suites.SUITES / "lite.yaml").read_text())
+    stale = raw["instances"][0]["id"]
+    raw["instances"][0]["hash"] = H
+    (tmp_path / "lite.yaml").write_text(yaml.safe_dump(raw))
+    records = {}
+    for m in lite.instances:
+        records.update(evidence(m.id))
+    monkeypatch.setattr(make_suite.status, "load_records", lambda: records)
+    make_suite.refreeze(str(tmp_path / "lite.yaml"))
+    new = suites.load(tmp_path / "lite.yaml")
+    assert new.version == lite.version + 1 and [m.id for m in new.instances] == [m.id for m in lite.instances]
+    assert all(m.hash == current(m.id) for m in new.instances)
+    assert new.selection["changed"] == [stale] and new.selection["refrozen_from"] == lite.version
+
+
+def test_refreeze_refuses_a_member_that_no_longer_qualifies(tmp_path, monkeypatch):
+    raw = yaml.safe_load((suites.SUITES / "lite.yaml").read_text())
+    raw["instances"][0]["hash"] = H
+    (tmp_path / "lite.yaml").write_text(yaml.safe_dump(raw))
+    monkeypatch.setattr(make_suite.status, "load_records", lambda: {})      # nothing validated
+    with pytest.raises(SystemExit, match="do not qualify"):
+        make_suite.refreeze(str(tmp_path / "lite.yaml"))

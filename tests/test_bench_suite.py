@@ -46,8 +46,8 @@ def bench(tmp_path, monkeypatch):
 
 
 def run(suite, **kw):
-    args = argparse.Namespace(suite=suite, only=None, model=None, limit=None, retry_errors=False, attempts=None,
-                              hint_level=None)
+    args = argparse.Namespace(suite=suite, only=None, model=None, limit=None, retry_errors=False, rerun=False,
+                              attempts=None, hint_level=None)
     for k, v in kw.items():
         setattr(args, k, v)
     cfg = dict(CFG, **({"hint_level": kw["hint_level"]} if kw.get("hint_level") else {}))
@@ -96,3 +96,17 @@ def test_private_suite_results_go_to_the_private_checkout(bench, tmp_path, monke
     run("secret", limit=1)
     assert not (tmp_path / "results.jsonl").exists()
     assert json.loads((priv / "results" / "results.jsonl").read_text())["suite"] == "secret"
+
+
+def test_rerun_repeats_only_the_named_scenarios(bench, tmp_path):
+    lite = suites.load("lite")
+    run("lite", limit=3)
+    first, third = lite.instances[0].id, lite.instances[2].id
+    run("lite", limit=3, rerun=True, only=f"{first},{third}")
+    assert [b[0] for b in bench[3:]] == [first, third]
+    assert len(rows.load(lite)) == 3                         # the newer row replaces the older one
+
+
+def test_damage_counts_against_the_agent_only_if_it_changed_something():
+    assert ab.attribute_damage(["journey:browse"], agent_changed=True) == (["journey:browse"], [])
+    assert ab.attribute_damage(["journey:browse"], agent_changed=False) == ([], ["journey:browse"])

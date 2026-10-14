@@ -1,0 +1,18 @@
+
+##### pass 1/2: 1 scenario(s)
+16:35:15 === wl-nodeselector-018 (k8s.workload_patch)
+16:35:16   0. world healthy?
+16:35:29   1. baseline must PASS
+16:35:30       [PASS   ] journey:ads - 3/3 ok, avg 35ms
+16:35:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+16:35:30   2. inject
+16:35:30   ERROR RuntimeError: wl-nodeselector-018 is already injected; revert it first (or pass --force)
+16:35:30   7. restore exactly
+16:35:45   => ERROR  {'world_ready_s': 13, 'restore_s': 15}
+
+Stopping: the cluster is not healthy after wl-nodeselector-018 (ERROR). Fix it (see results/logs/), then re-run; --fill resumes where this stopped.
+
+SUMMARY (this run | status of the current version)
+  wl-nodeselector-018                              ERROR                                    | draft (0/1 validated (ERROR 1))
+
+Run python scripts/generate.py to write the new statuses into scenarios/ and CATALOG.md.

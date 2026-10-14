@@ -1,34 +1,34 @@
-03:36:15 === wl-readonly-rootfs-022 (k8s.workload_patch)
-03:36:16   0. world healthy?
-03:36:25   1. baseline must PASS
-03:36:25       [PASS   ] journey:images - 3/3 ok, avg 34ms
-03:36:25       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-03:36:25   2. inject
-03:36:25   3. verifier must FAIL (<= 240s)
-03:36:31       [FAIL   ] journey:images - 0/3 ok, avg 1719ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
-03:36:31       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/1 pods ready for opentelemetry.io/name=image-provider; image-provider-5649b8c986-5vc5j (image-provider: last exit Error)
-03:36:31   4. do-nothing agent: still FAIL after 60s?
-03:37:32       [FAIL   ] journey:images - 0/3 ok, avg 27ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
-03:37:32       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/1 pods ready for opentelemetry.io/name=image-provider; image-provider-5649b8c986-5vc5j (image-provider: last exit Error)
-03:37:32       failing in 5/5 checks during the hold
-03:37:32   5. reference solution
-03:37:32     $ kubectl patch deployment image-provider --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem"}]'
-03:37:32       deployment.apps/image-provider patched
-03:37:32     $ kubectl rollout status deployment/image-provider --timeout=300s
-03:37:33       Waiting for deployment "image-provider" rollout to finish: 0 out of 1 new replicas have been updated...
-03:37:33       Waiting for deployment "image-provider" rollout to finish: 0 out of 1 new replicas have been updated...
-03:37:33       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
-03:37:33       deployment "image-provider" successfully rolled out
-03:37:33   6. verifier must PASS (<= 300s)
-03:37:34       [PASS   ] journey:images - 3/3 ok, avg 27ms
-03:37:34       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-03:37:34   6b. invariants must PASS (shop_health)
-03:37:35       [PASS   ] journey:browse - 2/2 ok, avg 17ms
-03:37:35       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
-03:37:35       [PASS   ] journey:cart - 2/2 ok, avg 34ms
-03:37:35       [PASS   ] journey:checkout - 2/2 ok, avg 72ms
-03:37:35   6c. the fix must survive a restart of deployment/image-provider
-03:38:20       [PASS   ] journey:images - 3/3 ok, avg 34ms
-03:38:20       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
-03:38:20   7. restore exactly
-03:38:29   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+14:03:20 === wl-readonly-rootfs-022 (k8s.workload_patch)
+14:03:21   0. world healthy?
+14:03:30   1. baseline must PASS
+14:03:31       [PASS   ] journey:images - 3/3 ok, avg 38ms
+14:03:31       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+14:03:31   2. inject
+14:03:31   3. verifier must FAIL (<= 240s)
+14:03:37       [FAIL   ] journey:images - 0/3 ok, avg 1702ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connecti
+14:03:37       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/1 pods ready for opentelemetry.io/name=image-provider; image-provider-5dd6d8b678-2nt4p (image-provider: last exit Error)
+14:03:37   4. do-nothing agent: still FAIL after 900s?
+14:18:38       [FAIL   ] journey:images - 0/3 ok, avg 31ms; e.g. GET /images/products/NationalParkFoundationExplorascope.jpg -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote c
+14:18:38       [FAIL   ] pods_ready:opentelemetry.io/name=image-provider - 0/1 pods ready for opentelemetry.io/name=image-provider; image-provider-5dd6d8b678-2nt4p (image-provider: CrashLoopBackOff)
+14:18:38       failing in 84/84 checks during the hold
+14:18:38   5. reference solution
+14:18:38     $ kubectl patch deployment image-provider --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem"}]'
+14:18:38       deployment.apps/image-provider patched
+14:18:38     $ kubectl rollout status deployment/image-provider --timeout=300s
+14:18:39       Waiting for deployment "image-provider" rollout to finish: 0 out of 1 new replicas have been updated...
+14:18:39       Waiting for deployment "image-provider" rollout to finish: 0 out of 1 new replicas have been updated...
+14:18:39       Waiting for deployment "image-provider" rollout to finish: 0 of 1 updated replicas are available...
+14:18:39       deployment "image-provider" successfully rolled out
+14:18:39   6. verifier must PASS (<= 300s)
+14:18:40       [PASS   ] journey:images - 3/3 ok, avg 36ms
+14:18:40       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+14:18:40   6b. invariants must PASS (shop_health)
+14:18:41       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+14:18:41       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+14:18:41       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+14:18:41       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
+14:18:41   6c. the fix must survive a restart of deployment/image-provider
+14:19:26       [PASS   ] journey:images - 3/3 ok, avg 41ms
+14:19:26       [PASS   ] pods_ready:opentelemetry.io/name=image-provider - 1/1 pods ready for opentelemetry.io/name=image-provider
+14:19:27   7. restore exactly
+14:19:36   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

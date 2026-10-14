@@ -1,22 +1,22 @@
-02:21:38 === flag-image-slow-load-071 (app.flag)
-02:21:38   0. world healthy?
-02:21:50   1. baseline must PASS
-02:21:50       [PASS   ] journey:images_browser - 3/3 ok, avg 26ms
-02:21:50   2. inject
-02:21:51   3. verifier must FAIL (<= 240s)
-02:22:22       [FAIL   ] journey:images_browser - 3/3 ok, avg 10038ms (> 3000ms)
-02:22:22   4. do-nothing agent: still FAIL after 60s?
-02:24:14       [FAIL   ] journey:images_browser - 3/3 ok, avg 10040ms (> 3000ms)
-02:24:14       failing in 2/2 checks during the hold
-02:24:14   5. reference solution
-02:24:14     $ python injectors/toggle_flag.py imageSlowLoad --off
-02:24:15       'imageSlowLoad' -> off (flagd is serving it now)
-02:24:15   6. verifier must PASS (<= 300s)
-02:24:15       [PASS   ] journey:images_browser - 3/3 ok, avg 28ms
-02:24:15   6b. invariants must PASS (shop_health)
-02:24:17       [PASS   ] journey:browse - 2/2 ok, avg 25ms
-02:24:17       [PASS   ] journey:recommendations - 2/2 ok, avg 76ms
-02:24:17       [PASS   ] journey:cart - 2/2 ok, avg 205ms
-02:24:17       [PASS   ] journey:checkout - 2/2 ok, avg 150ms
-02:24:17   7. restore exactly
-02:24:27   => VALIDATED  {'world_ready_s': 11, 'detect_s': 31, 'recover_s': 1, 'invariants_s': 2, 'restore_s': 9}
+06:35:02 === flag-image-slow-load-071 (app.flag)
+06:35:04   0. world healthy?
+06:35:17   1. baseline must PASS
+06:35:18       [PASS   ] journey:images_browser - 3/3 ok, avg 38ms
+06:35:18   2. inject
+06:35:19   3. verifier must FAIL (<= 240s)
+06:35:49       [FAIL   ] journey:images_browser - 3/3 ok, avg 10022ms (> 3000ms)
+06:35:49   4. do-nothing agent: still FAIL after 900s?
+06:51:20       [FAIL   ] journey:images_browser - 3/3 ok, avg 10033ms (> 3000ms)
+06:51:20       failing in 22/22 checks during the hold
+06:51:20   5. reference solution
+06:51:20     $ python injectors/toggle_flag.py imageSlowLoad --off
+06:51:21       'imageSlowLoad' -> off (flagd is serving it now)
+06:51:21   6. verifier must PASS (<= 300s)
+06:51:21       [PASS   ] journey:images_browser - 3/3 ok, avg 24ms
+06:51:21   6b. invariants must PASS (shop_health)
+06:51:22       [PASS   ] journey:browse - 2/2 ok, avg 25ms
+06:51:22       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+06:51:22       [PASS   ] journey:cart - 2/2 ok, avg 36ms
+06:51:22       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
+06:51:22   7. restore exactly
+06:51:31   => VALIDATED  {'world_ready_s': 13, 'detect_s': 31, 'recover_s': 0, 'invariants_s': 1, 'restore_s': 9}

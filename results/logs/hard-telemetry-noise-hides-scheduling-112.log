@@ -1,33 +1,33 @@
-00:19:07 === hard-telemetry-noise-hides-scheduling-112 (composite)
-00:19:08   0. world healthy?
-00:19:27   1. baseline must PASS
-00:19:29       [PASS   ] journey:currency - 3/3 ok, avg 98ms
-00:19:29       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-00:19:29   2. inject
-00:20:19   3. verifier must FAIL (<= 300s)
-00:20:44       [FAIL   ] journey:currency - 0/3 ok, avg 8038ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
-00:20:44       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-ssqrq (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
-00:20:44   4. do-nothing agent: still FAIL after 60s?
-00:22:18       [FAIL   ] journey:currency - 0/3 ok, avg 8026ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
-00:22:18       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-ssqrq (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
-00:22:18       failing in 2/2 checks during the hold
-00:22:18   5. reference solution
-00:22:18     $ kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
-00:22:19       node/ai-gym-3-worker untainted
-00:22:19       node/ai-gym-3-worker2 untainted
-00:22:19     $ kubectl rollout status deployment/currency --timeout=300s
-00:22:20       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
-00:22:20       deployment "currency" successfully rolled out
-00:22:20   6. verifier must PASS (<= 420s)
-00:22:45       [PASS   ] journey:currency - 3/3 ok, avg 46ms
-00:22:45       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-00:22:45   6b. invariants must PASS (shop_health)
-00:22:46       [PASS   ] journey:browse - 2/2 ok, avg 29ms
-00:22:46       [PASS   ] journey:recommendations - 2/2 ok, avg 64ms
-00:22:46       [PASS   ] journey:cart - 2/2 ok, avg 60ms
-00:22:46       [PASS   ] journey:checkout - 2/2 ok, avg 124ms
-00:22:46   6c. the fix must survive a restart of daemonset/otel-collector-agent, opentelemetry.io/name=currency
-00:23:33       [PASS   ] journey:currency - 3/3 ok, avg 49ms
-00:23:33       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-00:23:33   7. restore exactly
-00:24:10   => VALIDATED  {'world_ready_s': 19, 'detect_s': 25, 'recover_s': 25, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 37}
+09:27:29 === hard-telemetry-noise-hides-scheduling-112 (composite)
+09:27:29   0. world healthy?
+09:27:38   1. baseline must PASS
+09:27:38       [PASS   ] journey:currency - 3/3 ok, avg 30ms
+09:27:38       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+09:27:38   2. inject
+09:28:28   3. verifier must FAIL (<= 300s)
+09:28:52       [FAIL   ] journey:currency - 0/3 ok, avg 8027ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
+09:28:52       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-f6bk6 (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+09:28:52   4. do-nothing agent: still FAIL after 1200s?
+09:48:53       [FAIL   ] journey:currency - 0/3 ok, avg 25ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+09:48:53       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-756866474-f6bk6 (Pending: Unschedulable 0/3 nodes are available: 3 node(s) had untolerated taint(s). preemption: 0/3 nodes are ava)
+09:48:53       failing in 105/105 checks during the hold
+09:48:53   5. reference solution
+09:48:53     $ kubectl taint nodes -l '!node-role.kubernetes.io/control-plane' dedicated=batch:NoSchedule-
+09:48:53       node/ai-gym-worker untainted
+09:48:53       node/ai-gym-worker2 untainted
+09:48:53     $ kubectl rollout status deployment/currency --timeout=300s
+09:48:54       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+09:48:54       deployment "currency" successfully rolled out
+09:48:54   6. verifier must PASS (<= 420s)
+09:50:09       [PASS   ] journey:currency - 3/3 ok, avg 35ms
+09:50:09       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+09:50:09   6b. invariants must PASS (shop_health)
+09:50:10       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+09:50:10       [PASS   ] journey:recommendations - 2/2 ok, avg 41ms
+09:50:10       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+09:50:10       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+09:50:10   6c. the fix must survive a restart of daemonset/otel-collector-agent, opentelemetry.io/name=currency
+09:50:56       [PASS   ] journey:currency - 3/3 ok, avg 38ms
+09:50:56       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+09:50:56   7. restore exactly
+09:51:35   => VALIDATED  {'world_ready_s': 8, 'detect_s': 25, 'recover_s': 75, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 38}
