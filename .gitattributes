@@ -1,3 +1,8 @@
 # Shell scripts run inside WSL/Linux; keep LF even on a Windows checkout
 # (core.autocrlf=true would otherwise give them CRLF and bash would fail on '\r').
 *.sh text eol=lf
+
+# Append-only logs: keep both sides on a merge (branches validate and run in parallel).
+results/validation.jsonl merge=union
+results/environments.jsonl merge=union
+bench/results/results.jsonl merge=union

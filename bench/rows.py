@@ -1,11 +1,12 @@
 """Reading benchmark results the same way in every report (leaderboard, scoreboard, report, judge, ...).
 
-An episode is identified by (scenario, model, attempt, content_hash, hint_level): re-running it
-replaces the old row (the later line wins), while another scenario version or hint level is a
-different episode. A suite's reports keep only rows whose (scenario, content_hash) is a member of the
-suite and whose hint level is the suite's, so a row counts for every suite that holds exactly the
-instance it ran and never for a suite that holds another version of it. Rows from before suites
-(no content_hash) only show up with --any-version, which matches members by id alone.
+An episode is identified by (scenario, model, attempt, content_hash, hint_level, prompt_version):
+re-running it replaces the old row (the later line wins), while another scenario version, hint level or
+prompt version is a different episode. A suite's reports keep only rows whose (scenario, content_hash)
+is a member of the suite, whose hint level is the suite's and whose prompt version is the current one,
+so a row counts for every suite that holds exactly the instance it ran and never for a suite that holds
+another version of it. Rows from before suites (no content_hash) or from older prompts only show up
+with --any-version, which matches members by id alone.
 
 Results of private suites are kept in the private checkout (private/results/), never in
 bench/results/, so they cannot be published by accident.
@@ -24,6 +25,10 @@ from gym.core import suites  # noqa: E402
 
 RESULTS = HERE / "results"
 AXES = ("layer", "fix_type", "drivers")   # tag axes the reports break results down by
+# Version of what agent_bench tells the agent (system prompt, reminders, report request).
+# 1: until 2026-10-15 (rows without the field). 2: the system prompt states the command budget and the
+# agent is reminded when 5 commands are left.
+PROMPT_VERSION = 2
 
 
 def read_jsonl(path):
@@ -48,8 +53,13 @@ def hint_level(r):
     return r.get("hint_level") or "page"
 
 
+def prompt_version(r):
+    return r.get("prompt_version") or 1
+
+
 def identity(r):
-    return (r.get("scenario") or r.get("key"), r.get("model"), r.get("attempt"), r.get("content_hash"), hint_level(r))
+    return (r.get("scenario") or r.get("key"), r.get("model"), r.get("attempt"), r.get("content_hash"), hint_level(r),
+            prompt_version(r))
 
 
 def ep_key(r):
@@ -70,7 +80,7 @@ def in_suite(rows, suite, any_version=False):
         return [r for r in rows if r.get("scenario") in ids]
     members = {(m.id, m.hash) for m in suite.instances}
     return [r for r in rows if (r.get("scenario"), r.get("content_hash")) in members
-            and hint_level(r) == suite.hint_level]
+            and hint_level(r) == suite.hint_level and prompt_version(r) == PROMPT_VERSION]
 
 
 def load(suite=None, any_version=False):
@@ -115,11 +125,12 @@ def provenance(suite, rows, any_version=False):
     lines = [f"Suite: **{suite.name} v{suite.version}** ({suite.visibility}, {len(suite.instances)} instances, "
              f"hint level {suite.hint_level}), fingerprint `{suites.fingerprint(suite)[:19]}`."]
     if any_version:
-        lines.append("Matched by scenario id only (--any-version): rows may come from other scenario versions or "
-                     "hint levels than the suite's, so these numbers are not pinned to it.")
+        lines.append("Matched by scenario id only (--any-version): rows may come from other scenario versions, "
+                     "hint levels or prompt versions than the suite's, so these numbers are not pinned to it.")
     else:
         ran = {r.get("scenario") for r in rows}
-        lines.append(f"Every row matches a member's content hash at hint level {suite.hint_level}; "
+        lines.append(f"Every row matches a member's content hash at hint level {suite.hint_level}, agent prompt "
+                     f"version {PROMPT_VERSION}; "
                      f"{len(ran)} of {len(suite.instances)} members have results. "
                      "The suite file lists each member's hash; each result row records it as content_hash.")
     return lines

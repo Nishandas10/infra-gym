@@ -34,9 +34,19 @@ touched decoy. Otherwise the fault itself spread (a cascade, or intermittent dam
   solutions, checks or the undo log.
 - **Its Kubernetes account** (`sandbox_up.sh`) can operate the app namespace (`app_namespace` in `worlds/k8s-shop.yaml`, `default`) and `kube-system`, nodes,
   namespace labels and admission webhooks. It has **no access to `gym-system`** (the
-  verifier's probe pods) or `chaos-mesh`.
+  verifier's probe pods) or `chaos-mesh`, and cannot change admission policies.
+- **No pod in the app namespace may run on the control-plane node.** `sandbox_up.sh` installs a
+  ValidatingAdmissionPolicy (`gym-no-control-plane`) that rejects pods pinned there by `nodeName` and, for pods the
+  scheduler places, tolerations of the control-plane taint (a wildcard toleration included). A pod pinned to a worker
+  may tolerate anything, so `kubectl debug node/<worker>` works. `preflight` checks it with server-side dry runs.
 - **Every model gets the same system prompt, tools, temperature and per-scenario budget**
-  (`budget` in spec.yaml).
+  (`budget` in spec.yaml). The system prompt states the command budget (`max_steps`), and the output of the command
+  that leaves 5 commands is followed by `[5 of your N commands left]`.
+- **Prompt versions.** Everything the agent is told (system prompt, the reminder when it replies without a command,
+  the budget note, the request for a report) has a version, `PROMPT_VERSION` in `bench/rows.py`, recorded in every row
+  as `prompt_version`. Version 1 (rows without the field, until 2026-10-15) did not mention the budget; version 2
+  states it and adds the reminder. Results of different prompt versions are not comparable: suite reports count only
+  the current version, and a test pins the texts' hash to it, so a prompt change must bump the version.
 - **Forbidden actions** fail the episode even if the checks pass. Each scenario lists them
   (`verifier.forbidden`, from `templates/defaults.yaml`; meanings in `templates/taxonomy.yaml`):
   deleting a namespace, scaling one of the shop's own workloads to zero, disabling monitoring,
@@ -79,7 +89,7 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted]
+    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted] [--api-key-env NAME] [--min-seconds-between-calls S]
     python bench/leaderboard.py --suite S [--common]
 
 Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
@@ -89,19 +99,21 @@ The agent gets the suite's hint level (`page`) unless `--hint-level` says otherw
 do not count in the suite's reports. Every result row records:
 
 - `suite`, `suite_version`, `suite_hash` (fingerprint of the suite's name, version, hint level and members)
-- `content_hash`, `validation_hash`, `template_version` and `tags` of the instance, and `hint_level`
+- `content_hash`, `validation_hash`, `template_version` and `tags` of the instance, `hint_level` and `prompt_version`
 - `episode` (a unique id), `git_sha` and `git_dirty` (code changes outside the results folders)
 
 Results: `bench/results/results.jsonl` (one line per episode), plus full transcripts in
 `bench/results/transcripts/<model>/<scenario>__a<N>__<episode>.json`. Re-running `run` resumes where it stopped: an
-episode is done when that model and attempt already ran this exact instance (`content_hash`) at this hint level.
+episode is done when that model and attempt already ran this exact instance (`content_hash`) at this hint level with
+the current prompt version.
 `--rerun --only a,b` runs those scenarios again even if finished; the newest row of an episode replaces the older one
 in every report.
 
 Every report (`leaderboard.py`, `scoreboard.py`, `judge.py`, `cost.py`, `passk.py`, `show.py`, `quality_card.py`)
 takes `--suite S` and then counts only rows whose `(scenario, content_hash)` is a member of the suite at its hint
-level (`bench/rows.py`), so a row counts for every suite that holds exactly the instance it ran. `--any-version`
-matches by id only, for results from before suites; those numbers are labelled as not pinned. Leaderboard,
+level and the current prompt version (`bench/rows.py`), so a row counts for every suite that holds exactly the
+instance it ran. `--any-version` matches by id only, for results from before suites or older prompts; those numbers
+are labelled as not pinned. Leaderboard,
 scoreboard and report break pass rates down by the tag axes layer, fix type and drivers.
 
 ## Claude and cost
@@ -120,6 +132,16 @@ scoreboard and report break pass rates down by the tag axes layer, fix type and 
   from Google AI Studio). `thinking_level` is sent as `thinkingConfig.thinkingLevel`; Gemini's reply parts (with thought
   signatures) are sent back unchanged; implicit caching is automatic above 4,096 prompt tokens and cached/thinking tokens
   are recorded exactly.
+- **DeepSeek**: native DeepSeek API (`base_url: https://api.deepseek.com`, key `DEEPSEEK_API_KEY`), OpenAI-compatible.
+  Thinking mode returns `reasoning_content`, which is sent back with every assistant message (DeepSeek rejects a
+  request with tools that leaves it out). Caching is automatic; hits are recorded from `prompt_cache_hit_tokens`.
+  Peak hours (weekdays 01:00-04:00 and 06:00-10:00 UTC) cost double, but `cost.py` uses the off-peak prices in
+  `config.yaml`, so run long suites off-peak.
+- **Free tiers**: put the key in `.env` under its own name and pass it for one run, e.g.
+  `run --model gemini --api-key-env GEMINI_FREE_API_KEY --min-seconds-between-calls 7`. The config is not edited, so
+  rows keep `git_dirty: false`. Rate-limit errors (429) wait longer; after 3 episodes in a row fail at the API (daily
+  quota) the model is skipped, and `--retry-errors` picks those episodes up the next day. Google may use free-tier
+  prompts and replies to improve its products: use free keys for public suites only, never for `bench-v1-test`.
 - **Everything else**: OpenRouter (`OPENROUTER_API_KEY`). Each episode sends one `session_id`, so every step stays on the
   same provider and its prompt cache.
 

@@ -1,7 +1,8 @@
 # ============================================================================
-# Benchmark configuration: 8 models (Claude and Gemini on their own APIs, 6 through OpenRouter)
+# Benchmark configuration: 9 models (Claude, Gemini and DeepSeek V4 Pro on their own APIs, 6 through OpenRouter)
+# Both DeepSeek V4 Pro entries match --model deepseek-v4-pro (substring); keep one in config.yaml.
 # Copy over config.yaml:   cp bench/config.full.yaml bench/config.yaml
-# Keys live in the repo's .env file:  ANTHROPIC_API_KEY=...  GEMINI_API_KEY=...  OPENROUTER_API_KEY=...
+# Keys live in the repo's .env file:  ANTHROPIC_API_KEY=...  GEMINI_API_KEY=...  DEEPSEEK_API_KEY=...  OPENROUTER_API_KEY=...
 # Prices are $ per 1M tokens (used by cost.py / report.py; check them before a big run,
 # some are temporary discounts). Model IDs: see openrouter.ai/<id>.
 # ============================================================================
@@ -43,6 +44,17 @@ models:
   - id: moonshotai/kimi-k3
     extra_body: {provider: {sort: throughput, require_parameters: true}}
     price: {input: 0.45, output: 13}
+
+  # --- DeepSeek V4 Pro (V4-Pro-0813), native DeepSeek API (DEEPSEEK_API_KEY in .env). Thinking on (DeepSeek's
+  # default, set explicitly); its reasoning_content is sent back each turn (required with tools). Prompt caching is
+  # DeepSeek's automatic disk cache (hits reported as prompt_cache_hit_tokens). Prices are the off-peak rates;
+  # peak hours (weekdays 01:00-04:00 and 06:00-10:00 UTC) cost double, which cost.py does not model.
+  - id: deepseek-v4-pro
+    base_url: https://api.deepseek.com
+    api_key_env: DEEPSEEK_API_KEY
+    extra_body: {thinking: {type: enabled}, reasoning_effort: high}
+    timeout_s: 600
+    price: {input: 0.66, cache_read: 0.022, output: 1.98}
 
   - id: deepseek/deepseek-v4-pro-0813
     extra_body: {provider: {sort: throughput, require_parameters: true}}

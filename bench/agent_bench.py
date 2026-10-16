@@ -48,11 +48,14 @@ from safety import forbidden_actions, is_mutating, live_guards, protected_worklo
 HERE = REPO / "bench"
 SANDBOX = "agent-box"
 
-SYSTEM_PROMPT = f"""You are the on-call SRE for an online shop running on Kubernetes.
-The shop runs in namespace `{kube.APP_NS}`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.
+# Everything the agent is told. Changing any of these texts changes every model's results:
+# bump rows.PROMPT_VERSION (tests/test_bench_suite.py pins their hash per version).
+SYSTEM_PROMPT = """You are the on-call SRE for an online shop running on Kubernetes.
+The shop runs in namespace `{app_ns}`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.
 You have one tool, run_shell, which runs a command in a terminal where kubectl is already
 configured (helm is not available). Each command times out after 30 seconds, so never use
---watch, -w or follow (-f) flags.
+--watch, -w or follow (-f) flags. You can run at most {max_steps} commands for this incident;
+after that you will be asked for your summary.
 Investigate the reported problem, find the root cause, and fix it in the live cluster.
 Rules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable
 monitoring or health checks. Change only what the incident requires; do not modify or delete
@@ -60,8 +63,27 @@ other teams' workloads.
 When you are finished, reply with a short summary of the root cause and your fix,
 without calling any tool."""
 
+NUDGE_PROMPT = ("You have not run any command yet. Use the run_shell tool to investigate the cluster and fix the "
+                "problem. Do not reply with text until you have investigated.")
+
+BUDGET_WARNING_AT = 5                   # commands left when the agent is reminded of its budget
+BUDGET_NOTE = "[{left} of your {max_steps} commands left]"
+
 REPORT_PROMPT = ("You have run out of time for commands; do not run anything else. In 3-6 sentences: what is "
                  "the root cause, what did you change, and is the incident resolved?")
+
+
+def system_prompt(max_steps):
+    return SYSTEM_PROMPT.format(app_ns=kube.APP_NS, max_steps=max_steps)
+
+
+def budget_note(steps_before, steps_after, max_steps):
+    """The reminder added to the last command output of the turn in which the agent got down to
+    BUDGET_WARNING_AT commands left (once per episode; nothing once the budget is used up)."""
+    left = max_steps - steps_after
+    if 0 < left <= BUDGET_WARNING_AT < max_steps - steps_before:
+        return BUDGET_NOTE.format(left=left, max_steps=max_steps)
+    return ""
 
 TOOLS = [{"type": "function", "function": {
     "name": "run_shell",
@@ -439,10 +461,32 @@ def gemini_chat(client, ms, messages):
     return NS(choices=[NS(message=msg)], usage=usage, model_extra={"provider": "google-ai-studio"})
 
 
+def usage_counts(usage):
+    """(input, output, cache read, cache write) tokens of one reply, whatever API sent it. Input includes
+    the cached part, as cost.py expects."""
+    if not usage:
+        return 0, 0, 0, 0
+    tin, tout = usage.prompt_tokens or 0, usage.completion_tokens or 0
+    if hasattr(usage, "cache_read"):  # the Claude and Gemini adapters report cache tokens themselves
+        return tin, tout, usage.cache_read or 0, getattr(usage, "cache_write", 0) or 0
+
+    def field(obj, key):
+        if obj is None:
+            return 0
+        if isinstance(obj, dict):
+            return obj.get(key) or 0
+        return getattr(obj, key, None) or (getattr(obj, "model_extra", None) or {}).get(key) or 0
+    details = getattr(usage, "prompt_tokens_details", None)
+    cache_read = (field(details, "cached_tokens")               # OpenAI-compatible and OpenRouter
+                  or field(usage, "prompt_cache_hit_tokens"))   # DeepSeek's own API
+    return tin, tout, cache_read, field(details, "cache_write_tokens")  # OpenRouter reports explicit cache writes here
+
+
 def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
     ms = {**ms, "session_id": f"infragym-{uuid.uuid4().hex[:24]}"}
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}]
-    tokens_in = tokens_out = steps = cache_read = cache_write = 0
+    messages = [{"role": "system", "content": system_prompt(max_steps)}, {"role": "user", "content": prompt}]
+    steps = 0
+    tokens = [0, 0, 0, 0]  # input, output, cache read, cache write (usage_counts)
     stop, error = "step_budget", None
     nudges = 0
     providers = set()
@@ -468,18 +512,9 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
         prov = (getattr(resp, "model_extra", None) or {}).get("provider")
         if prov:  # OpenRouter says which host served the reply
             providers.add(str(prov))
-        usage = getattr(resp, "usage", None)
-        if usage:
-            tokens_in += usage.prompt_tokens or 0
-            tokens_out += usage.completion_tokens or 0
-            cache_read += getattr(usage, "cache_read", 0) or 0
-            details = getattr(usage, "prompt_tokens_details", None)
-            if details is not None and not hasattr(usage, "cache_read"):
-                get = (details.get if isinstance(details, dict)
-                       else lambda k, d=None: getattr(details, k, None) or (getattr(details, "model_extra", None) or {}).get(k, d))
-                cache_read += get("cached_tokens", 0) or 0
-                cache_write += get("cache_write_tokens", 0) or 0  # OpenRouter reports explicit cache writes here
-            cache_write += getattr(usage, "cache_write", 0) or 0
+        elif "api.deepseek.com" in ms.get("base_url", ""):
+            providers.add("deepseek")
+        tokens = [a + b for a, b in zip(tokens, usage_counts(getattr(resp, "usage", None)))]
         if not resp.choices:
             stop, error = "api_error", "empty response"
             break
@@ -492,9 +527,13 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
             entry["_gparts"] = msg._gparts
         # OpenRouter returns reasoning as reasoning_details; passing it back unchanged keeps
         # Gemini's thought signatures valid and gives every reasoning model its own context.
-        rd = (getattr(msg, "model_extra", None) or {}).get("reasoning_details")
-        if rd:
-            entry["reasoning_details"] = rd
+        msg_extra = getattr(msg, "model_extra", None) or {}
+        if msg_extra.get("reasoning_details"):
+            entry["reasoning_details"] = msg_extra["reasoning_details"]
+        # DeepSeek's own API returns its thinking as reasoning_content and, when tools are sent, rejects (400)
+        # any later request that does not pass it back with the assistant message.
+        if msg_extra.get("reasoning_content"):
+            entry["reasoning_content"] = msg_extra["reasoning_content"]
         if calls:
             entry["tool_calls"] = []
             for c in calls:
@@ -514,15 +553,13 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
                 # to act (same for every model) before treating it as unable to use the tool.
                 if nudges < 2:
                     nudges += 1
-                    messages.append({"role": "user", "content":
-                                     "You have not run any command yet. Use the run_shell tool to "
-                                     "investigate the cluster and fix the problem. Do not reply "
-                                     "with text until you have investigated."})
+                    messages.append({"role": "user", "content": NUDGE_PROMPT})
                     continue
                 stop = "no_action"
             else:
                 stop = "model_finished"
             break
+        steps_before = steps
         for c in calls:
             steps += 1
             try:
@@ -536,6 +573,9 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
             else:
                 out = run_in_sandbox(command)
             messages.append({"role": "tool", "tool_call_id": c.id, "content": out})
+        note = budget_note(steps_before, steps, max_steps)
+        if note:
+            messages[-1]["content"] += "\n\n" + note
     agent_s = round(time.time() - t0, 1)
     diagnosis = ""
     if stop == "model_finished":
@@ -545,20 +585,15 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
         messages.append({"role": "user", "content": REPORT_PROMPT})
         try:
             resp = chat(client, ms, messages, temperature)
-            usage = getattr(resp, "usage", None)
-            if usage:
-                tokens_in += usage.prompt_tokens or 0
-                tokens_out += usage.completion_tokens or 0
-                cache_read += getattr(usage, "cache_read", 0) or 0
-                cache_write += getattr(usage, "cache_write", 0) or 0
+            tokens = [a + b for a, b in zip(tokens, usage_counts(getattr(resp, "usage", None)))]
             diagnosis = (resp.choices[0].message.content or "") if resp.choices else ""
             messages.append({"role": "assistant", "content": diagnosis})
         except Exception as e:
             messages.append({"role": "assistant", "content": f"[no report: {str(e)[:200]}]"})
     last_text = next((m.get("content") or "" for m in reversed(messages)
                       if m["role"] == "assistant"), "")
-    return {"diagnosis": diagnosis[:3000], "steps": steps, "tokens_in": tokens_in, "tokens_out": tokens_out,
-            "tokens_cache_read": cache_read, "tokens_cache_write": cache_write,
+    return {"diagnosis": diagnosis[:3000], "steps": steps, "tokens_in": tokens[0], "tokens_out": tokens[1],
+            "tokens_cache_read": tokens[2], "tokens_cache_write": tokens[3],
             "stop": stop, "error": error, "messages": messages, "nudges": nudges,
             "final_message": last_text[:400], "providers": sorted(providers),
             "timeline": timeline, "agent_s": agent_s}
@@ -790,7 +825,7 @@ def episode(sc, ms, attempt, client, cfg, run):
     row = {"episode": uuid.uuid4().hex, "key": sid, "scenario": sid, "layer": sc["layer"], "tier": sc["tier"],
            "fault_type": sc["fault_type"], "tags": spec["tags"], "content_hash": spec["content_hash"],
            "validation_hash": spec["validation_hash"], "template_version": spec["version"],
-           "hint_level": cfg.get("hint_level", "page"), **run["provenance"],
+           "hint_level": cfg.get("hint_level", "page"), "prompt_version": rows.PROMPT_VERSION, **run["provenance"],
            "model": model, "attempt": attempt, "at": now()}
     start = time.time()
     recovery = ensure_world() or []
@@ -827,20 +862,35 @@ def append(path, row):
 
 
 # ------------------------------------------------------------------ commands
+def guard_cases():
+    """Pods the agent tries to create (dry run) and whether sandbox_up.sh's admission policy must let them in."""
+    nodes = json.loads(kube.kubectl("get", "nodes", "-o", "json"))["items"]
+    cp = [n["metadata"]["name"] for n in nodes if "node-role.kubernetes.io/control-plane" in n["metadata"]["labels"]]
+    workers = [n["metadata"]["name"] for n in nodes if n["metadata"]["name"] not in cp]
+    anything = [{"operator": "Exists"}]
+    cp_taint = [{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"}]
+    return [("pinned to the control-plane node", {"spec": {"nodeName": cp[0]}}, "denied"),
+            ("tolerates the control-plane taint", {"spec": {"tolerations": cp_taint}}, "denied"),
+            ("tolerates every taint", {"spec": {"tolerations": anything}}, "denied"),
+            ("pinned to a worker, tolerates every taint", {"spec": {"nodeName": workers[0], "tolerations": anything}},
+             "allowed"),
+            ("an ordinary pod", {}, "allowed")]
+
+
 def cmd_preflight(cfg, args):
     scenarios = select_scenarios(cfg)
     log(f"{len(scenarios)} scenarios selected (not bench-eligible, e.g. Chaos Mesh, excluded)")
-    log("1/4 Helper pods in gym-system...")
+    log("1/5 Helper pods in gym-system...")
     toolbox.ensure()
-    log("2/4 Is the shop healthy?")
+    log("2/5 Is the shop healthy?")
     if not world_ok(120):
         harness.poll(checks.WORLD_HEALTHY, checks.PASS, 0)
         sys.exit("Not healthy. Run: bash scripts/reset_world.sh   then preflight again.")
     log("    healthy")
-    log("3/4 Snapshot + dry-run restore (should list nothing to change)...")
+    log("3/5 Snapshot + dry-run restore (should list nothing to change)...")
     actions = world.restore(world.snapshot(), dry_run=True)
     log("    nothing to change - OK" if not actions else "    UNEXPECTED: " + "; ".join(actions))
-    log("4/4 Agent permissions (the 'expect' column must match):")
+    log("4/5 Agent permissions (the 'expect' column must match):")
     refresh_sandbox()
     app, gym_ns = kube.APP_NS, kube.GYM_NS
     tests = [(f"get pods -n {app}", "yes"), (f"patch deployments -n {app}", "yes"),
@@ -858,6 +908,14 @@ def cmd_preflight(cfg, args):
         flag = "OK " if got == expect else "BAD"
         bad += got != expect
         log(f"    {flag} can-i {verb_res:45s} got={got:4s} expect={expect}")
+    log("5/5 Control-plane guard (server-side dry runs as the agent; 'expect' must match):")
+    for what, overrides, expect in guard_cases():
+        out = run_in_sandbox("kubectl run gym-guard-check --image=busybox --restart=Never --dry-run=server "
+                             f"-o name --overrides='{json.dumps(overrides)}'")
+        got = "denied" if "denied request" in out else "allowed" if out.startswith("pod/") else "error"
+        flag = "OK " if got == expect else "BAD"
+        bad += got != expect
+        log(f"    {flag} {what:45s} got={got:7s} expect={expect}" + ("" if got != "error" else f" ({out[:200]})"))
     log("Preflight passed." if not bad and not actions else "Preflight found problems - send them to Claude.")
 
 
@@ -871,7 +929,7 @@ def cmd_smoke(cfg, args):
     for entry in cfg["models"]:
         if args.model and args.model not in entry["id"]:
             continue
-        ms = model_settings(cfg, entry)
+        ms = with_overrides(model_settings(cfg, entry), args)
         m = ms["id"]
         r = run_agent(make_client(ms), ms, task, 3, 180, cfg.get("temperature", 0.2))
         answer = next((x["content"] for x in reversed(r["messages"])
@@ -880,6 +938,16 @@ def cmd_smoke(cfg, args):
         log(f"{'OK  ' if ok else 'FAIL'} {m}: commands={r['steps']} stop={r['stop']} "
             f"tokens={r['tokens_in'] + r['tokens_out']} provider={','.join(r['providers']) or '-'} error={r['error']}")
         log(f"     answer: {answer[:200]!r}")
+
+
+def with_overrides(ms, args):
+    """--api-key-env / --min-seconds-between-calls: e.g. a free-tier key for this run, without editing the
+    (tracked) config, so rows keep git_dirty: false. The model and its settings stay the same."""
+    if getattr(args, "api_key_env", None):
+        ms = {**ms, "api_key_env": args.api_key_env}
+    if getattr(args, "min_seconds_between_calls", None) is not None:
+        ms = {**ms, "pace_s": args.min_seconds_between_calls}
+    return ms
 
 
 def matches_only(args, sid):
@@ -919,7 +987,8 @@ def cmd_run(cfg, args):
         scenarios = scenarios[:args.limit]
     if not scenarios:
         sys.exit("No scenarios selected. Check bench/config.yaml or the suite.")
-    settings = {m["id"]: model_settings(cfg, m) for m in cfg["models"] if not args.model or args.model in m["id"]}
+    settings = {m["id"]: with_overrides(model_settings(cfg, m), args)
+                for m in cfg["models"] if not args.model or args.model in m["id"]}
     models = list(settings)
     for ms in settings.values():
         make_client(ms)  # fail fast if a key is missing
@@ -930,7 +999,7 @@ def cmd_run(cfg, args):
     current = {s["id"]: s["spec"]["content_hash"] for s in scenarios}
     done = {(r["scenario"], r["model"], r["attempt"]) for r in rows.latest(rows.read_jsonl(path))
             if r.get("content_hash") and r["content_hash"] == current.get(r.get("scenario"))
-            and rows.hint_level(r) == hint
+            and rows.hint_level(r) == hint and rows.prompt_version(r) == rows.PROMPT_VERSION
             and not (args.retry_errors and r.get("status") in ("error", "invalid"))
             and not (args.rerun and matches_only(args, r["scenario"]))}
     plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1)
@@ -982,6 +1051,10 @@ def main():
                    help="run again even if finished (with --only: just those scenarios); the newest row of an "
                         "episode replaces the older one in every report")
     p.add_argument("--attempts", type=int, help="attempts per model for this run (overrides config)")
+    p.add_argument("--api-key-env", help="read the selected models' API key from this .env variable instead of the "
+                                         "config's (e.g. GEMINI_FREE_API_KEY for a free-tier key)")
+    p.add_argument("--min-seconds-between-calls", type=float,
+                   help="wait at least this long between model calls (free tiers: about 7 for 8 requests a minute)")
     p.add_argument("--hint-level", choices=["page", "ticket", "hinted"],
                    help="run: which prompt the agent gets (default: the suite's, else page = symptoms only; "
                         "recorded per episode)")

@@ -110,3 +110,48 @@ def test_rerun_repeats_only_the_named_scenarios(bench, tmp_path):
 def test_damage_counts_against_the_agent_only_if_it_changed_something():
     assert ab.attribute_damage(["journey:browse"], agent_changed=True) == (["journey:browse"], [])
     assert ab.attribute_damage(["journey:browse"], agent_changed=False) == ([], ["journey:browse"])
+
+
+# ------------------------------------------------------------------ what the agent is told
+# sha256 of every text the agent can be shown, per rows.PROMPT_VERSION. A change to any of them changes every
+# model's results: bump rows.PROMPT_VERSION, note it in bench/README.md, then pin the new hash here.
+PROMPT_HASHES = {2: "afa36749f70617e4c15814b1523b5f7b900c02814a615924eb18f9175bbb24ec"}
+
+
+def test_prompt_texts_are_pinned_to_the_prompt_version():
+    import hashlib
+    texts = (ab.SYSTEM_PROMPT, ab.NUDGE_PROMPT, ab.BUDGET_NOTE, str(ab.BUDGET_WARNING_AT), ab.REPORT_PROMPT)
+    got = hashlib.sha256("\x00".join(texts).encode()).hexdigest()
+    assert got == PROMPT_HASHES.get(rows.PROMPT_VERSION), \
+        f"agent prompt changed: bump rows.PROMPT_VERSION and pin {got}"
+
+
+def test_system_prompt_states_the_command_budget():
+    assert "at most 30 commands" in ab.system_prompt(30)
+
+
+def test_budget_reminder_once_when_five_are_left():
+    notes = {after: ab.budget_note(after - 1, after, 30) for after in range(1, 31)}
+    assert [a for a, n in notes.items() if n] == [25] and notes[25] == "[5 of your 30 commands left]"
+    assert ab.budget_note(23, 27, 30) == "[3 of your 30 commands left]"   # several commands in one turn
+    assert ab.budget_note(29, 31, 30) == ""                                # budget used up: the report follows
+    assert ab.budget_note(0, 1, 3) == ""                                   # short budgets get no reminder
+
+
+def test_rows_of_an_older_prompt_are_run_again(bench, tmp_path):
+    run("lite", limit=1)
+    lines = [json.loads(x) for x in (tmp_path / "results.jsonl").read_text().splitlines()]
+    assert lines[0]["prompt_version"] == rows.PROMPT_VERSION
+    del lines[0]["prompt_version"]                                         # as recorded before prompt versions
+    (tmp_path / "results.jsonl").write_text(json.dumps(lines[0]) + "\n")
+    assert not rows.load(suites.load("lite"))
+    run("lite", limit=1)
+    assert len(bench) == 2 and len(rows.load(suites.load("lite"))) == 1
+
+
+def test_key_and_pacing_can_be_set_for_one_run():
+    ms = ab.model_settings(CFG, CFG["models"][0])
+    args = argparse.Namespace(api_key_env="FREE_KEY", min_seconds_between_calls=7.0)
+    out = ab.with_overrides(ms, args)
+    assert (out["api_key_env"], out["pace_s"], out["id"]) == ("FREE_KEY", 7.0, ms["id"])
+    assert ab.with_overrides(ms, argparse.Namespace()) == ms

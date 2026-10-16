@@ -169,14 +169,18 @@ def test_candidates_exclude_and_clean():
 # ------------------------------------------------------------------ results scoped to a suite
 def test_rows_count_only_the_suites_exact_instances():
     s = suite([("a-001", H)])
-    rs = [{"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "page", "n": 1},
-          {"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "page", "n": 2},
+    pv = rows.PROMPT_VERSION
+    rs = [{"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "page", "prompt_version": pv,
+           "n": 1},
+          {"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "page", "prompt_version": pv,
+           "n": 2},
           {"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": "sha256:" + "b" * 64, "n": 3},
           {"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "ticket", "n": 4},
-          {"scenario": "a-001", "model": "m", "attempt": 1, "n": 5}]       # from before suites
+          {"scenario": "a-001", "model": "m", "attempt": 1, "n": 5},       # from before suites
+          {"scenario": "a-001", "model": "m", "attempt": 1, "content_hash": H, "hint_level": "page", "n": 6}]  # prompt v1
     latest = rows.latest(rs)
     assert [r["n"] for r in rows.in_suite(latest, s)] == [2]               # the re-run replaced the first
-    assert sorted(r["n"] for r in rows.in_suite(latest, s, any_version=True)) == [2, 3, 4, 5]
+    assert sorted(r["n"] for r in rows.in_suite(latest, s, any_version=True)) == [2, 3, 4, 5, 6]
 
 
 def test_private_results_stay_out_of_the_public_folder():

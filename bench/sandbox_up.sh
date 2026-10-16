@@ -66,6 +66,48 @@ roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: gym-agen
 subjects: [{kind: ServiceAccount, name: agent, namespace: ${APP_NS}}]
 YAML
 
+# No pod in the app namespace may run on the control-plane node: not pinned there by nodeName, and (when the
+# scheduler places it) not with a toleration for the control-plane taint, a wildcard one included. A pod pinned
+# to a worker may tolerate anything, so `kubectl debug node/<worker>` still works. The agent cannot change
+# admission policies (the RBAC above only covers webhook configurations), and the namespace is matched by its
+# name label, which the API server sets and nobody can change.
+CP_NODES=$(kubectl get nodes -l node-role.kubernetes.io/control-plane \
+  -o jsonpath="{range .items[*]}'{.metadata.name}',{end}")
+CP_NODES="[${CP_NODES%,}]"
+kubectl apply -f - >/dev/null << YAML
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata: {name: gym-no-control-plane}
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        !has(object.spec.nodeName) || !(object.spec.nodeName in ${CP_NODES})
+      message: pods in ${APP_NS} may not run on the control-plane node
+    - expression: >-
+        (has(object.spec.nodeName) && object.spec.nodeName != '') || !has(object.spec.tolerations) ||
+        !object.spec.tolerations.exists(t,
+          (has(t.key) && t.key == 'node-role.kubernetes.io/control-plane') ||
+          ((!has(t.key) || t.key == '') && has(t.operator) && t.operator == 'Exists'))
+      message: pods in ${APP_NS} may not tolerate the control-plane taint
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata: {name: gym-no-control-plane}
+spec:
+  policyName: gym-no-control-plane
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels: {kubernetes.io/metadata.name: ${APP_NS}}
+YAML
+
 TOKEN=$(kubectl create token agent -n "$APP_NS" --duration=24h)
 TMP="$KDIR/admin-internal"
 kind get kubeconfig --internal --name "$CLUSTER" > "$TMP"
