@@ -2182,7 +2182,7 @@
         "name": "fraud-detection",
         "resources": {
          "limits": {
-          "memory": "300Mi"
+          "memory": "450Mi"
          }
         },
         "terminationMessagePath": "/dev/termination-log",
