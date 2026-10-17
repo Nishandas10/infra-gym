@@ -4998,6 +4998,160 @@
    "restart_settle_s": 45
   }
  },
+ "rollout-two-bad-releases-114": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   },
+   {
+    "lookback": "1m",
+    "min_traces": 1,
+    "service": "shipping",
+    "type": "jaeger_traces"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/shipping"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "change_cause": "shipping 3.1.1: pricing client config update (PLAT-2231)",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:QUOTE_ADDR/value",
+       "value": "http://quote:8081"
+      },
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.1.1"
+      }
+     ],
+     "target": "shipping",
+     "type": "k8s.bad_rollout",
+     "wait_s": 180
+    },
+    {
+     "change_cause": "shipping 3.1.2: send telemetry through the new collector port (OBS-118)",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/spec/containers/$c/env/$name:OTEL_EXPORTER_OTLP_ENDPOINT/value",
+       "value": "http://$(OTEL_COLLECTOR_NAME):4999"
+      },
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.1.2"
+      }
+     ],
+     "target": "shipping",
+     "type": "k8s.bad_rollout",
+     "wait_s": 180
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Checkout fails when calculating shipping, and shipping's traces stopped showing up in Jaeger at about the same time. Find the cause and fix it.",
+  "solution": [
+   "REV=$(kubectl get deploy shipping -o jsonpath='{.metadata.annotations.deployment\\.kubernetes\\.io/revision}') && kubectl rollout undo deployment/shipping --to-revision=$((REV - 2))",
+   "kubectl rollout status deployment/shipping --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
+ "rollout-wrong-artifact-115": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=payment",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/payment"
+   }
+  ],
+  "fault": {
+   "change_cause": "payment 3.1.1: card validation hotfix (PAY-412)",
+   "ops": [
+    {
+     "op": "replace",
+     "path": "/spec/template/spec/containers/$c/image",
+     "value": "ghcr.io/open-telemetry/demo:3.1.0-quote"
+    },
+    {
+     "op": "replace",
+     "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+     "value": "3.1.1"
+    }
+   ],
+   "target": "payment",
+   "type": "k8s.bad_rollout"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Every order fails at the payment step. Find the cause and fix it.",
+  "solution": [
+   "kubectl rollout undo deployment/payment",
+   "kubectl rollout status deployment/payment --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
  "svc-deleted-037": {
   "budget": {
    "max_steps": 30,
@@ -5042,6 +5196,85 @@
    "hold_s": 60,
    "poll_s": 10,
    "recover_timeout_s": 480,
+   "restart_settle_s": 45
+  }
+ },
+ "svc-internal-traffic-local-113": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "currency",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 8,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 6,
+    "type": "journey"
+   },
+   {
+    "port": 8080,
+    "service": "currency",
+    "type": "reachable_from_nodes"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/currency"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "kind": "service",
+     "name": "currency",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/internalTrafficPolicy",
+       "value": "Local"
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "away_from": [
+      "opentelemetry.io/name=frontend",
+      "opentelemetry.io/name=checkout"
+     ],
+     "target": "opentelemetry.io/name=currency",
+     "type": "k8s.separate_pods"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Every order fails at checkout, and prices fail to load when shoppers switch to a currency other than USD. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch service currency --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/internalTrafficPolicy\",\"value\":\"Cluster\"}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 90,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
    "restart_settle_s": 45
   }
  },

@@ -1,0 +1,92 @@
+spec_version: 2
+id: svc-internal-traffic-local-113
+version: 1
+title: Service set to internalTrafficPolicy Local; callers on other nodes cannot reach its single pod
+mechanism: service/internal-traffic-policy-local
+split: train
+seed: 1113
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Every order fails at checkout, and prices fail to load when shoppers switch to a currency other than USD.
+      Find the cause and fix it.
+    ticket: Every order fails at checkout, and prices fail to load when shoppers switch to a currency other than USD.
+      The currency pod is Running and Ready, its logs show no errors and its Service has a ready endpoint. Find the
+      cause and fix it.
+    hinted: Every order fails at checkout, and prices fail to load when shoppers switch to a currency other than USD.
+      Connections to the currency Service succeed from some nodes and time out from others. Find the cause and fix
+      it.
+  leak_terms: [internaltrafficpolicy, traffic policy, node-local]
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
+  - partial-reachability
+  - looks-correct-config
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: service
+    name: currency
+    ops:
+    - op: replace
+      path: /spec/internalTrafficPolicy
+      value: Local
+  # With single replicas the scheduler puts a caller on currency's node in about one run in four, which hides
+  # the fault from that caller. Move both callers off it, so every run shows the same outage.
+  - mechanism: k8s.separate_pods
+    target: opentelemetry.io/name=currency
+    away_from:
+    - opentelemetry.io/name=frontend
+    - opentelemetry.io/name=checkout
+verifier:
+  checks:
+  - type: journey
+    journey: currency
+    repeat: 8
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 6
+    max_error_pct: 0
+    max_avg_ms: 2500
+  # Whatever node the shop's pods run on: moving them next to currency is not a fix.
+  - type: reachable_from_nodes
+    service: currency
+    port: 8080
+  durability:
+  - restart: deployment/currency
+ground_truth:
+  root_causes:
+  - component: service/currency
+    namespace: default
+    what: internalTrafficPolicy is Local, so only clients on the node of the single currency pod can reach it
+  explanation: >-
+    The currency Service was set to `internalTrafficPolicy: Local`, so kube-proxy sends in-cluster
+    traffic only to a currency pod on the caller's own node and drops it otherwise. Currency has one replica, and
+    frontend and checkout run on another node, so their calls time out while the currency pod, its endpoint and its
+    logs all look healthy.
+  evidence:
+  - '`kubectl logs deploy/checkout`: currency calls time out or are unavailable.'
+  - '`kubectl get pods -o wide`: currency runs on a different node than frontend and checkout.'
+  - '`kubectl get endpointslices -l kubernetes.io/service-name=currency`: one ready endpoint.'
+  - '`kubectl get svc currency -o yaml`: `internalTrafficPolicy: Local`; every other Service uses `Cluster`.'
+  - A test pod on the currency pod's node connects to currency:8080; one on the other worker node times out.
+reference:
+  commands:
+  - kubectl patch service currency --type=json -p '[{"op":"replace","path":"/spec/internalTrafficPolicy","value":"Cluster"}]'
+  fix: Set `internalTrafficPolicy` back to `Cluster` (removing the field has the same effect). Moving frontend or
+    checkout onto the currency pod's node, or scaling currency up, only hides the fault for the nodes that happen to
+    have a currency pod.
+validation:
+  hold_s: 90
+notes:
+- 'Measured on a dev cluster (kube-proxy iptables mode), 2026-10-16: with Local, nc to currency:8080 was OPEN from the
+  currency pod''s node and BLOCKED from the other worker.'

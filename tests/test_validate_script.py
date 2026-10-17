@@ -15,7 +15,7 @@ def test_shards_are_disjoint_and_complete():
     every = [s["id"] for s in select(args())]
     shards = [[s["id"] for s in select(args(shard=f"{i}/3"))] for i in (1, 2, 3)]
     assert sorted(sum(shards, [])) == sorted(every)
-    assert len(set(sum(shards, []))) == len(every) == 83
+    assert len(set(sum(shards, []))) == len(every) >= 83   # 83 before Phase 7 added scenarios
     assert max(map(len, shards)) - min(map(len, shards)) <= 1
     hard = {s["id"] for s in select(args(split="hard"))}
     assert all(len(hard & set(shard)) >= 4 for shard in shards)   # Hard tier spread over every worker

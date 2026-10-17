@@ -126,6 +126,8 @@ def derive_durability(fault):
         ns = step.get("namespace")
         if mech == "k8s.workload_patch":
             add(f"{step.get('kind', 'deployment')}/{step['target']}", ns)
+        elif mech == "k8s.bad_rollout":
+            add(f"deployment/{step['target']}", ns)
         elif mech == "k8s.memory_limit":
             add(f"deployment/{step['target_deployment']}")
         elif mech == "app.flag_source_config":

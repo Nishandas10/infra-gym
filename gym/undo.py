@@ -110,6 +110,22 @@ def run_hook(hook):
     import time
     if hook.get("delete_failed_pods"):
         kube.kubectl("delete", "pods", "--field-selector=status.phase=Failed", "--wait=false")
+    if hook.get("prune_replicasets"):
+        # k8s.bad_rollout: the revisions it created, once the Deployment's template is restored. The one the
+        # Deployment runs now is kept, whatever its name (the agent may have rolled out more revisions).
+        h = hook["prune_replicasets"]
+        from .faults.workload import owned_replicasets
+
+        def synced():   # the controller has seen the restored template and named its revision
+            d = kube.get("deployment", h["deployment"], namespace=h["ns"])
+            gen = d["metadata"].get("generation", 0)
+            return d if (d.get("status") or {}).get("observedGeneration", gen) >= gen else None
+        dep = kube.wait_until(synced, 60, interval=2) or kube.get("deployment", h["deployment"], namespace=h["ns"])
+        current = (dep["metadata"].get("annotations") or {}).get("deployment.kubernetes.io/revision")
+        for rs in owned_replicasets(h["deployment"], h["ns"]):
+            rev = (rs["metadata"].get("annotations") or {}).get("deployment.kubernetes.io/revision")
+            if rs["metadata"]["name"] not in h["keep"] and rev != current:
+                kube.delete("replicaset", rs["metadata"]["name"], namespace=h["ns"])
     if hook.get("kafka_topic"):
         # A fresh broker has no topics until someone produces; consumers that subscribe
         # before that can sit idle for minutes. Create it as soon as the broker answers.

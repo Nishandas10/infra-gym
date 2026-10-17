@@ -1,0 +1,41 @@
+19:21:12 === svc-internal-traffic-local-113 (composite)
+19:21:14   0. world healthy?
+19:21:38   1. baseline must PASS
+19:21:42       [PASS   ] journey:currency - 8/8 ok, avg 49ms
+19:21:42       [PASS   ] journey:checkout - 8/8 ok, avg 126ms
+19:21:42       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+19:21:42   2. inject
+19:21:43   3. verifier must FAIL (<= 240s)
+19:21:49       [PASS   ] journey:currency - 8/8 ok, avg 39ms
+19:21:49       [PASS   ] journey:checkout - 8/8 ok, avg 122ms
+19:21:49       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-3-worker (1/2 worker nodes reach it)
+19:21:49   4. do-nothing agent: still FAIL after 900s?
+19:36:59       [PASS   ] journey:currency - 8/8 ok, avg 38ms
+19:36:59       [PASS   ] journey:checkout - 8/8 ok, avg 116ms
+19:36:59       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-3-worker (1/2 worker nodes reach it)
+19:36:59       failing in 56/56 checks during the hold
+19:36:59   5. reference solution
+19:36:59     $ kubectl patch service currency --type=json -p '[{"op":"replace","path":"/spec/internalTrafficPolicy","value":"Cluster"}]'
+19:36:59       service/currency patched
+19:36:59   6. verifier must PASS (<= 300s)
+19:37:02       [PASS   ] journey:currency - 8/8 ok, avg 37ms
+19:37:02       [PASS   ] journey:checkout - 8/8 ok, avg 132ms
+19:37:02       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+19:37:02   6b. invariants must PASS (shop_health)
+19:37:04       [PASS   ] journey:browse - 2/2 ok, avg 71ms
+19:37:04       [PASS   ] journey:recommendations - 2/2 ok, avg 69ms
+19:37:04       [PASS   ] journey:cart - 2/2 ok, avg 84ms
+19:37:04       [PASS   ] journey:checkout - 2/2 ok, avg 164ms
+19:37:04   6c. the fix must survive a restart of deployment/currency
+19:37:52       [PASS   ] journey:currency - 8/8 ok, avg 40ms
+19:37:52       [PASS   ] journey:checkout - 8/8 ok, avg 131ms
+19:37:52       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+19:37:52   7. restore exactly
+19:43:05       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+19:43:05       [PASS   ] journey:recommendations - 2/2 ok, avg 80ms
+19:43:05       [PASS   ] journey:cart - 2/2 ok, avg 47ms
+19:43:05       [PASS   ] journey:checkout - 2/2 ok, avg 140ms
+19:43:05       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+19:43:05       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+19:43:05       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 378)
+19:43:05   => RESTORE_FAILED  {'world_ready_s': 24, 'detect_s': 6, 'recover_s': 3, 'invariants_s': 2, 'durable_s': 3, 'restore_s': 301}

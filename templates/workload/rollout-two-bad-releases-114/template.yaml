@@ -1,0 +1,93 @@
+spec_version: 2
+id: rollout-two-bad-releases-114
+version: 1
+title: Two bad shipping releases in a row; rolling back one revision is not enough
+mechanism: rollout/consecutive-bad-releases
+split: train
+seed: 1114
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Checkout fails when calculating shipping, and shipping's traces stopped showing up in Jaeger at about the
+      same time. Find the cause and fix it.
+    ticket: Checkout fails when calculating shipping, and shipping's traces stopped showing up in Jaeger at about the
+      same time. Shipping was deployed twice this morning. Find the cause and fix it.
+    hinted: Checkout fails when calculating shipping, and shipping's traces stopped showing up in Jaeger at about the
+      same time. Both of this morning's shipping deploys changed its configuration. Find the cause and fix it.
+  leak_terms: [roll back, rollback, revision]
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - rollback
+  drivers:
+  - partial-fix-trap
+  - independent-faults
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.bad_rollout
+    target: shipping
+    change_cause: 'shipping 3.1.1: pricing client config update (PLAT-2231)'
+    wait_s: 180
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:QUOTE_ADDR/value
+      value: http://quote:8081
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.1.1
+  - mechanism: k8s.bad_rollout
+    target: shipping
+    change_cause: 'shipping 3.1.2: send telemetry through the new collector port (OBS-118)'
+    wait_s: 180
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/env/$name:OTEL_EXPORTER_OTLP_ENDPOINT/value
+      value: http://$(OTEL_COLLECTOR_NAME):4999
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.1.2
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 4
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: jaeger_traces
+    service: shipping
+    lookback: 1m
+    min_traces: 1
+ground_truth:
+  root_causes:
+  - component: deployment/shipping
+    namespace: default
+    what: release 3.1.1 set QUOTE_ADDR to http://quote:8081; the quote Service listens on 8080
+  - component: deployment/shipping
+    namespace: default
+    what: release 3.1.2 set OTEL_EXPORTER_OTLP_ENDPOINT to the collector on port 4999, where nothing listens
+  explanation: Two shipping releases went out back to back. 3.1.1 points the quote client at port 8081, so every
+    shipping quote fails and checkout fails with it. 3.1.2 points shipping's OTLP exporter at port 4999 of the
+    collector, so shipping sends no spans at all. A single `kubectl rollout undo` only goes back to 3.1.1, which
+    restores the traces but still has the wrong quote port.
+  evidence:
+  - '`kubectl logs deploy/shipping`: connection refused calling quote:8081, and OTLP export errors.'
+  - '`kubectl rollout history deployment/shipping`: two recent revisions, 3.1.1 and 3.1.2, with change causes.'
+  - '`kubectl rollout history deployment/shipping --revision=<N>`: the revision before both has QUOTE_ADDR
+    http://quote:8080 and the exporter on port 4318.'
+  - '`kubectl get svc quote`: port 8080.'
+reference:
+  commands:
+  - REV=$(kubectl get deploy shipping -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}') &&
+    kubectl rollout undo deployment/shipping --to-revision=$((REV - 2))
+  - kubectl rollout status deployment/shipping --timeout=300s
+  fix: Roll shipping back to the revision before both releases (`kubectl rollout history`, then `kubectl rollout
+    undo --to-revision=<N>`). Setting QUOTE_ADDR=http://quote:8080 and
+    OTEL_EXPORTER_OTLP_ENDPOINT=http://$(OTEL_COLLECTOR_NAME):4318 by hand is equally correct. Shipping exports
+    OTLP over HTTP (port 4318), so copying the gRPC endpoint (port 4317) from services such as currency or frontend
+    leaves its traces broken.
+validation:
+  detect_timeout_s: 300

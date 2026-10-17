@@ -5,6 +5,8 @@ gym-probe        runs gym/probe_script.py to exercise user journeys through the
 gym-kafka-tools  runs Kafka admin CLIs with a small heap. The broker container
                  has KAFKA_HEAP_OPTS=-Xms400M, so running the CLIs inside it
                  can push the broker past its memory limit.
+gym-node-probe   a DaemonSet: one tiny pod per worker node, so a check can test a
+                 connection from every node (faults that only some nodes see).
 """
 from __future__ import annotations
 
@@ -16,6 +18,8 @@ from . import kube
 
 PROBE_IMAGE = "python:3.12-alpine"
 KAFKA_IMAGE = "ghcr.io/open-telemetry/demo:3.1.0-kafka"
+NODE_PROBE = "gym-node-probe"
+NODE_PROBE_IMAGE = "busybox:1.36"
 _PROBE_SRC = pathlib.Path(__file__).with_name("probe_script.py")
 _KEEP_ALIVE = ["sh", "-c", "trap 'exit 0' TERM INT; while true; do sleep 3600 & wait $!; done"]
 
@@ -47,6 +51,28 @@ def _deployment(name, image, env=None, limit="64Mi", volumes=None, mounts=None, 
     }
 
 
+def _node_probe():
+    """No tolerations: it runs on the worker nodes only, like the shop's own pods."""
+    labels = {"app": NODE_PROBE}
+    return {
+        "apiVersion": "apps/v1", "kind": "DaemonSet",
+        "metadata": {"name": NODE_PROBE, "namespace": kube.GYM_NS, "labels": labels},
+        "spec": {
+            "selector": {"matchLabels": labels},
+            "template": {
+                "metadata": {"labels": labels},
+                "spec": {
+                    "terminationGracePeriodSeconds": 2,
+                    "containers": [{
+                        "name": NODE_PROBE, "image": NODE_PROBE_IMAGE, "command": _KEEP_ALIVE,
+                        "resources": {"requests": {"memory": "4Mi", "cpu": "5m"}, "limits": {"memory": "16Mi"}},
+                    }],
+                },
+            },
+        },
+    }
+
+
 def manifests():
     src = _PROBE_SRC.read_text()
     digest = hashlib.sha256(src.encode()).hexdigest()[:12]
@@ -64,6 +90,7 @@ def manifests():
                          # the image bundles an OpenTelemetry Java agent; keep the CLIs quiet
                          {"name": "OTEL_JAVAAGENT_ENABLED", "value": "false"},
                          {"name": "OTEL_SDK_DISABLED", "value": "true"}]),
+        _node_probe(),
     ]
 
 
@@ -73,6 +100,8 @@ def ensure(timeout=300):
     for app in ("gym-probe", "gym-kafka-tools"):
         kube.kubectl("rollout", "status", f"deploy/{app}", f"--timeout={timeout}s", namespace=kube.GYM_NS,
                      timeout=timeout + 30)
+    kube.kubectl("rollout", "status", f"ds/{NODE_PROBE}", f"--timeout={timeout}s", namespace=kube.GYM_NS,
+                 timeout=timeout + 30)
 
 
 def _pod(app):
@@ -80,6 +109,12 @@ def _pod(app):
         if kube.pod_ready(p):
             return p["metadata"]["name"]
     raise kube.KubeError(f"no ready {app} pod in {kube.GYM_NS} (run: python scripts/gym_setup.py)")
+
+
+def node_probes():
+    """{node name: ready gym-node-probe pod on it}."""
+    return {p["spec"]["nodeName"]: p["metadata"]["name"]
+            for p in kube.pods(f"app={NODE_PROBE}", namespace=kube.GYM_NS) if kube.pod_ready(p)}
 
 
 def probe(plan, timeout=240):

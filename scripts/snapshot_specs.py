@@ -29,7 +29,8 @@ FAULT_LEVEL = ("restart_on_revert", "revert_hooks")
 
 
 def v1_fault(fault):
-    steps = [{"type": V1_NAME[s["mechanism"]], **{k: v for k, v in s.items() if k != "mechanism"}}
+    # mechanisms added after the migration have no v1 name and keep their own
+    steps = [{"type": V1_NAME.get(s["mechanism"], s["mechanism"]), **{k: v for k, v in s.items() if k != "mechanism"}}
              for s in fault["steps"]]
     top = {k: fault[k] for k in FAULT_LEVEL if fault.get(k) is not None}
     if len(steps) == 1:

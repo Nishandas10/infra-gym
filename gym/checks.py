@@ -88,6 +88,30 @@ def c_endpoints(service, namespace=kube.APP_NS, min_ready=1, **_):
     return status, f"service {service} has {ready} ready endpoint(s)"
 
 
+def c_reachable_from_nodes(service, port, namespace=kube.APP_NS, timeout_s=3, **_):
+    """A TCP connection to the Service from a probe pod on every worker node (gym-system). It fails when some
+    nodes cannot reach the Service (internalTrafficPolicy: Local, a node's network), whichever node the app's own
+    pods happen to run on, so moving pods until the user journeys pass is not a fix."""
+    host = f"{service}.{namespace}.svc.cluster.local"
+    probes = toolbox.node_probes()
+    missing = [n for n in kube.worker_nodes() if n not in probes]
+    if missing:
+        return UNKNOWN, f"no ready {toolbox.NODE_PROBE} pod on {', '.join(missing)} (run: python scripts/gym_setup.py)"
+    blocked = []
+    for node, pod in sorted(probes.items()):
+        r = kube.exec_in(pod, ["sh", "-c", f"nc -z -w {timeout_s} {host} {port} && echo OPEN || echo BLOCKED"],
+                         namespace=kube.GYM_NS, timeout=timeout_s + 30)
+        out = r.stdout.strip()
+        if out not in ("OPEN", "BLOCKED"):
+            return UNKNOWN, f"probe on {node} failed: {(r.stderr or out).strip()[:200]}"
+        if out == "BLOCKED":
+            blocked.append(node)
+    if blocked:
+        return FAIL, (f"{host}:{port} unreachable from {', '.join(blocked)} "
+                      f"({len(probes) - len(blocked)}/{len(probes)} worker nodes reach it)")
+    return PASS, f"{host}:{port} reachable from all {len(probes)} worker nodes"
+
+
 def c_no_new_restarts(selector, window_s=60, namespace=kube.APP_NS, **_):
     def total():
         return sum(kube.restarts(p) for p in kube.pods(selector, namespace=namespace))
@@ -382,7 +406,7 @@ def c_memory_usage(selector, max_mib=256, container=None, namespace=kube.APP_NS,
 CHECKS = {
     "cpu_usage": c_cpu_usage, "orders_recorded": c_orders_recorded, "memory_usage": c_memory_usage,
     "pods_ready": c_pods_ready, "pods_stable": c_pods_stable, "endpoints": c_endpoints,
-    "no_new_restarts": c_no_new_restarts,
+    "no_new_restarts": c_no_new_restarts, "reachable_from_nodes": c_reachable_from_nodes,
     "nodes_ready": c_nodes_ready, "traffic": c_traffic, "kafka_lag": c_kafka_lag, "sql": c_sql,
     "http": c_http, "jaeger_traces": c_jaeger_traces, "jaeger_attr_absent": c_jaeger_attr_absent,
     "prometheus": c_prometheus,

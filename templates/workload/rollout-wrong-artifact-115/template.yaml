@@ -1,0 +1,68 @@
+spec_version: 2
+id: rollout-wrong-artifact-115
+version: 1
+title: A payment release shipped another service's image; the new pod starts and crashes
+mechanism: rollout/wrong-artifact-released
+split: train
+seed: 1115
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Every order fails at the payment step. Find the cause and fix it.
+    ticket: Every order fails at the payment step. Payment 3.1.1 was released this morning and its pod keeps
+      restarting. Find the cause and fix it.
+  leak_terms: [roll back, rollback, image, artifact]
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - rollback
+  drivers:
+  - looks-correct-config
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.bad_rollout
+    target: payment
+    change_cause: 'payment 3.1.1: card validation hotfix (PAY-412)'
+    ops:
+    - op: replace
+      path: /spec/template/spec/containers/$c/image
+      value: ghcr.io/open-telemetry/demo:3.1.0-quote
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.1.1
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=payment
+ground_truth:
+  root_causes:
+  - component: deployment/payment
+    namespace: default
+    what: release 3.1.1 runs image demo:3.1.0-quote (the quote service's build) instead of demo:3.1.0-payment
+  explanation: The payment 3.1.1 release points the Deployment at `ghcr.io/open-telemetry/demo:3.1.0-quote`, the
+    quote service's image. It pulls and starts, then exits, because it is a different program with a different
+    configuration. With one replica and no readiness probe the rollout replaced the working pod, so every payment
+    fails.
+  evidence:
+  - '`kubectl get pods`: the payment pod is in Error / CrashLoopBackOff.'
+  - '`kubectl logs deploy/payment --previous`: startup output of the quote service, not payment''s Node.js logs.'
+  - '`kubectl get deploy payment -o jsonpath=''{..image}''`: demo:3.1.0-quote, unlike every other service''s
+    demo:3.1.0-<own name>.'
+  - '`kubectl rollout history deployment/payment`: the latest revision is the 3.1.1 hotfix.'
+reference:
+  commands:
+  - kubectl rollout undo deployment/payment
+  - kubectl rollout status deployment/payment --timeout=300s
+  fix: Roll payment back to the previous revision, or set its image back to ghcr.io/open-telemetry/demo:3.1.0-payment.
+notes:
+- 'Measured on a dev cluster, 2026-10-16: with the quote image the payment pod went to Error with restarts, and checkout
+  returned 500 "Failed to place order".'

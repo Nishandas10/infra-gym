@@ -66,7 +66,7 @@ def test_catalog_reports_status():
     vhash = yaml.safe_load(built[SID]["spec.yaml"])["validation_hash"]
     records = {vhash: runs("VALIDATED", "ERROR", "FIX_NOT_DURABLE")}
     text = generate.catalog_markdown(built, records)
-    assert "0 validated, 1 quarantined, 94 draft" in text
+    assert f"0 validated, 1 quarantined, {len(built) - 1} draft" in text
     row = next(line for line in text.splitlines() if line.startswith(f"| `{SID}`"))
     assert "| quarantined | 1/3 validated (ERROR 1, FIX_NOT_DURABLE 1) |" in row
 

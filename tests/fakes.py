@@ -101,6 +101,12 @@ class FakeCluster:
         self.flagd_live = data["flagd_live_file"]
         self.execs = []           # (target, cmd, stdin)
         self.pod_deletions = []   # label selectors / args of `kubectl delete pod(s)`
+        # The fixture keeps no pod placement or status: spread the pods over the workers, all Ready.
+        workers = self.workers()
+        for i, key in enumerate(sorted(k for k in self.objs if k[0] == "pod")):
+            pod = self.objs[key]
+            pod.setdefault("spec", {})["nodeName"] = workers[i % len(workers)]
+            pod["status"] = {"phase": "Running", "conditions": [{"type": "Ready", "status": "True"}]}
 
     # ------------------------------------------------------------- inspection
     def obj(self, kind, name, namespace=kube.APP_NS):
@@ -121,6 +127,16 @@ class FakeCluster:
                     c["metadata"].pop("annotations")
             out[key] = c
         return out
+
+    def workers(self, schedulable=False):
+        nodes = [o for k, o in sorted(self.objs.items()) if k[0] == "node"]
+        return [n["metadata"]["name"] for n in nodes
+                if "node-role.kubernetes.io/control-plane" not in (n["metadata"].get("labels") or {})
+                and not any(t.get("key") == "node-role.kubernetes.io/control-plane" for t in n["spec"].get("taints", []))
+                and not (schedulable and n["spec"].get("unschedulable"))]
+
+    def node_of(self, selector):
+        return {p["spec"]["nodeName"] for p in self.items("pod", selector=selector)}
 
     def flags_live(self):
         return json.loads(self.flagd_live)["flags"]
@@ -185,6 +201,14 @@ class FakeCluster:
         args = [str(a) for a in args]
         if args[:1] == ["delete"] and len(args) > 1 and canonical_kind(args[1]) == "pod":
             self.pod_deletions.append(" ".join(args[2:]))
+            if "-l" in args:   # the replacement pods land on a schedulable worker, another one if possible
+                selector = args[args.index("-l") + 1]
+                for key, pod in self.objs.items():
+                    if key[0] == "pod" and key[1] == namespace and _matches(pod, selector):
+                        free = self.workers(schedulable=True)
+                        others = [n for n in free if n != pod["spec"]["nodeName"]]
+                        if others or free:
+                            pod["spec"]["nodeName"] = (others or free)[0]
             if any("flagd" in a for a in args):
                 # flagd's init container rebuilds the live file from the ConfigMap at pod start
                 self.flagd_live = self.obj("configmap", flags.CONFIGMAP)["data"][flags.CONFIG_KEY]

@@ -1,0 +1,41 @@
+19:35:22 === rollout-wrong-artifact-115 (k8s.bad_rollout)
+19:35:24   0. world healthy?
+19:35:35   1. baseline must PASS
+19:35:36       [PASS   ] journey:checkout - 3/3 ok, avg 118ms
+19:35:36       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+19:35:36   2. inject
+19:35:37   3. verifier must FAIL (<= 240s)
+19:35:49       [FAIL   ] journey:checkout - 0/3 ok, avg 59ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+19:35:49       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-5jrz8 (payment: last exit Error)
+19:35:49   4. do-nothing agent: still FAIL after 60s?
+19:36:50       [FAIL   ] journey:checkout - 0/3 ok, avg 90ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+19:36:50       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-5jrz8 (payment: last exit Error)
+19:36:50       failing in 5/5 checks during the hold
+19:36:50   5. reference solution
+19:36:50     $ kubectl rollout undo deployment/payment
+19:36:50       deployment.apps/payment rolled back
+19:36:50     $ kubectl rollout status deployment/payment --timeout=300s
+19:36:51       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+19:36:51       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+19:36:51       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+19:36:51       deployment "payment" successfully rolled out
+19:36:51   6. verifier must PASS (<= 300s)
+19:38:54       [PASS   ] journey:checkout - 3/3 ok, avg 134ms
+19:38:54       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+19:38:54   6b. invariants must PASS (shop_health)
+19:38:55       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+19:38:55       [PASS   ] journey:recommendations - 2/2 ok, avg 57ms
+19:38:55       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+19:38:55       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+19:38:55   6c. the fix must survive a restart of deployment/payment
+19:39:41       [PASS   ] journey:checkout - 3/3 ok, avg 138ms
+19:39:41       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+19:39:41   7. restore exactly
+19:45:03       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+19:45:03       [PASS   ] journey:recommendations - 2/2 ok, avg 49ms
+19:45:03       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+19:45:03       [PASS   ] journey:checkout - 2/2 ok, avg 83ms
+19:45:03       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+19:45:03       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+19:45:03       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 108)
+19:45:03   => RESTORE_FAILED  {'world_ready_s': 11, 'detect_s': 12, 'recover_s': 122, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 311}
