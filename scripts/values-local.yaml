@@ -49,6 +49,13 @@ components:
     resources:
       limits:
         memory: 64Mi
+  # fraud-detection (a JVM with the OpenTelemetry Java agent) outgrew the chart's 300Mi: it was OOMKilled every
+  # few hours on its own, and a world check that caught it in crash-loop backoff found its Kafka consumer group
+  # empty for minutes (RESTORE_FAILED in 019, 113 and 115, 2026-10-14 to 2026-10-16).
+  fraud-detection:
+    resources:
+      limits:
+        memory: 450Mi
 
 # Jaeger keeps traces in memory. At the chart's cap of 25,000 traces it grew to
 # ~330 MB during long validation runs, and the shrinking headroom let a single
