@@ -1388,8 +1388,8 @@ def main():
                    help="run, oracle: fix (default), diagnose (name the root cause, change nothing) or detect (a "
                         "health check with no symptom given); see bench/modes.py")
     args = p.parse_args()
-    if args.shard and (args.command != "oracle" or not os.environ.get("KUBECONFIG")):
-        p.error("--shard is for oracle, with one cluster per worker (KUBECONFIG=~/.kube/gym/<cluster>)")
+    if args.shard and (args.command not in ("run", "oracle") or not os.environ.get("KUBECONFIG")):
+        p.error("--shard is for run and oracle, with one cluster per worker (KUBECONFIG=~/.kube/gym/<cluster>)")
     cfg = load_config()
     if args.hint_level:
         cfg["hint_level"] = args.hint_level
