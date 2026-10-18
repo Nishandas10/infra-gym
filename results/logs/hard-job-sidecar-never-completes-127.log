@@ -1,0 +1,63 @@
+18:25:36 === hard-job-sidecar-never-completes-127 (composite)
+18:25:37   0. world healthy?
+18:25:51   1. baseline must PASS
+18:25:59       [PASS   ] orders_recorded - accounting recorded the new order (1157 -> 1158 rows)
+18:25:59       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+18:25:59       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+18:25:59   2. inject
+18:26:01   3. verifier must FAIL (<= 300s)
+18:27:41       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 1159 rows)
+18:27:41       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 8)
+18:27:41       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-gcdn9 (accounting: PodInitializing)
+18:27:41   4. do-nothing agent: still FAIL after 900s?
+18:45:38       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 1159 rows)
+18:45:38       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 77)
+18:45:38       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-gcdn9 (accounting: PodInitializing)
+18:45:38       failing in 9/9 checks during the hold
+18:45:38   5. reference solution
+18:45:38     $ kubectl delete job ledger-migrate-7 --wait=true
+18:45:38       job.batch "ledger-migrate-7" deleted from default namespace
+18:45:38     $ cat <<'EOF' | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata: {name: ledger-migrate-7, namespace: default, labels: {app.kubernetes.io/name: ledger-migrate}}
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: log-shipper
+        image: busybox:latest
+        imagePullPolicy: IfNotPresent
+        restartPolicy: Always
+        command: [sh, -c, 'trap "exit 0" TERM; while true; do sleep 1; done']
+      containers:
+      - name: migrate
+        image: postgres:18.4
+        imagePullPolicy: IfNotPresent
+        env: [{name: PGPASSWORD, value: changeit}]
+        command: [sh, -c, 'psql -h astronomy-db -U postgres -d astronomy_db -v ON_ERROR_STOP=1 -c ANALYZE']
+EOF
+18:45:39       job.batch/ledger-migrate-7 created
+18:45:39     $ kubectl wait --for=condition=complete job/ledger-migrate-7 --timeout=120s
+18:45:45       job.batch/ledger-migrate-7 condition met
+18:45:45     $ kubectl rollout status deployment/accounting --timeout=180s
+18:45:45       error: deployment "accounting" exceeded its progress deadline
+18:45:45       (stale progress-deadline condition from the fault's rollout; retrying)
+18:45:55       deployment "accounting" successfully rolled out
+18:45:55   6. verifier must PASS (<= 360s)
+18:46:05       [PASS   ] orders_recorded - accounting recorded the new order (1159 -> 1165 rows)
+18:46:05       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+18:46:05       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+18:46:05   6b. invariants must PASS (shop_health)
+18:46:07       [PASS   ] journey:browse - 2/2 ok, avg 41ms
+18:46:07       [PASS   ] journey:recommendations - 2/2 ok, avg 111ms
+18:46:07       [PASS   ] journey:cart - 2/2 ok, avg 72ms
+18:46:07       [PASS   ] journey:checkout - 2/2 ok, avg 308ms
+18:46:07   6c. the fix must survive a restart of deployment/accounting
+18:46:58       [PASS   ] orders_recorded - accounting recorded the new order (1243 -> 1244 rows)
+18:46:58       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+18:46:58       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+18:46:58   7. restore exactly
+18:47:09   => VALIDATED  {'world_ready_s': 14, 'detect_s': 100, 'recover_s': 9, 'invariants_s': 2, 'durable_s': 6, 'restore_s': 10}

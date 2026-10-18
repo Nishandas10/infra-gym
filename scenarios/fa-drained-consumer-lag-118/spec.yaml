@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:0bb5d4f0531072272ccaed0188683f0dfb15e65c163c1a68efaa8a4dd4782667
 validation_hash: sha256:43898aef398d02f4e3a61c4e807efa5a31e3c559891ad420164ff9e09a3c3f35
-status: draft
+status: validated
 title: 'False alarm: the fraud-detection consumer group had no consumers for a few minutes and has since caught
   up'
 mechanism: false-alarm/consumer-gap-recovered

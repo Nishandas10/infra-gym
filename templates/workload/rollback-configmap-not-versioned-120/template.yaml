@@ -1,0 +1,117 @@
+spec_version: 2
+id: rollback-configmap-not-versioned-120
+version: 1
+title: A checkout setting broken in a ConfigMap that rollouts do not version; rolling back does not bring it back
+mechanism: rollout/configmap-not-versioned
+split: train
+seed: 1120
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Every order fails at checkout since this morning's checkout releases. Find the cause and fix it.
+    ticket: Every order fails at checkout since this morning's checkout releases (3.1.1 and 3.1.2). Checkout's logs
+      show the payment call failing. Find the cause and fix it.
+    hinted: Every order fails at checkout since this morning's checkout releases. One of the releases moved
+      checkout's runtime settings out of the Deployment. Find the cause and fix it.
+  leak_terms: [configmap, config map, checkout-settings, payment_addr, roll back, rollback, revision, setting]
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - restart
+  drivers:
+  - partial-fix-trap
+  - recent-change-bias
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: checkout-settings
+        namespace: default
+        labels:
+          app.kubernetes.io/name: checkout
+      data:
+        PAYMENT_ADDR: payment:8080
+  - mechanism: k8s.bad_rollout
+    target: checkout
+    change_cause: 'checkout 3.1.1: move runtime settings to ConfigMap checkout-settings (PLAT-2301)'
+    wait_s: 180
+    ops:
+    - op: remove
+      path: /spec/template/spec/containers/$c/env/$name:PAYMENT_ADDR
+    - op: add
+      path: /spec/template/spec/containers/$c/envFrom
+      value:
+      - configMapRef:
+          name: checkout-settings
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.1.1
+    pause_s: 30
+  - mechanism: k8s.object_patch
+    kind: configmap
+    name: checkout-settings
+    ops:
+    - op: replace
+      path: /data/PAYMENT_ADDR
+      value: payment:8081
+  - mechanism: k8s.bad_rollout
+    target: checkout
+    change_cause: 'checkout 3.1.2: payment client v2 (PAY-77)'
+    wait_s: 180
+    ops:
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.1.2
+verifier:
+  checks:
+  - type: journey
+    journey: checkout
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=checkout
+ground_truth:
+  root_causes:
+  - component: configmap/checkout-settings
+    namespace: default
+    what: PAYMENT_ADDR was edited in place to payment:8081; the payment Service listens on 8080, so every payment call
+      from checkout fails
+  explanation: >-
+    Release 3.1.1 moved checkout's PAYMENT_ADDR out of the Deployment into the ConfigMap `checkout-settings`
+    (envFrom), still with the right value payment:8080. Afterwards the ConfigMap was edited in place to payment:8081,
+    and release 3.1.2 (only a version bump) restarted checkout, which picked up the wrong address: every order fails
+    at the payment step. A ConfigMap is not part of a Deployment revision, so `kubectl rollout undo` goes back to
+    3.1.1, which reads the same edited ConfigMap and stays broken. The ConfigMap value has to be fixed, and checkout
+    restarted because environment variables are read only at start.
+  evidence:
+  - '`kubectl logs deploy/checkout`: the payment call to payment:8081 fails (timeouts, then unavailable).'
+  - '`kubectl rollout history deployment/checkout`: 3.1.1 moved settings to ConfigMap checkout-settings; 3.1.2
+    differs from 3.1.1 only in its version label.'
+  - '`kubectl get configmap checkout-settings -o yaml`: PAYMENT_ADDR payment:8081.'
+  - '`kubectl get svc payment`: port 8080; the revision before 3.1.1 set PAYMENT_ADDR=payment:8080 directly.'
+  red_herrings:
+  - Release 3.1.2 went out last, but it only changed the version label; rolling it back changes nothing.
+reference:
+  commands:
+  - kubectl patch configmap checkout-settings --type merge -p '{"data":{"PAYMENT_ADDR":"payment:8080"}}'
+  - kubectl rollout restart deployment/checkout
+  - kubectl rollout status deployment/checkout --timeout=180s
+  fix: >-
+    Set PAYMENT_ADDR back to payment:8080 in ConfigMap checkout-settings and restart checkout (`kubectl rollout
+    restart deployment/checkout`). Also correct: rolling checkout back to the revision before both releases (it sets
+    PAYMENT_ADDR=payment:8080 directly), or overriding PAYMENT_ADDR=payment:8080 in the Deployment's env. A plain
+    `kubectl rollout undo` (back to 3.1.1) does not fix it, and editing the ConfigMap without a restart does not
+    reach the running pod.
+notes:
+- 'Measured on a dev cluster, 2026-10-17: checkout failed within 20 s of injection (504, then 500 "Failed to place
+  order"). `kubectl rollout undo` left it failing for 215 s. The ConfigMap fix + restart made checkout pass within
+  2 s and it stayed green for 218 s; revert left no ConfigMap behind and the Deployment back at 3.1.0.'

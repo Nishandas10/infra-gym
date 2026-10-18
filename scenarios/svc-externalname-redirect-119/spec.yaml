@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:6752b03a2069ddf01e12830bdfd10c8c7889cb361ea77af3b15cb1c7ed233ccb
 validation_hash: sha256:db137a2c42d2fc13f69ba40a7c79f6c9839ed42e4fd62fb5e48d66f9254631b6
-status: draft
+status: validated
 title: cart Service converted to ExternalName for an unfinished migration; new connections to cart cannot resolve
 mechanism: service/externalname-redirect
 split: train

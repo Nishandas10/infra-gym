@@ -5,7 +5,7 @@ the undo log, how to put everything back. A scenario's fault is a list of steps,
 order (with an optional `pause_s` after each).
 
 Names are prefixed by what they act on: k8s.* (Kubernetes objects), app.* (the shop's own
-feature flags), runtime.* (commands inside running pods), chaos.* (Chaos Mesh).
+feature flags), runtime.* (commands inside running pods), chaos.* (Chaos Mesh), node.* (the nodes themselves).
 """
 from __future__ import annotations
 
@@ -82,4 +82,4 @@ def revert(spec):
 
 
 # Import mechanism modules so they register themselves.
-from . import workload, chaos, flags, k8s_objects, runtime  # noqa: E402,F401
+from . import workload, chaos, flags, k8s_objects, node, runtime  # noqa: E402,F401

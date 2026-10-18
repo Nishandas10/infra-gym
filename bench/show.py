@@ -23,8 +23,8 @@ import rows as R  # noqa: E402
 
 
 
-def load_results(suite=None, any_version=False):
-    return R.load(suite, any_version)
+def load_results(suite=None, any_version=False, run_mode="fix"):
+    return R.load(suite, any_version, run_mode)
 
 
 def short(text, limit):
@@ -139,7 +139,7 @@ def main():
     a = ap.parse_args()
     suite = R.suite_from_args(a)
     if not a.scenario:
-        return list_episodes(load_results(suite, a.any_version))
+        return list_episodes(load_results(suite, a.any_version, a.mode))
     text = story(a.scenario, a.model, a.attempt, a.full, suite, a.any_version)
     print(text)
     if a.out:

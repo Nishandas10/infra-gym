@@ -1,0 +1,175 @@
+spec_version: 2
+id: migration-job-suspended-124
+version: 1
+title: A product-catalog release waits for a schema migration whose Job was created suspended
+mechanism: jobs/suspended-migration
+split: train
+seed: 1124
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product pages fail for every shopper since this morning's product-catalog 3.2.0 release, which has to stay.
+      Find the cause and fix it.
+    ticket: Product pages fail for every shopper since this morning's product-catalog 3.2.0 release, which has to
+      stay. The new product-catalog pod never gets past initialization. Find the cause and fix it.
+    hinted: Product pages fail for every shopper since this morning's product-catalog 3.2.0 release, which has to
+      stay. The release waits for a database schema change that was never applied. Find the cause and fix it.
+  leak_terms: [migration, migrate, job, suspend, schema, init, initcontainer]
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - multi-hop
+  - silent-failure
+  injector: k8s-api
+fault:
+  steps:
+  # The table of applied schema versions (40 and 41 applied earlier); revert drops it and migration 42's index.
+  - mechanism: runtime.exec
+    target: deploy/astronomy-db
+    commands:
+    - - psql
+      - -U
+      - postgres
+      - -d
+      - astronomy_db
+      - -c
+      - CREATE TABLE catalog.schema_migrations (version int PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now());
+        INSERT INTO catalog.schema_migrations (version, applied_at) VALUES (40, now() - interval '30 days'),
+        (41, now() - interval '9 days')
+    undo_commands:
+    - - psql
+      - -U
+      - postgres
+      - -d
+      - astronomy_db
+      - -c
+      - DROP INDEX IF EXISTS catalog.products_name_idx; DROP TABLE IF EXISTS catalog.schema_migrations
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: catalog-migrate-42
+        namespace: default
+        labels:
+          app.kubernetes.io/name: catalog-migrate
+          app.kubernetes.io/part-of: product-catalog
+        annotations:
+          platform.example.com/release: product-catalog-3.2.0
+      spec:
+        suspend: true
+        backoffLimit: 2
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: catalog-migrate
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: migrate
+              image: postgres:18.4
+              imagePullPolicy: IfNotPresent
+              env:
+              - name: PGPASSWORD
+                value: changeit
+              command:
+              - psql
+              - -h
+              - astronomy-db
+              - -U
+              - postgres
+              - -d
+              - astronomy_db
+              - -v
+              - ON_ERROR_STOP=1
+              - -c
+              - CREATE INDEX IF NOT EXISTS products_name_idx ON catalog.products (name); INSERT INTO
+                catalog.schema_migrations (version) VALUES (42) ON CONFLICT DO NOTHING
+              resources:
+                limits:
+                  memory: 64Mi
+  - mechanism: k8s.bad_rollout
+    target: product-catalog
+    change_cause: 'product-catalog 3.2.0: product search index, needs schema 42 (CAT-913)'
+    ops:
+    - op: replace
+      path: /spec/strategy
+      value:
+        type: Recreate
+    - op: append
+      path: /spec/template/spec/initContainers
+      value:
+        name: wait-for-schema
+        image: postgres:18.4
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PGPASSWORD
+          value: changeit
+        command:
+        - sh
+        - -c
+        - until [ "$(psql -h astronomy-db -U postgres -d astronomy_db -Atc "select count(*) from catalog.schema_migrations
+          where version = 42" 2>/dev/null)" = 1 ]; do echo "waiting for schema version 42"; sleep 5; done
+        resources:
+          limits:
+            memory: 64Mi
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.2.0
+verifier:
+  checks:
+  - type: journey
+    journey: catalog
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+    timeout_s: 6
+  - type: pods_ready
+    selector: opentelemetry.io/name=product-catalog
+  # Schema 42 applied. query_to_xml runs only the chosen branch, so the query also passes in the healthy world,
+  # where the table does not exist.
+  - type: sql
+    query: >-
+      select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null
+      then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end,
+      false, true, '')))[1]::text::int
+    expect_min: 1
+ground_truth:
+  root_causes:
+  - component: job/catalog-migrate-42
+    namespace: default
+    what: created with suspend true, so it never runs; schema version 42 is never applied and product-catalog 3.2.0's
+      init container waits for it forever
+  explanation: >-
+    product-catalog 3.2.0 (rolled out with the Recreate strategy, so the old pod is gone) has a new init container
+    that waits until schema version 42 is recorded in catalog.schema_migrations. The migration that records it is the
+    Job `catalog-migrate-42`, which was created with `spec.suspend: true` and never started. The new pod stays at
+    Init:1/2, product-catalog has no ready pod, and every product page fails. Unsuspending the Job runs the migration
+    (about 3 s); the init container then passes and product-catalog starts.
+  evidence:
+  - '`kubectl get pods -l opentelemetry.io/name=product-catalog`: Init:1/2; `kubectl logs <pod> -c wait-for-schema`:
+    "waiting for schema version 42".'
+  - '`kubectl get jobs`: catalog-migrate-42 is Suspended with 0/1 completions; its annotation names the 3.2.0
+    release.'
+  - '`kubectl rollout history deployment/product-catalog`: 3.2.0 "product search index, needs schema 42".'
+  - '`select * from catalog.schema_migrations`: versions 40 and 41 only.'
+reference:
+  commands:
+  - kubectl patch job catalog-migrate-42 --type merge -p '{"spec":{"suspend":false}}'
+  - kubectl wait --for=condition=complete job/catalog-migrate-42 --timeout=120s
+  - kubectl rollout status deployment/product-catalog --timeout=180s
+  fix: >-
+    Unsuspend the migration Job (`kubectl patch job catalog-migrate-42 -p '{"spec":{"suspend":false}}'`); once it
+    completes, the waiting init container passes and product-catalog starts. Running the same migration SQL by hand
+    is also acceptable. Rolling back the release or removing its init container restores the pages but leaves schema
+    42 unapplied, and the release has to stay.
+notes:
+- 'Measured on a dev cluster, 2026-10-17: product-catalog stuck at Init:1/2 and the catalog journey failing for 3 min
+  (timeouts, then 500s). After unsuspending, the Job completed in 3 s and every check passed within 46 s. Revert left
+  no table, index or Job, and product-catalog back on RollingUpdate with its original init container (world healthy
+  about 3 min after revert).'

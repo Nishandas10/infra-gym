@@ -36,6 +36,7 @@ def bench(tmp_path, monkeypatch):
 
     monkeypatch.setattr(rows, "RESULTS", tmp_path)
     monkeypatch.setattr(ab.toolbox, "ensure", lambda: None)
+    monkeypatch.setattr(ab, "refresh_sandbox", lambda: None)
     monkeypatch.setattr(ab, "make_client", lambda ms: None)
     monkeypatch.setattr(ab, "ensure_world", lambda: [])
     monkeypatch.setattr(ab, "UndoLog", NoUndo)
@@ -116,12 +117,15 @@ def test_damage_counts_against_the_agent_only_if_it_changed_something():
 # sha256 of every text the agent can be shown, per rows.PROMPT_VERSION. A change to any of them changes every
 # model's results: bump rows.PROMPT_VERSION, note it in bench/README.md, then pin the new hash here.
 PROMPT_HASHES = {2: "afa36749f70617e4c15814b1523b5f7b900c02814a615924eb18f9175bbb24ec",
-                 3: "d7bd61bcb7113401de17eb3ebaa47ee41e2177b402fffc894d18a13c8034d391"}
+                 3: "4b6195ae219a43be926a8f8281707745af6d42bd6165d26f2615d2261f7bd60a"}
 
 
 def test_prompt_texts_are_pinned_to_the_prompt_version():
     import hashlib
     texts = (ab.SYSTEM_PROMPT, ab.NUDGE_PROMPT, ab.BUDGET_NOTE, str(ab.BUDGET_WARNING_AT), ab.REPORT_PROMPT)
+    if rows.PROMPT_VERSION >= 3:   # the diagnose/detect texts (bench/modes.py) came with version 3
+        texts += (ab.READONLY_SYSTEM_PROMPT, *ab.MODE_TASKS.values(), ab.DETECT_PROMPT, ab.READONLY_NUDGE_PROMPT,
+                  ab.READONLY_REPORT_PROMPT)
     got = hashlib.sha256("\x00".join(texts).encode()).hexdigest()
     assert got == PROMPT_HASHES.get(rows.PROMPT_VERSION), \
         f"agent prompt changed: bump rows.PROMPT_VERSION and pin {got}"

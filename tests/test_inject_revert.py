@@ -62,6 +62,13 @@ EXPECT = {   # what must be true right after injection (Hard tier)
         "jaeger:4999" in f.obj("configmap", "otel-collector-agent")["data"]["relay"]
         and all(any(t["key"] == "dedicated" for t in f.obj("node", n)["spec"].get("taints", []))
                 for n in ("ai-gym-worker", "ai-gym-worker2"))),
+    "hard-job-sidecar-never-completes-127": lambda f: (
+        [c["name"] for c in f.obj("job", "ledger-migrate-7")["spec"]["template"]["spec"]["containers"]]
+        == ["migrate", "log-shipper"]
+        and f.obj("rolebinding", "job-status-reader")
+        and f.obj("deployment", "accounting")["spec"]["strategy"] == {"type": "Recreate"}
+        and [c["name"] for c in f.obj("deployment", "accounting")["spec"]["template"]["spec"]["initContainers"]]
+        == ["wait-for-kafka", "wait-for-ledger-migration"]),
 }
 
 
@@ -85,7 +92,7 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
     faults.inject(spec, sdir)
 
     changed = (fake.state() != objects_before or fake.flags_live() != flags_before
-               or any(cmd[:1] != ["cat"] for _, cmd, _ in fake.execs))
+               or any(cmd[:1] != ["cat"] for _, cmd, _ in fake.execs) or fake.kubelet_stopped)
     assert changed or spec["id"] in NO_NET_CHANGE, "injection changed nothing"
     if spec["id"] in EXPECT:
         assert EXPECT[spec["id"]](fake), "injected state is not as expected"
@@ -98,6 +105,7 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
     diff = sorted(str(k) for k in set(objects_before) | set(after) if objects_before.get(k) != after.get(k))
     assert not diff, f"not restored exactly: {diff}"
     assert fake.flags_live() == flags_before, "flagd's live flags not restored"
+    assert not fake.kubelet_stopped, f"kubelet still stopped on {sorted(fake.kubelet_stopped)}"
 
     reverted_cmds = [cmd for _, cmd, _ in fake.execs[execs_at_revert:]]
     for st in spec["fault"]["steps"]:

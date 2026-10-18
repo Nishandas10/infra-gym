@@ -100,6 +100,8 @@ class FakeCluster:
             self.objs[_key(o["kind"], o["metadata"]["name"], o["metadata"].get("namespace"))] = o
         self.flagd_live = data["flagd_live_file"]
         self.execs = []           # (target, cmd, stdin)
+        self.node_cmds = []       # (node, cmd) run with kube.node_exec (docker exec into a kind node)
+        self.kubelet_stopped = set()
         self.pod_deletions = []   # label selectors / args of `kubectl delete pod(s)`
         # The fixture keeps no pod placement or status: spread the pods over the workers, all Ready.
         workers = self.workers()
@@ -223,6 +225,18 @@ class FakeCluster:
             self.flagd_live = input
         return Result()
 
+    def node_exec(self, node, cmd, timeout=60):
+        cmd = list(cmd)
+        self.node_cmds.append((node, cmd))
+        if cmd[:2] == ["systemctl", "stop"] and cmd[2:] == ["kubelet"]:
+            self.kubelet_stopped.add(node)
+        if cmd[:2] == ["systemctl", "start"] and cmd[2:] == ["kubelet"]:
+            self.kubelet_stopped.discard(node)
+        return ""
+
+    def node_ready(self, node):
+        return node not in self.kubelet_stopped
+
     # ------------------------------------------------------- what services see
     def evaluate(self, flag, context=None):
         f = self.flags_live()[flag]
@@ -234,7 +248,7 @@ class FakeCluster:
 
 def install(fake, monkeypatch, state_dir):
     """Route gym.kube (and the few helpers that reach the network) to the fake."""
-    for fn in ("get", "items", "apply", "create", "delete", "patch", "kubectl", "exec_in"):
+    for fn in ("get", "items", "apply", "create", "delete", "patch", "kubectl", "exec_in", "node_exec", "node_ready"):
         monkeypatch.setattr(kube, fn, getattr(fake, fn))
     monkeypatch.setattr(kube, "wait_until", lambda fn, timeout, interval=5: fn())
     monkeypatch.setattr(flags, "evaluate", fake.evaluate)

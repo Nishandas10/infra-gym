@@ -1,0 +1,10 @@
+16:11:28 === cronjob-pileup-exhausts-capacity-125 (k8s.create_objects)
+16:11:29   0. world healthy?
+16:16:46       [PASS   ] journey:browse - 2/2 ok, avg 59ms
+16:16:46       [PASS   ] journey:recommendations - 2/2 ok, avg 76ms
+16:16:46       [PASS   ] journey:cart - 2/2 ok, avg 74ms
+16:16:46       [PASS   ] journey:checkout - 2/2 ok, avg 192ms
+16:16:46       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+16:16:46       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+16:16:46       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 200)
+16:16:46   => ENV_UNHEALTHY  {'world_ready_s': 304}

@@ -1,0 +1,102 @@
+{
+ "episode": "92ae3a3ea1754a669247af586da91ff9",
+ "scenario": "migration-job-suspended-124",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:b701252e1b58b9516de4a55fa919c2e0787b96b6b8b7ca9f1dd6481fbe068876",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Product pages fail for every shopper since this morning's product-catalog 3.2.0 release, which has to stay. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch job catalog-migrate-42 --type merge -p '{\\\"spec\\\":{\\\"suspend\\\":false}}'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "job.batch/catalog-migrate-42 patched"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl wait --for=condition=complete job/catalog-migrate-42 --timeout=120s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "job.batch/catalog-migrate-42 condition met"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-3",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/product-catalog --timeout=180s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-3",
+   "content": "Waiting for deployment \"product-catalog\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"product-catalog\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "product-catalog 3.2.0 (rolled out with the Recreate strategy, so the old pod is gone) has a new init container that waits until schema version 42 is recorded in catalog.schema_migrations. The migration that records it is the Job `catalog-migrate-42`, which was created with `spec.suspend: true` and never started. The new pod stays at Init:1/2, product-catalog has no ready pod, and every product page fails. Unsuspending the Job runs the migration (about 3 s); the init container then passes and product-catalog starts."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch job catalog-migrate-42 --type merge -p '{\"spec\":{\"suspend\":false}}'",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.2,
+   "cmd": "kubectl wait --for=condition=complete job/catalog-migrate-42 --timeout=120s",
+   "changes": false
+  },
+  {
+   "step": 3,
+   "t": 3.3,
+   "cmd": "kubectl rollout status deployment/product-catalog --timeout=180s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 70.9
+}

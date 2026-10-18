@@ -1,0 +1,200 @@
+spec_version: 2
+id: hard-job-sidecar-never-completes-127
+version: 1
+title: An accounting release waits for a migration Job that never completes because its log-shipper sidecar never exits
+mechanism: jobs/sidecar-blocks-completion
+split: hard
+seed: 1127
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Orders placed in the last few minutes are missing from the accounting ledger, although customers can check
+      out normally. Find the cause and fix it.
+    ticket: Orders placed in the last few minutes are missing from the accounting ledger, although customers can check
+      out normally. Accounting 3.2.0 went out shortly before. Find the cause and fix it.
+    hinted: Orders placed in the last few minutes are missing from the accounting ledger, although customers can check
+      out normally. The new accounting pod waits for a database migration that has already run. Find the cause and fix
+      it.
+  leak_terms: [migration, migrate, job, sidecar, log-shipper, init, release, rollout]
+tags:
+  layer: workload
+  symptom: silent-data
+  fix_type:
+  - config-edit
+  drivers:
+  - async-path
+  - silent-failure
+  - looks-healthy
+  injector: k8s-api
+fault:
+  steps:
+  # The release's init container asks the API whether the Job has completed, with the shop's ServiceAccount.
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: job-status-reader
+        namespace: default
+      rules:
+      - apiGroups: [batch]
+        resources: [jobs]
+        verbs: [get, list, watch]
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: job-status-reader
+        namespace: default
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: job-status-reader
+      subjects:
+      - kind: ServiceAccount
+        name: my-shop
+        namespace: default
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: ledger-migrate-7
+        namespace: default
+        labels:
+          app.kubernetes.io/name: ledger-migrate
+          app.kubernetes.io/part-of: accounting
+        annotations:
+          platform.example.com/release: accounting-3.2.0
+      spec:
+        backoffLimit: 2
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: ledger-migrate
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: migrate
+              image: postgres:18.4
+              imagePullPolicy: IfNotPresent
+              env:
+              - name: PGPASSWORD
+                value: changeit
+              command: [sh, -c, 'echo "applying ledger migration 7"; psql -h astronomy-db -U postgres -d astronomy_db
+                  -v ON_ERROR_STOP=1 -c ANALYZE && echo "ledger migration 7 applied"']
+              resources:
+                limits:
+                  memory: 64Mi
+            # An ordinary container, not a native sidecar: the pod (and so the Job) only completes once it exits.
+            - name: log-shipper
+              image: busybox:latest
+              imagePullPolicy: IfNotPresent
+              command: [sh, -c, 'trap "exit 0" TERM; echo "shipping job logs"; while true; do sleep 1; done']
+              resources:
+                limits:
+                  memory: 16Mi
+  - mechanism: k8s.bad_rollout
+    target: accounting
+    change_cause: 'accounting 3.2.0: ledger schema v7 (FIN-208)'
+    ops:
+    - op: replace
+      path: /spec/strategy
+      value:
+        type: Recreate
+    - op: append
+      path: /spec/template/spec/initContainers
+      value:
+        name: wait-for-ledger-migration
+        image: busybox:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - -c
+        - |-
+          T=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          until wget -q -O- --no-check-certificate --header "Authorization: Bearer $T" https://kubernetes.default.svc/apis/batch/v1/namespaces/default/jobs/ledger-migrate-7 | grep -q -E '"type": ?"Complete"'; do
+            echo "waiting for job ledger-migrate-7 to complete"; sleep 5
+          done
+        resources:
+          limits:
+            memory: 16Mi
+    - op: replace
+      path: /spec/template/metadata/labels/app.kubernetes.io~1version
+      value: 3.2.0
+verifier:
+  checks:
+  - type: orders_recorded
+    timeout_s: 90
+  - type: kafka_lag
+    group: accounting
+    max_lag: 200
+  - type: pods_ready
+    selector: opentelemetry.io/name=accounting
+ground_truth:
+  root_causes:
+  - component: job/ledger-migrate-7
+    namespace: default
+    what: its log-shipper runs as an ordinary second container that never exits, so the Job never completes and
+      accounting 3.2.0's init container, which waits for the Job to complete, never finishes
+  explanation: >-
+    Accounting 3.2.0 (Recreate strategy, so the old pod is gone) adds an init container that polls the Kubernetes API
+    until Job `ledger-migrate-7` is Complete. The Job's `migrate` container did its work in seconds ("ledger migration
+    7 applied") and exited 0, but the pod also runs a `log-shipper` as a regular container that loops forever. A pod
+    completes only when all its regular containers have exited, so the Job stays Running at 0/1 completions, the new
+    accounting pod never leaves initialization, the orders consumer group has no members, and orders pile up in Kafka
+    unrecorded while checkout keeps working.
+  evidence:
+  - '`kubectl get pods -l opentelemetry.io/name=accounting`: Init:1/2; `kubectl logs <pod> -c
+    wait-for-ledger-migration`: "waiting for job ledger-migrate-7 to complete".'
+  - '`kubectl get job ledger-migrate-7`: Running, 0/1 completions for minutes; its pod is 1/2 Ready, `migrate`
+    Terminated (Completed) and `log-shipper` still Running.'
+  - '`kubectl logs job/ledger-migrate-7 -c migrate`: "ledger migration 7 applied".'
+  - 'Kafka: consumer group accounting has no active members and a growing lag.'
+reference:
+  commands:
+  - kubectl delete job ledger-migrate-7 --wait=true
+  - |-
+    cat <<'EOF' | kubectl apply -f -
+    apiVersion: batch/v1
+    kind: Job
+    metadata: {name: ledger-migrate-7, namespace: default, labels: {app.kubernetes.io/name: ledger-migrate}}
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers:
+          - name: log-shipper
+            image: busybox:latest
+            imagePullPolicy: IfNotPresent
+            restartPolicy: Always
+            command: [sh, -c, 'trap "exit 0" TERM; while true; do sleep 1; done']
+          containers:
+          - name: migrate
+            image: postgres:18.4
+            imagePullPolicy: IfNotPresent
+            env: [{name: PGPASSWORD, value: changeit}]
+            command: [sh, -c, 'psql -h astronomy-db -U postgres -d astronomy_db -v ON_ERROR_STOP=1 -c ANALYZE']
+    EOF
+  - kubectl wait --for=condition=complete job/ledger-migrate-7 --timeout=120s
+  - kubectl rollout status deployment/accounting --timeout=180s
+  fix: >-
+    Make the Job complete. Either recreate it with the log-shipper as a native sidecar (an init container with
+    `restartPolicy: Always`, which Kubernetes stops once the main container exits), or stop the running log-shipper
+    (`kubectl exec job/ledger-migrate-7 -c log-shipper -- kill 1`; it exits 0 on SIGTERM). Once the Job is Complete the
+    init container passes, accounting starts and drains the backlog. Deleting the Job without recreating it leaves
+    accounting waiting forever; removing the init container from the release also restores the ledger but skips the
+    release's migration gate.
+  traps:
+  - The migration itself already succeeded ("ledger migration 7 applied"), so the Job looks done at a glance.
+  - Checkout and every user journey stay green; only the ledger, Kafka lag and the accounting pod show it.
+  - Deleting the stuck Job (the reflex for a stuck Job) leaves the init container waiting for a Job that no longer
+    exists.
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 360
+notes:
+- 'Measured on a dev cluster, 2026-10-17: accounting stuck at Init:1/2 and orders not recorded for 4.5 min (consumer
+  group with no members, lag 19-24). Stopping the log-shipper completed the Job in 4 s and recreating the Job with a
+  native sidecar in 5 s; in both cases every check passed within 12 s and stayed green for 5 min. Revert left no Job,
+  Role or RoleBinding and accounting back on RollingUpdate with only wait-for-kafka.'

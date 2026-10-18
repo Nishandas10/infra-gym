@@ -1,0 +1,80 @@
+spec_version: 2
+id: serviceaccount-deleted-122
+version: 2
+title: The shop's ServiceAccount was deleted; a restarted cart pod can never be created again
+mechanism: rbac/serviceaccount-deleted
+split: train
+seed: 1122
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Adding items to the cart fails for every shopper since a few minutes ago, and orders cannot be placed. Find
+      the cause and fix it.
+    ticket: Adding items to the cart fails for every shopper since a few minutes ago, and orders cannot be placed.
+      There is no cart pod at all, and nobody scaled the cart down. Find the cause and fix it.
+    hinted: Adding items to the cart fails for every shopper since a few minutes ago, and orders cannot be placed. The
+      cart's ReplicaSet keeps trying to create a pod and the API server refuses it. Find the cause and fix it.
+  leak_terms: [serviceaccount, service account, my-shop, forbidden, rbac]
+tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - restore-object
+  - restart
+  drivers:
+  - silent-rejection
+  - fix-is-blocked
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.delete_object
+    kind: serviceaccount
+    name: my-shop
+    # The pods that already run keep running; the next pod that has to be created cannot be.
+    recreate_pods_after:
+    - opentelemetry.io/name=cart
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=cart
+ground_truth:
+  root_causes:
+  - component: serviceaccount/my-shop
+    namespace: default
+    what: was deleted; every shop pod runs as it, so the API server rejects any new shop pod
+  explanation: >-
+    The ServiceAccount `my-shop`, which every shop Deployment runs its pods as, was deleted. Pods that were already
+    running keep running, but the API server rejects every new pod that names a ServiceAccount that does not
+    exist. The cart pod was replaced afterwards, so its ReplicaSet keeps failing with `error looking up service
+    account default/my-shop` and the cart has no pod at all; adding to cart and checkout fail.
+  evidence:
+  - '`kubectl get pods -l opentelemetry.io/name=cart`: no pod.'
+  - '`kubectl describe rs -l opentelemetry.io/name=cart` / `kubectl get events`: FailedCreate, `pods "cart-..." is
+    forbidden: error looking up service account default/my-shop: serviceaccount "my-shop" not found`.'
+  - '`kubectl get serviceaccounts`: no `my-shop`; every shop Deployment has `serviceAccountName: my-shop`.'
+reference:
+  commands:
+  - kubectl create serviceaccount my-shop
+  - kubectl rollout restart deployment/cart
+  - kubectl rollout status deployment/cart --timeout=300s
+  fix: >-
+    Recreate the ServiceAccount `my-shop`, then restart cart (`kubectl rollout restart deployment/cart`). The
+    ReplicaSet retries the failed pod creation with an exponential backoff, which after a long outage reaches about
+    16 minutes, so without the restart cart can stay down long after the ServiceAccount is back.
+    Pointing the cart Deployment at another ServiceAccount (e.g. `default`) also brings cart back but leaves every
+    other shop workload unable to restart.
+validation:
+  recover_timeout_s: 420
+notes:
+- 'Measured on a dev cluster, 2026-10-17: cart had no pod and FailedCreate events for 4 min; after `kubectl create
+  serviceaccount my-shop` the ReplicaSet (in backoff) created the pod within ~60 s and the cart journey passed at
+  ~2 min. Revert recreates the ServiceAccount only if it is missing.'
+- 'v2 (2026-10-17): the long-hold run (15 min outage) showed the ReplicaSet still in backoff 5 min after the
+  ServiceAccount was recreated; the reference fix now restarts cart.'

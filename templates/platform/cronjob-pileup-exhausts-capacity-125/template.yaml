@@ -1,0 +1,114 @@
+spec_version: 2
+id: cronjob-pileup-exhausts-capacity-125
+version: 1
+title: A report CronJob piles up hung runs until no node has memory left; a restarted recommendation pod cannot fit
+mechanism: jobs/cronjob-pileup
+split: train
+seed: 1125
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Product recommendations stopped showing up on the storefront a few minutes ago. Find the cause and fix it.
+    ticket: Product recommendations stopped showing up on the storefront a few minutes ago. The recommendation pod
+      was restarted and has been Pending since. Find the cause and fix it.
+    hinted: Product recommendations stopped showing up on the storefront a few minutes ago. The nodes have no memory
+      left to schedule the recommendation pod, and something else keeps taking it. Find the cause and fix it.
+  leak_terms: [cronjob, cron job, report-export, concurrency, job, jobs, memory, capacity]
+tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - delete-object
+  drivers:
+  - misattributed-symptom
+  - hidden-second-actor
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: report-export
+        namespace: default
+        labels:
+          app.kubernetes.io/name: report-export
+        annotations:
+          platform.example.com/owner: data-team
+      spec:
+        schedule: '* * * * *'
+        concurrencyPolicy: Allow
+        jobTemplate:
+          metadata:
+            labels:
+              app.kubernetes.io/name: report-export
+          spec:
+            parallelism: 20
+            completions: 20
+            backoffLimit: 0
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: report-export
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: export
+                  image: busybox:latest
+                  imagePullPolicy: IfNotPresent
+                  command: [sh, -c, 'echo waiting for the export lock; sleep 86400']
+                  resources:
+                    requests: {memory: 450Mi, cpu: 10m}
+                    limits: {memory: 450Mi}
+    # Let the hung runs fill the workers (~6 min), then recreate the victim, as a node event or a deploy would.
+    settle_s: 420
+    recreate_pods_after:
+    - opentelemetry.io/name=recommendation
+verifier:
+  checks:
+  - type: journey
+    journey: recommendations
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=recommendation
+ground_truth:
+  root_causes:
+  - component: cronjob/report-export
+    namespace: default
+    what: runs every minute with concurrencyPolicy Allow, and every run hangs; the piled-up runs reserve all the
+      workers' memory, so the recommendation pod cannot be scheduled
+  explanation: >-
+    The data team's report-export CronJob starts 20 pods every minute (450Mi requested each), with
+    `concurrencyPolicy: Allow`, and every run hangs waiting for a lock instead of finishing. Within minutes the runs
+    have reserved nearly all the workers' memory. When the recommendation pod was recreated, no node had room for
+    its request, so it is Pending (Insufficient memory) and the storefront shows no recommendations. More runs keep
+    arriving every minute, so deleting a few pods only helps until the next run.
+  evidence:
+  - '`kubectl get pods -l opentelemetry.io/name=recommendation`: Pending; `kubectl describe pod`: 0/3 nodes are
+    available: Insufficient memory.'
+  - '`kubectl describe nodes`: memory requests at ~98% on every worker.'
+  - '`kubectl get cronjobs,jobs`: report-export, concurrencyPolicy Allow, one Job per minute, none completing.'
+  - '`kubectl logs` of a report-export pod: "waiting for the export lock".'
+reference:
+  commands:
+  - kubectl patch cronjob report-export --type merge -p '{"spec":{"suspend":true}}'
+  - kubectl delete jobs -l app.kubernetes.io/name=report-export --wait=false
+  - kubectl rollout status deployment/recommendation --timeout=300s
+  fix: >-
+    Stop the pile-up at its source: suspend the CronJob (or set `concurrencyPolicy: Forbid` and an
+    `activeDeadlineSeconds`, or delete it), then delete its hung Jobs so their memory is released. Deleting pods or
+    Jobs alone is undone by the next run within a minute; scaling recommendation or lowering its request does not
+    address the cause.
+validation:
+  detect_timeout_s: 300
+  recover_timeout_s: 420
+notes:
+- 'Measured on a dev cluster (2 workers, 31Gi allocatable each), 2026-10-17: memory requests reached 98% on both
+  workers after 6 min (120 runs Running, 20 more Pending each minute); a recreated recommendation pod stayed Pending
+  and the recommendations journey failed (500); revert removed every run and the world was healthy 1.7 min later.'

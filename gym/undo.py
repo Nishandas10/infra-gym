@@ -126,6 +126,13 @@ def run_hook(hook):
             rev = (rs["metadata"].get("annotations") or {}).get("deployment.kubernetes.io/revision")
             if rs["metadata"]["name"] not in h["keep"] and rev != current:
                 kube.delete("replicaset", rs["metadata"]["name"], namespace=h["ns"])
+    if hook.get("kubelet_start"):
+        # node.kubelet_stop: start it again and wait until the node reports Ready (pods evicted meanwhile are then
+        # rescheduled; the world check after revert waits for them).
+        node = hook["kubelet_start"]
+        kube.node_exec(node, ["systemctl", "start", "kubelet"])
+        if not kube.wait_until(lambda: kube.node_ready(node), 180, interval=5):
+            raise RuntimeError(f"node {node} is not Ready 180 s after starting its kubelet")
     if hook.get("kafka_topic"):
         # A fresh broker has no topics until someone produces; consumers that subscribe
         # before that can sit idle for minutes. Create it as soon as the broker answers.

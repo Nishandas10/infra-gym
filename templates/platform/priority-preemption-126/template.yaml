@@ -1,0 +1,129 @@
+spec_version: 2
+id: priority-preemption-126
+version: 1
+title: A nightly batch with a copied high-priority class preempts the whole shop off both workers
+mechanism: scheduling/priority-preemption
+split: train
+seed: 1126
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: The whole shop went down a few minutes ago. Every page fails, and most of the shop's pods are Pending. Find
+      the cause and fix it.
+    ticket: The whole shop went down a few minutes ago. Every page fails, and most of the shop's pods are Pending with
+      Insufficient memory, although nothing in the shop changed. Find the cause and fix it.
+    hinted: The whole shop went down a few minutes ago. Every page fails, and most of the shop's pods are Pending. A new
+      workload took the shop's capacity at a higher scheduling priority. Find the cause and fix it.
+  leak_terms: [priority, priorityclass, preempt, preemption, batch, nightly]
+tags:
+  layer: platform
+  symptom: hard-errors
+  fix_type:
+  - delete-object
+  drivers:
+  - misattributed-symptom
+  injector: k8s-api
+fault:
+  steps:
+  # Two replicas, one per worker (required anti-affinity), each requesting most of a worker's 32Gi, at a priority far
+  # above the shop's (0): the scheduler preempts every shop pod on both workers, and none fits back. The gym's own pods
+  # run at gym-critical (above this class), so the verifier's probes stay.
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: scheduling.k8s.io/v1
+      kind: PriorityClass
+      metadata:
+        name: batch-critical
+      value: 1000000
+      description: nightly batch (copied from the platform's critical class)
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: nightly-batch
+        namespace: default
+        labels:
+          app.kubernetes.io/name: nightly-batch
+      spec:
+        replicas: 2
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: nightly-batch
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: nightly-batch
+          spec:
+            priorityClassName: batch-critical
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: nightly-batch
+                  topologyKey: kubernetes.io/hostname
+            containers:
+            - name: batch
+              image: busybox:latest
+              imagePullPolicy: IfNotPresent
+              command: [sh, -c, 'echo crunching; sleep 86400']
+              resources:
+                requests:
+                  memory: 31Gi
+                  cpu: 10m
+                limits:
+                  memory: 31Gi
+verifier:
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+  - type: pods_ready
+    selector: ''
+ground_truth:
+  root_causes:
+  - component: deployment/nightly-batch
+    namespace: default
+    what: its two replicas run at PriorityClass batch-critical (1000000, far above the shop's 0) and request 31Gi each,
+      so the scheduler preempted every shop pod on both workers and none fits back
+  explanation: >-
+    A `nightly-batch` Deployment was added with `priorityClassName: batch-critical`, a class copied from the
+    platform's critical one (value 1000000). Its two replicas (one per worker) each request 31Gi of a worker's 32Gi.
+    To place them, the scheduler preempted every lower-priority pod on both workers: the whole shop. The evicted pods
+    were recreated but stay Pending with Insufficient memory, so every page fails. Nothing in the shop itself
+    changed.
+  evidence:
+  - '`kubectl get pods`: almost every shop pod Pending; `nightly-batch` 2/2 Running.'
+  - '`kubectl describe pod <pending shop pod>`: 0/3 nodes are available ... Insufficient memory; preemption is not
+    helpful (the batch has a higher priority).'
+  - '`kubectl get events --field-selector reason=Preempted`: shop pods preempted by the nightly-batch pods.'
+  - '`kubectl get deploy nightly-batch -o yaml`: priorityClassName batch-critical, requests 31Gi; `kubectl get
+    priorityclass`: batch-critical 1000000.'
+  red_herrings:
+  - The shop's own Deployments and resources are unchanged; raising their priority or memory is neither possible nor
+    needed.
+reference:
+  commands:
+  - kubectl delete deployment nightly-batch
+  fix: >-
+    Remove the batch from the shop's capacity: delete the nightly-batch Deployment or scale it to 0. The shop's pods
+    then schedule again and the shop recovers within a few minutes. Removing only its priorityClassName does not help
+    by itself: the running batch pods keep their memory until they are replaced. The PriorityClass cannot be deleted
+    with the on-call permissions here, and does not need to be.
+validation:
+  recover_timeout_s: 480
+notes:
+- 'Sized for workers with 32Gi allocatable (all three dev clusters): 31Gi leaves too little for any shop pod.'
+- 'Measured on a dev cluster, 2026-10-17 (spike 126c, after the gym-critical PriorityClass): every shop pod Pending
+  within 15 s, browse and checkout failing (503, then connection refused), the gym pods untouched. After deleting
+  nightly-batch: browse passed at 101 s, checkout and all 27 pods at 204 s, still green at 306 s; revert left no
+  PriorityClass or Deployment. Spikes 126/126b with one replica preempted different pods depending on placement
+  (load-generator, prometheus, a collector agent), hence two replicas.'

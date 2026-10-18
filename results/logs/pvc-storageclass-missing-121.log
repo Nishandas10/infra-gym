@@ -1,0 +1,44 @@
+16:16:37 === pvc-storageclass-missing-121 (composite)
+16:16:38   0. world healthy?
+16:16:50   1. baseline must PASS
+16:16:50       [PASS   ] journey:cart - 3/3 ok, avg 47ms
+16:16:50       [PASS   ] pods_ready:opentelemetry.io/name=valkey-cart - 1/1 pods ready for opentelemetry.io/name=valkey-cart
+16:16:50   2. inject
+16:16:51   3. verifier must FAIL (<= 240s)
+16:17:16       [FAIL   ] journey:cart - 0/3 ok, avg 8040ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+16:17:16       [FAIL   ] pods_ready:opentelemetry.io/name=valkey-cart - 0/1 pods ready for opentelemetry.io/name=valkey-cart; valkey-cart-7dc6dbf7bf-d7fnx (Pending: Unschedulable 0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. not found)
+16:17:16   4. do-nothing agent: still FAIL after 900s?
+16:32:46       [FAIL   ] journey:cart - 0/3 ok, avg 8025ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+16:32:46       [FAIL   ] pods_ready:opentelemetry.io/name=valkey-cart - 0/1 pods ready for opentelemetry.io/name=valkey-cart; valkey-cart-7dc6dbf7bf-d7fnx (Pending: Unschedulable 0/3 nodes are available: pod has unbound immediate PersistentVolumeClaims. not found)
+16:32:46       failing in 26/26 checks during the hold
+16:32:46   5. reference solution
+16:32:46     $ kubectl delete pvc valkey-data --wait=false
+16:32:46       persistentvolumeclaim "valkey-data" deleted from default namespace
+16:32:46     $ kubectl delete pod -l opentelemetry.io/name=valkey-cart --wait=false
+16:32:46       pod "valkey-cart-7dc6dbf7bf-d7fnx" deleted from default namespace
+16:32:46     $ sleep 10
+16:32:56     $ cat <<'EOF' | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: valkey-data, namespace: default}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 1Gi}}
+EOF
+16:32:56       persistentvolumeclaim/valkey-data created
+16:32:56     $ kubectl rollout status deployment/valkey-cart --timeout=180s
+16:33:03       Waiting for deployment "valkey-cart" rollout to finish: 0 of 1 updated replicas are available...
+16:33:03       deployment "valkey-cart" successfully rolled out
+16:33:03   6. verifier must PASS (<= 300s)
+16:33:05       [PASS   ] journey:cart - 3/3 ok, avg 153ms
+16:33:05       [PASS   ] pods_ready:opentelemetry.io/name=valkey-cart - 1/1 pods ready for opentelemetry.io/name=valkey-cart
+16:33:05   6b. invariants must PASS (shop_health)
+16:33:06       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+16:33:06       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
+16:33:06       [PASS   ] journey:cart - 2/2 ok, avg 37ms
+16:33:06       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
+16:33:06   6c. the fix must survive a restart of deployment/valkey-cart
+16:33:52       [PASS   ] journey:cart - 3/3 ok, avg 54ms
+16:33:52       [PASS   ] pods_ready:opentelemetry.io/name=valkey-cart - 1/1 pods ready for opentelemetry.io/name=valkey-cart
+16:33:52   7. restore exactly
+16:34:04   => VALIDATED  {'world_ready_s': 12, 'detect_s': 25, 'recover_s': 2, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 12}

@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:2d70bd12b8fc0595129089794b552372162a096a2cd04f8a5a0935f44d0bf14c
 validation_hash: sha256:b38f3312a10b13bdfab22002aeebd0803479bec0edb0c5b12732eb15792a0046
-status: draft
+status: validated
 title: 'False alarm: a routine recommendation release fired a replica alert while it rolled out; the release is
   healthy'
 mechanism: false-alarm/healthy-release

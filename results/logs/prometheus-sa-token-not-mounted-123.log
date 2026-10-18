@@ -1,0 +1,34 @@
+17:04:07 === prometheus-sa-token-not-mounted-123 (composite)
+17:04:07   0. world healthy?
+17:04:16   1. baseline must PASS
+17:04:17       [PASS   ] prometheus:count(up{job="kubernetes-nodes-cadvisor"}) - count(up{job="kubernetes-nodes-cadvisor"}) = 3
+17:04:17       [PASS   ] prometheus:count(up{job="kubernetes-pods"}) - count(up{job="kubernetes-pods"}) = 1
+17:04:17   2. inject
+17:04:19   3. verifier must FAIL (<= 240s)
+17:04:21       [UNKNOWN] prometheus:count(up{job="kubernetes-nodes-cadvisor"}) - prometheus query failed: HTTP 0
+17:04:21       [UNKNOWN] prometheus:count(up{job="kubernetes-pods"}) - prometheus query failed: HTTP 0
+17:04:21   4. do-nothing agent: still FAIL after 900s?
+17:19:22       [FAIL   ] prometheus:count(up{job="kubernetes-nodes-cadvisor"}) - no data for count(up{job="kubernetes-nodes-cadvisor"})
+17:19:22       [FAIL   ] prometheus:count(up{job="kubernetes-pods"}) - no data for count(up{job="kubernetes-pods"})
+17:19:22       failing in 81/81 checks during the hold
+17:19:22   5. reference solution
+17:19:22     $ kubectl patch deployment prometheus --type json -p '[{"op":"remove","path":"/spec/template/spec/automountServiceAccountToken"}]'
+17:19:22       deployment.apps/prometheus patched
+17:19:22     $ kubectl rollout status deployment/prometheus --timeout=240s
+17:19:54       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+17:19:54       Waiting for deployment "prometheus" rollout to finish: 0 out of 1 new replicas have been updated...
+17:19:54       Waiting for deployment "prometheus" rollout to finish: 0 of 1 updated replicas are available...
+17:19:54       deployment "prometheus" successfully rolled out
+17:19:54   6. verifier must PASS (<= 360s)
+17:20:08       [PASS   ] prometheus:count(up{job="kubernetes-nodes-cadvisor"}) - count(up{job="kubernetes-nodes-cadvisor"}) = 2
+17:20:08       [PASS   ] prometheus:count(up{job="kubernetes-pods"}) - count(up{job="kubernetes-pods"}) = 1
+17:20:08   6b. invariants must PASS (shop_health)
+17:20:10       [PASS   ] journey:browse - 2/2 ok, avg 48ms
+17:20:10       [PASS   ] journey:recommendations - 2/2 ok, avg 102ms
+17:20:10       [PASS   ] journey:cart - 2/2 ok, avg 72ms
+17:20:10       [PASS   ] journey:checkout - 2/2 ok, avg 184ms
+17:20:10   6c. the fix must survive a restart of deployment/prometheus
+17:20:56       [PASS   ] prometheus:count(up{job="kubernetes-nodes-cadvisor"}) - count(up{job="kubernetes-nodes-cadvisor"}) = 2
+17:20:56       [PASS   ] prometheus:count(up{job="kubernetes-pods"}) - count(up{job="kubernetes-pods"}) = 1
+17:20:56   7. restore exactly
+17:21:47   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 14, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 50}

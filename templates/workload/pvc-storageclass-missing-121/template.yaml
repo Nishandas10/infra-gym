@@ -1,0 +1,109 @@
+spec_version: 2
+id: pvc-storageclass-missing-121
+version: 1
+title: valkey-cart moved onto a PVC with a StorageClass this cluster does not have; the cart store never starts
+mechanism: storage/storageclass-missing
+split: train
+seed: 1121
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Since this morning's change to the cart's data store, adding items to the cart times out for every shopper.
+      Find the cause and fix it.
+    ticket: Since this morning's change to the cart's data store, adding items to the cart times out for every
+      shopper. The cart store's new pod has been Pending ever since. Find the cause and fix it.
+    hinted: Since this morning's change to the cart's data store, adding items to the cart times out for every
+      shopper. The cart store's pod waits for a volume that never gets provisioned. Find the cause and fix it.
+  leak_terms: [storageclass, storage class, premium-rwo, pvc, persistentvolumeclaim, volume, provision]
+tags:
+  layer: workload
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  - restore-object
+  drivers:
+  - silent-rejection
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.create_objects
+    manifests:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: valkey-data
+        namespace: default
+        labels:
+          app.kubernetes.io/name: valkey-cart
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: premium-rwo
+        resources:
+          requests:
+            storage: 1Gi
+  - mechanism: k8s.workload_patch
+    target: valkey-cart
+    strategy: Recreate
+    ops:
+    - op: append
+      path: /spec/template/spec/volumes
+      value:
+        name: data
+        persistentVolumeClaim:
+          claimName: valkey-data
+    - op: append
+      path: /spec/template/spec/containers/$c/volumeMounts
+      value:
+        name: data
+        mountPath: /data
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: pods_ready
+    selector: opentelemetry.io/name=valkey-cart
+ground_truth:
+  root_causes:
+  - component: persistentvolumeclaim/valkey-data
+    namespace: default
+    what: asks for StorageClass premium-rwo, which does not exist here, so it is never provisioned and the valkey-cart
+      pod that mounts it stays Pending
+  explanation: >-
+    valkey-cart (the cart's Redis-compatible store) was moved onto a PersistentVolumeClaim `valkey-data` with
+    `storageClassName: premium-rwo`, a class name copied from another cloud. This cluster only has the `standard`
+    class, so the claim is never provisioned (ProvisioningFailed: storageclass "premium-rwo" not found), the new
+    valkey-cart pod is Pending (unbound PersistentVolumeClaim), and with the Recreate strategy the old pod is already
+    gone: every cart call times out.
+  evidence:
+  - '`kubectl get pods -l opentelemetry.io/name=valkey-cart`: Pending; `kubectl describe pod`: pod has unbound
+    immediate PersistentVolumeClaims.'
+  - '`kubectl get pvc valkey-data`: Pending, STORAGECLASS premium-rwo.'
+  - '`kubectl describe pvc valkey-data`: ProvisioningFailed, storageclass.storage.k8s.io "premium-rwo" not found.'
+  - '`kubectl get storageclass`: only `standard` (default).'
+reference:
+  commands:
+  - kubectl delete pvc valkey-data --wait=false
+  - kubectl delete pod -l opentelemetry.io/name=valkey-cart --wait=false
+  - sleep 10
+  - |-
+    cat <<'EOF' | kubectl apply -f -
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata: {name: valkey-data, namespace: default}
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources: {requests: {storage: 1Gi}}
+    EOF
+  - kubectl rollout status deployment/valkey-cart --timeout=180s
+  fix: >-
+    A PVC's storageClassName cannot be changed: delete the claim (and the Pending pod that holds it) and recreate it
+    without a class (or with `standard`). Removing the volume from valkey-cart (back to its old ephemeral storage)
+    also works. Creating a StorageClass is not possible with the on-call permissions here.
+notes:
+- 'Measured on a dev cluster, 2026-10-17: PVC Pending with ProvisioningFailed and valkey-cart Pending for 4 min, cart
+  journey timing out (8 s); after the reference fix cart passed within 7 s; revert left no PVC or PV behind.'

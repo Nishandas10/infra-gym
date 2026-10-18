@@ -1,0 +1,30 @@
+19:02:26 === priority-preemption-126 (k8s.create_objects)
+19:02:27   0. world healthy?
+19:02:37   1. baseline must PASS
+19:02:38       [PASS   ] journey:browse - 3/3 ok, avg 26ms
+19:02:38       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
+19:02:38       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+19:02:38   2. inject
+19:02:39   3. verifier must FAIL (<= 240s)
+19:02:47       [FAIL   ] journey:browse - 0/3 ok, avg 1718ms; e.g. GET /api/products/1YMWWN1N4O -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+19:02:47       [FAIL   ] journey:checkout - 0/3 ok, avg 8ms; e.g. POST /api/cart -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+19:02:47       [FAIL   ] pods_ready - not ready: ad-94d5cc5ff-rwdqb (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp); cart-646fdf69b6-j69pc (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp); checkout-6d96d76bb7-ldt4t
+19:02:47   4. do-nothing agent: still FAIL after 900s?
+19:17:47       [FAIL   ] journey:browse - 0/3 ok, avg 15ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+19:17:47       [FAIL   ] journey:checkout - 0/3 ok, avg 5ms; e.g. POST /api/cart -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+19:17:47       [FAIL   ] pods_ready - not ready: ad-94d5cc5ff-rwdqb (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp); cart-646fdf69b6-j69pc (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp); checkout-6d96d76bb7-ldt4t
+19:17:47       failing in 82/82 checks during the hold
+19:17:47   5. reference solution
+19:17:47     $ kubectl delete deployment nightly-batch
+19:17:48       deployment.apps "nightly-batch" deleted from default namespace
+19:17:48   6. verifier must PASS (<= 480s)
+19:19:17       [PASS   ] journey:browse - 3/3 ok, avg 32ms
+19:19:17       [PASS   ] journey:checkout - 3/3 ok, avg 597ms
+19:19:17       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+19:19:17   6b. invariants must PASS (shop_health)
+19:19:19       [PASS   ] journey:browse - 2/2 ok, avg 36ms
+19:19:19       [PASS   ] journey:recommendations - 2/2 ok, avg 107ms
+19:19:19       [PASS   ] journey:cart - 2/2 ok, avg 56ms
+19:19:19       [PASS   ] journey:checkout - 2/2 ok, avg 140ms
+19:19:19   7. restore exactly
+19:19:30   => VALIDATED  {'world_ready_s': 10, 'detect_s': 8, 'recover_s': 90, 'invariants_s': 2, 'restore_s': 11}

@@ -1,0 +1,40 @@
+17:00:26 === migration-job-suspended-124 (composite)
+17:00:27   0. world healthy?
+17:00:36   1. baseline must PASS
+17:00:37       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
+17:00:37       [PASS   ] pods_ready:opentelemetry.io/name=product-catalog - 1/1 pods ready for opentelemetry.io/name=product-catalog
+17:00:37       [PASS   ] sql:select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int - select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int = 1
+17:00:37   2. inject
+17:00:38   3. verifier must FAIL (<= 240s)
+17:00:57       [FAIL   ] journey:catalog - 0/3 ok, avg 6025ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+17:00:57       [FAIL   ] pods_ready:opentelemetry.io/name=product-catalog - 0/1 pods ready for opentelemetry.io/name=product-catalog; product-catalog-75bcf8569b-mv22j (product-catalog: PodInitializing)
+17:00:57       [FAIL   ] sql:select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int - select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int = 0 (< 1)
+17:00:57   4. do-nothing agent: still FAIL after 900s?
+17:15:58       [FAIL   ] journey:catalog - 0/3 ok, avg 19ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+17:15:58       [FAIL   ] pods_ready:opentelemetry.io/name=product-catalog - 0/1 pods ready for opentelemetry.io/name=product-catalog; product-catalog-75bcf8569b-mv22j (product-catalog: PodInitializing)
+17:15:58       [FAIL   ] sql:select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int - select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int = 0 (< 1)
+17:15:58       failing in 75/75 checks during the hold
+17:15:58   5. reference solution
+17:15:58     $ kubectl patch job catalog-migrate-42 --type merge -p '{"spec":{"suspend":false}}'
+17:15:58       job.batch/catalog-migrate-42 patched
+17:15:58     $ kubectl wait --for=condition=complete job/catalog-migrate-42 --timeout=120s
+17:16:01       job.batch/catalog-migrate-42 condition met
+17:16:01     $ kubectl rollout status deployment/product-catalog --timeout=180s
+17:16:01       error: deployment "product-catalog" exceeded its progress deadline
+17:16:01       (stale progress-deadline condition from the fault's rollout; retrying)
+17:16:11       deployment "product-catalog" successfully rolled out
+17:16:11   6. verifier must PASS (<= 300s)
+17:16:45       [PASS   ] journey:catalog - 3/3 ok, avg 26ms
+17:16:45       [PASS   ] pods_ready:opentelemetry.io/name=product-catalog - 1/1 pods ready for opentelemetry.io/name=product-catalog
+17:16:45       [PASS   ] sql:select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int - select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int = 1
+17:16:45   6b. invariants must PASS (shop_health)
+17:17:08       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+17:17:08       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+17:17:08       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+17:17:08       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
+17:17:08   6c. the fix must survive a restart of deployment/product-catalog
+17:17:54       [PASS   ] journey:catalog - 3/3 ok, avg 30ms
+17:17:54       [PASS   ] pods_ready:opentelemetry.io/name=product-catalog - 1/1 pods ready for opentelemetry.io/name=product-catalog
+17:17:54       [PASS   ] sql:select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int - select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int = 1
+17:17:54   7. restore exactly
+17:20:53   => VALIDATED  {'world_ready_s': 9, 'detect_s': 19, 'recover_s': 34, 'invariants_s': 23, 'durable_s': 1, 'restore_s': 177}

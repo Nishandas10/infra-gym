@@ -77,7 +77,7 @@ def main():
     res_dir = R.results_dir(suite)
 
     rows, excluded = [], Counter()
-    for r in R.load(suite, a.any_version):
+    for r in R.load(suite, a.any_version, a.mode):
         if a.model and a.model not in str(r.get("model")):
             continue
         if r.get("status") in ("error", "invalid"):
@@ -136,7 +136,7 @@ def main():
 
     cols = ["Model", "Episodes", "Diag. (%)", "Mit. (%)", "E2E (%)", "TTD (s)", "TTM (s)", "Tokens",
             "Clean (%)", "Worse", "$/solved"]
-    title = R.title(suite, a.any_version)
+    title = R.title(suite, a.any_version, a.mode)
     L = [f"# Infra Gym scoreboard ({title})\n", *R.provenance(suite, rows, a.any_version), "",
          "| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     for t in table:

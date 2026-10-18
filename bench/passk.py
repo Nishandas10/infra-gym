@@ -18,7 +18,7 @@ ap.add_argument("--model", default="")
 R.add_suite_args(ap)
 a = ap.parse_args()
 
-latest = R.load(R.suite_from_args(a), a.any_version)
+latest = R.load(R.suite_from_args(a), a.any_version, a.mode)
 if not latest:
     sys.exit("No results yet.")
 

@@ -122,3 +122,40 @@ def test_reachable_from_nodes(monkeypatch):
     assert checks.c_reachable_from_nodes("currency", 8080)[0] == checks.UNKNOWN
     monkeypatch.setattr(toolbox, "node_probes", lambda: {"w1": "probe-1"})
     assert checks.c_reachable_from_nodes("currency", 8080)[0] == checks.UNKNOWN
+
+
+def kubelet_spec(name):
+    return {"id": "test-kubelet-stop", "fault": {"steps": [{"mechanism": "node.kubelet_stop", "name": name}]}}
+
+
+def test_kubelet_stop_one_worker_and_revert(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    first = sorted(fake.workers())[0]
+    spec = kubelet_spec("$worker")
+    faults.inject(spec, tmp_path)
+    assert fake.kubelet_stopped == {first}
+    assert fake.node_cmds == [(first, ["systemctl", "stop", "kubelet"])]
+    assert not faults.revert(spec)
+    assert fake.kubelet_stopped == set()
+    assert fake.node_cmds[-1] == (first, ["systemctl", "start", "kubelet"])
+
+
+def test_kubelet_stop_every_worker(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    spec = kubelet_spec("$workers")
+    faults.inject(spec, tmp_path)
+    assert fake.kubelet_stopped == set(fake.workers())
+    assert not faults.revert(spec)
+    assert fake.kubelet_stopped == set()
+
+
+def test_kubelet_revert_fails_if_the_node_stays_not_ready(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    spec = kubelet_spec("$worker")
+    faults.inject(spec, tmp_path)
+    monkeypatch.setattr(kube, "node_ready", lambda node: False)
+    errors = faults.revert(spec)
+    assert errors and "not Ready" in str(errors)

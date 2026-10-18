@@ -66,6 +66,7 @@ injector:   # how the gym injects the fault (informational; it does not change t
   chaos-mesh: a Chaos Mesh experiment (not bench-eligible, because its only fix is deleting the experiment)
   exec: commands run inside a pod (database, key-value store, Kafka tools)
   flagd: the shop's feature flags
+  node: commands run on a node itself (docker exec into the kind node container, from the gym's host)
   mixed: several of the above
 
 # A page-level prompt (task.prompts.page) reads like an alert or a customer report: symptoms and

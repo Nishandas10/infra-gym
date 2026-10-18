@@ -109,7 +109,7 @@ def append_jsonl(path, row):
 def episodes(a):
     """The latest row of every finished episode in scope (the suite's instances, see bench/rows.py)."""
     out, skipped = [], Counter()
-    for r in R.load(a.suite_obj, a.any_version):
+    for r in R.load(a.suite_obj, a.any_version, a.mode):
         if a.model and a.model not in str(r.get("model")):
             continue
         if r.get("status") in ("error", "invalid"):
@@ -426,7 +426,7 @@ def cmd_report(a):
         sys.exit("No graded episodes yet. Run: python bench/judge.py run" + suite_flag(a))
     judges = sorted({j["judge"] for _, j in rows})
     L = []
-    title = R.title(a.suite_obj, a.any_version)
+    title = R.title(a.suite_obj, a.any_version, a.mode)
     L.append(f"# Diagnosis scores ({title})\n")
     L.append(f"Judge: {', '.join(judges)}, rubric {RUBRIC_VERSION}. The judge saw only the answer key, the incident "
              "prompt and the model's written report (no model name, no PASS/FAIL). Pass rate comes from the "

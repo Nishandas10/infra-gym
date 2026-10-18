@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f87893f75e5efb2022d8e99eb29829d943fcdc8d167f017ffd460b418f5e39b4
 validation_hash: sha256:802a3144763acca5650edac4eab024ed82968e6fd84dacf024c05f18471d7d81
-status: draft
+status: validated
 title: 'False alarm: a worker is unschedulable because of planned maintenance; nothing is broken'
 mechanism: false-alarm/planned-node-maintenance
 split: train

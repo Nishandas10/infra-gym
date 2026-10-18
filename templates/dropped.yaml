@@ -4,3 +4,8 @@
 app-flag/db-lock-contention: >-
   productCatalogLockContention showed no user-visible latency change, even with 12 concurrent
   requests (~300ms both ways). It is aimed at continuous profiling, which is disabled here.
+capacity/metastable-retry-storm: >-
+  Envoy (frontend-proxy) retrying 5 times on 5xx/reset with a 2 s per-try timeout, a CPU-limited frontend and a 2-min
+  homepage flood (loadGeneratorFloodHomepage). The shop's normal load is tiny (5 Locust users, frontend ~40m CPU): at
+  a 30m limit it simply starved (removing the retries did not heal it), at 80m it healed on its own as soon as the
+  flood ended. No metastable state in between with this load (spikes 128 and 128b, 2026-10-17).

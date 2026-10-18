@@ -1,0 +1,35 @@
+16:59:14 === rollback-configmap-not-versioned-120 (composite)
+16:59:15   0. world healthy?
+16:59:27   1. baseline must PASS
+16:59:28       [PASS   ] journey:checkout - 3/3 ok, avg 133ms
+16:59:28       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+16:59:28   2. inject
+17:00:05   3. verifier must FAIL (<= 240s)
+17:00:26       [FAIL   ] journey:checkout - 0/3 ok, avg 6776ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+17:00:26       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+17:00:26   4. do-nothing agent: still FAIL after 900s?
+17:15:27       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+17:15:27       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+17:15:27       failing in 83/83 checks during the hold
+17:15:27   5. reference solution
+17:15:27     $ kubectl patch configmap checkout-settings --type merge -p '{"data":{"PAYMENT_ADDR":"payment:8080"}}'
+17:15:27       configmap/checkout-settings patched
+17:15:27     $ kubectl rollout restart deployment/checkout
+17:15:27       deployment.apps/checkout restarted
+17:15:27     $ kubectl rollout status deployment/checkout --timeout=180s
+17:15:29       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+17:15:29       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+17:15:29       deployment "checkout" successfully rolled out
+17:15:29   6. verifier must PASS (<= 300s)
+17:17:58       [PASS   ] journey:checkout - 3/3 ok, avg 95ms
+17:17:58       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+17:17:58   6b. invariants must PASS (shop_health)
+17:17:59       [PASS   ] journey:browse - 2/2 ok, avg 27ms
+17:17:59       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
+17:17:59       [PASS   ] journey:cart - 2/2 ok, avg 45ms
+17:17:59       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+17:17:59   6c. the fix must survive a restart of deployment/checkout
+17:18:45       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
+17:18:45       [PASS   ] pods_ready:opentelemetry.io/name=checkout - 1/1 pods ready for opentelemetry.io/name=checkout
+17:18:45   7. restore exactly
+17:19:19   => VALIDATED  {'world_ready_s': 12, 'detect_s': 21, 'recover_s': 148, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 31}

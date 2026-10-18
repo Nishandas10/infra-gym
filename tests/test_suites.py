@@ -50,9 +50,16 @@ def test_expected_public_suites_exist():
     assert {"bench-v1-dev", "hard-v1", "lite"} <= {p.stem for p in PUBLIC}
 
 
+# Hard-tier scenarios added after hard-v1 was frozen; `make_suite.py --refreeze` before Phase 6 takes them in, and
+# then this set is emptied again.
+HARD_SINCE_FREEZE = {"hard-job-sidecar-never-completes-127"}
+
+
 def test_hard_suite_is_the_whole_hard_tier():
     hard = {sid for sid, (spec, _) in INSTS.items() if spec["split"] == "hard" and spec["bench_eligible"]}
-    assert {m.id for m in suites.load("hard-v1").instances} == hard
+    members = {m.id for m in suites.load("hard-v1").instances}
+    assert members <= hard
+    assert hard - members == HARD_SINCE_FREEZE
 
 
 def test_lite_members_never_failed_validation():

@@ -53,6 +53,8 @@ def candidates(insts, records, split, clean, exclude):
     for sid, (spec, _) in sorted(insts.items()):
         if not spec.get("bench_eligible", True) or sid in exclude:
             continue
+        if spec["task"].get("kind") == "diagnose":   # suites are graded in fix mode, which never plays these
+            continue
         if split != "all" and spec["split"] != split:
             continue
         st = status.of_spec(spec, records)

@@ -28,7 +28,8 @@ AXES = ("layer", "fix_type", "drivers")   # tag axes the reports break results d
 # Version of what agent_bench tells the agent (system prompt, reminders, report request).
 # 1: until 2026-10-15 (rows without the field). 2: the system prompt states the command budget and the
 # agent is reminded when 5 commands are left. 3 (2026-10-17): the system prompt allows that nothing needs fixing
-# (false alarms, task.kind false_alarm): "if nothing needs fixing, change nothing and explain why".
+# (false alarms, task.kind false_alarm): "if nothing needs fixing, change nothing and explain why". It also brings the
+# diagnose/detect texts (bench/modes.py).
 PROMPT_VERSION = 3
 
 
@@ -58,9 +59,14 @@ def prompt_version(r):
     return r.get("prompt_version") or 1
 
 
+def mode(r):
+    """The run mode (bench/modes.py); rows from before modes are fix episodes."""
+    return r.get("mode") or "fix"
+
+
 def identity(r):
     return (r.get("scenario") or r.get("key"), r.get("model"), r.get("attempt"), r.get("content_hash"), hint_level(r),
-            prompt_version(r))
+            prompt_version(r), mode(r))
 
 
 def ep_key(r):
@@ -84,9 +90,9 @@ def in_suite(rows, suite, any_version=False):
             and hint_level(r) == suite.hint_level and prompt_version(r) == PROMPT_VERSION]
 
 
-def load(suite=None, any_version=False):
-    """The latest row of every episode, limited to the suite's members when a suite is given."""
-    rows = latest(read_jsonl(results_dir(suite) / "results.jsonl"))
+def load(suite=None, any_version=False, run_mode="fix"):
+    """The latest row of every episode in one run mode, limited to the suite's members when a suite is given."""
+    rows = [r for r in latest(read_jsonl(results_dir(suite) / "results.jsonl")) if mode(r) == run_mode]
     return rows if suite is None else in_suite(rows, suite, any_version)
 
 
@@ -97,6 +103,8 @@ def add_suite_args(ap):
     ap.add_argument("--any-version", action="store_true",
                     help="match suite members by id only, including rows of other scenario versions or hint "
                          "levels (e.g. results from before suites); such numbers are not pinned to the suite")
+    ap.add_argument("--mode", choices=("fix", "diagnose", "detect"), default="fix",
+                    help="which run mode's episodes to report (bench/modes.py; default fix)")
 
 
 def suite_from_args(a):
@@ -112,11 +120,12 @@ def suite_from_args(a):
         sys.exit(str(e))
 
 
-def title(suite, any_version=False):
-    """Name used in report titles and file names: <suite name>, or 'all' without a suite."""
+def title(suite, any_version=False, run_mode="fix"):
+    """Name used in report titles and file names: <suite name>, or 'all' without a suite (plus the mode if not fix)."""
+    suffix = "" if run_mode == "fix" else f"-{run_mode}"
     if suite is None:
-        return "all"
-    return suite.name + ("-any-version" if any_version else "")
+        return "all" + suffix
+    return suite.name + ("-any-version" if any_version else "") + suffix
 
 
 def provenance(suite, rows, any_version=False):

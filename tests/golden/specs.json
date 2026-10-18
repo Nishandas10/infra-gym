@@ -548,6 +548,124 @@
    "restart_settle_s": 45
   }
  },
+ "cronjob-pileup-exhausts-capacity-125": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "recommendations",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=recommendation",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=recommendation"
+   }
+  ],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "batch/v1",
+     "kind": "CronJob",
+     "metadata": {
+      "annotations": {
+       "platform.example.com/owner": "data-team"
+      },
+      "labels": {
+       "app.kubernetes.io/name": "report-export"
+      },
+      "name": "report-export",
+      "namespace": "default"
+     },
+     "spec": {
+      "concurrencyPolicy": "Allow",
+      "jobTemplate": {
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "report-export"
+        }
+       },
+       "spec": {
+        "backoffLimit": 0,
+        "completions": 20,
+        "parallelism": 20,
+        "template": {
+         "metadata": {
+          "labels": {
+           "app.kubernetes.io/name": "report-export"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo waiting for the export lock; sleep 86400"
+            ],
+            "image": "busybox:latest",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "export",
+            "resources": {
+             "limits": {
+              "memory": "450Mi"
+             },
+             "requests": {
+              "cpu": "10m",
+              "memory": "450Mi"
+             }
+            }
+           }
+          ],
+          "restartPolicy": "Never"
+         }
+        }
+       }
+      },
+      "schedule": "* * * * *"
+     }
+    }
+   ],
+   "recreate_pods_after": [
+    "opentelemetry.io/name=recommendation"
+   ],
+   "settle_s": 420,
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Product recommendations stopped showing up on the storefront a few minutes ago. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch cronjob report-export --type merge -p '{\"spec\":{\"suspend\":true}}'",
+   "kubectl delete jobs -l app.kubernetes.io/name=report-export --wait=false",
+   "kubectl rollout status deployment/recommendation --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
+  }
+ },
  "dns-error-005": {
   "budget": {
    "max_steps": 30,
@@ -2234,6 +2352,214 @@
    "restart_settle_s": 45
   }
  },
+ "hard-job-sidecar-never-completes-127": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "timeout_s": 90,
+    "type": "orders_recorded"
+   },
+   {
+    "group": "accounting",
+    "max_lag": 200,
+    "type": "kafka_lag"
+   },
+   {
+    "selector": "opentelemetry.io/name=accounting",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/accounting"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "rbac.authorization.k8s.io/v1",
+       "kind": "Role",
+       "metadata": {
+        "name": "job-status-reader",
+        "namespace": "default"
+       },
+       "rules": [
+        {
+         "apiGroups": [
+          "batch"
+         ],
+         "resources": [
+          "jobs"
+         ],
+         "verbs": [
+          "get",
+          "list",
+          "watch"
+         ]
+        }
+       ]
+      },
+      {
+       "apiVersion": "rbac.authorization.k8s.io/v1",
+       "kind": "RoleBinding",
+       "metadata": {
+        "name": "job-status-reader",
+        "namespace": "default"
+       },
+       "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "job-status-reader"
+       },
+       "subjects": [
+        {
+         "kind": "ServiceAccount",
+         "name": "my-shop",
+         "namespace": "default"
+        }
+       ]
+      },
+      {
+       "apiVersion": "batch/v1",
+       "kind": "Job",
+       "metadata": {
+        "annotations": {
+         "platform.example.com/release": "accounting-3.2.0"
+        },
+        "labels": {
+         "app.kubernetes.io/name": "ledger-migrate",
+         "app.kubernetes.io/part-of": "accounting"
+        },
+        "name": "ledger-migrate-7",
+        "namespace": "default"
+       },
+       "spec": {
+        "backoffLimit": 2,
+        "template": {
+         "metadata": {
+          "labels": {
+           "app.kubernetes.io/name": "ledger-migrate"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "echo \"applying ledger migration 7\"; psql -h astronomy-db -U postgres -d astronomy_db -v ON_ERROR_STOP=1 -c ANALYZE && echo \"ledger migration 7 applied\""
+            ],
+            "env": [
+             {
+              "name": "PGPASSWORD",
+              "value": "changeit"
+             }
+            ],
+            "image": "postgres:18.4",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "migrate",
+            "resources": {
+             "limits": {
+              "memory": "64Mi"
+             }
+            }
+           },
+           {
+            "command": [
+             "sh",
+             "-c",
+             "trap \"exit 0\" TERM; echo \"shipping job logs\"; while true; do sleep 1; done"
+            ],
+            "image": "busybox:latest",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "log-shipper",
+            "resources": {
+             "limits": {
+              "memory": "16Mi"
+             }
+            }
+           }
+          ],
+          "restartPolicy": "Never"
+         }
+        }
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "change_cause": "accounting 3.2.0: ledger schema v7 (FIN-208)",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/strategy",
+       "value": {
+        "type": "Recreate"
+       }
+      },
+      {
+       "op": "append",
+       "path": "/spec/template/spec/initContainers",
+       "value": {
+        "command": [
+         "sh",
+         "-c",
+         "T=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)\nuntil wget -q -O- --no-check-certificate --header \"Authorization: Bearer $T\" https://kubernetes.default.svc/apis/batch/v1/namespaces/default/jobs/ledger-migrate-7 | grep -q -E '\"type\": ?\"Complete\"'; do\n  echo \"waiting for job ledger-migrate-7 to complete\"; sleep 5\ndone"
+        ],
+        "image": "busybox:latest",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "wait-for-ledger-migration",
+        "resources": {
+         "limits": {
+          "memory": "16Mi"
+         }
+        }
+       }
+      },
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.2.0"
+      }
+     ],
+     "target": "accounting",
+     "type": "k8s.bad_rollout"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Orders placed in the last few minutes are missing from the accounting ledger, although customers can check out normally. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete job ledger-migrate-7 --wait=true",
+   "cat <<'EOF' | kubectl apply -f -\napiVersion: batch/v1\nkind: Job\nmetadata: {name: ledger-migrate-7, namespace: default, labels: {app.kubernetes.io/name: ledger-migrate}}\nspec:\n  backoffLimit: 2\n  template:\n    spec:\n      restartPolicy: Never\n      initContainers:\n      - name: log-shipper\n        image: busybox:latest\n        imagePullPolicy: IfNotPresent\n        restartPolicy: Always\n        command: [sh, -c, 'trap \"exit 0\" TERM; while true; do sleep 1; done']\n      containers:\n      - name: migrate\n        image: postgres:18.4\n        imagePullPolicy: IfNotPresent\n        env: [{name: PGPASSWORD, value: changeit}]\n        command: [sh, -c, 'psql -h astronomy-db -U postgres -d astronomy_db -v ON_ERROR_STOP=1 -c ANALYZE']\nEOF",
+   "kubectl wait --for=condition=complete job/ledger-migrate-7 --timeout=120s",
+   "kubectl rollout status deployment/accounting --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
+  }
+ },
  "hard-masked-second-fault-107": {
   "budget": {
    "max_steps": 40,
@@ -3396,6 +3722,49 @@
    "restart_settle_s": 45
   }
  },
+ "kubelet-stopped-129": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "type": "nodes_ready"
+   },
+   {
+    "selector": "",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [],
+  "fault": {
+   "name": "$worker",
+   "type": "node.kubelet_stop"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Alert \"node not ready\": one of the cluster's worker nodes has stopped reporting for a few minutes, and some shop services fail. Find the cause.",
+  "solution": [
+   "docker exec \"$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name | sort | head -1 | cut -d/ -f2)\" systemctl start kubelet",
+   "kubectl wait --for=condition=Ready node --all --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
+  }
+ },
  "limitrange-rejects-048": {
   "budget": {
    "max_steps": 30,
@@ -3460,6 +3829,200 @@
    "kubectl delete limitrange container-memory-cap",
    "kubectl rollout restart deployment/ad",
    "kubectl rollout status deployment/ad --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
+ "migration-job-suspended-124": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "catalog",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "timeout_s": 6,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=product-catalog",
+    "type": "pods_ready"
+   },
+   {
+    "expect_min": 1,
+    "query": "select (xpath('/row/n/text()', query_to_xml(case when to_regclass('catalog.schema_migrations') is null then 'select 1 as n' else 'select count(*) as n from catalog.schema_migrations where version = 42' end, false, true, '')))[1]::text::int",
+    "type": "sql"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/product-catalog"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "CREATE TABLE catalog.schema_migrations (version int PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now()); INSERT INTO catalog.schema_migrations (version, applied_at) VALUES (40, now() - interval '30 days'), (41, now() - interval '9 days')"
+      ]
+     ],
+     "target": "deploy/astronomy-db",
+     "type": "exec_commands",
+     "undo_commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "DROP INDEX IF EXISTS catalog.products_name_idx; DROP TABLE IF EXISTS catalog.schema_migrations"
+      ]
+     ]
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "batch/v1",
+       "kind": "Job",
+       "metadata": {
+        "annotations": {
+         "platform.example.com/release": "product-catalog-3.2.0"
+        },
+        "labels": {
+         "app.kubernetes.io/name": "catalog-migrate",
+         "app.kubernetes.io/part-of": "product-catalog"
+        },
+        "name": "catalog-migrate-42",
+        "namespace": "default"
+       },
+       "spec": {
+        "backoffLimit": 2,
+        "suspend": true,
+        "template": {
+         "metadata": {
+          "labels": {
+           "app.kubernetes.io/name": "catalog-migrate"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "psql",
+             "-h",
+             "astronomy-db",
+             "-U",
+             "postgres",
+             "-d",
+             "astronomy_db",
+             "-v",
+             "ON_ERROR_STOP=1",
+             "-c",
+             "CREATE INDEX IF NOT EXISTS products_name_idx ON catalog.products (name); INSERT INTO catalog.schema_migrations (version) VALUES (42) ON CONFLICT DO NOTHING"
+            ],
+            "env": [
+             {
+              "name": "PGPASSWORD",
+              "value": "changeit"
+             }
+            ],
+            "image": "postgres:18.4",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "migrate",
+            "resources": {
+             "limits": {
+              "memory": "64Mi"
+             }
+            }
+           }
+          ],
+          "restartPolicy": "Never"
+         }
+        }
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "change_cause": "product-catalog 3.2.0: product search index, needs schema 42 (CAT-913)",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/strategy",
+       "value": {
+        "type": "Recreate"
+       }
+      },
+      {
+       "op": "append",
+       "path": "/spec/template/spec/initContainers",
+       "value": {
+        "command": [
+         "sh",
+         "-c",
+         "until [ \"$(psql -h astronomy-db -U postgres -d astronomy_db -Atc \"select count(*) from catalog.schema_migrations where version = 42\" 2>/dev/null)\" = 1 ]; do echo \"waiting for schema version 42\"; sleep 5; done"
+        ],
+        "env": [
+         {
+          "name": "PGPASSWORD",
+          "value": "changeit"
+         }
+        ],
+        "image": "postgres:18.4",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "wait-for-schema",
+        "resources": {
+         "limits": {
+          "memory": "64Mi"
+         }
+        }
+       }
+      },
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.2.0"
+      }
+     ],
+     "target": "product-catalog",
+     "type": "k8s.bad_rollout"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Product pages fail for every shopper since this morning's product-catalog 3.2.0 release, which has to stay. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch job catalog-migrate-42 --type merge -p '{\"spec\":{\"suspend\":false}}'",
+   "kubectl wait --for=condition=complete job/catalog-migrate-42 --timeout=120s",
+   "kubectl rollout status deployment/product-catalog --timeout=180s"
   ],
   "validation": {
    "baseline_timeout_s": 120,
@@ -4628,65 +5191,102 @@
   ],
   "durability": [],
   "fault": {
-   "manifests": [
+   "steps": [
     {
-     "apiVersion": "apps/v1",
-     "kind": "Deployment",
-     "metadata": {
-      "labels": {
-       "app": "catalog-maintenance"
-      },
-      "name": "catalog-maintenance",
-      "namespace": "default"
-     },
-     "spec": {
-      "replicas": 1,
-      "selector": {
-       "matchLabels": {
-        "app": "catalog-maintenance"
-       }
-      },
-      "template": {
+     "commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "ALTER ROLE astronomy_user SET lock_timeout = '3s'"
+      ]
+     ],
+     "restart_after": [
+      "deployment/product-catalog"
+     ],
+     "target": "deploy/astronomy-db",
+     "type": "exec_commands",
+     "undo_commands": [
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()"
+      ],
+      [
+       "psql",
+       "-U",
+       "postgres",
+       "-d",
+       "astronomy_db",
+       "-c",
+       "ALTER ROLE astronomy_user RESET lock_timeout"
+      ]
+     ]
+    },
+    {
+     "manifests": [
+      {
+       "apiVersion": "apps/v1",
+       "kind": "Deployment",
        "metadata": {
         "labels": {
          "app": "catalog-maintenance"
-        }
+        },
+        "name": "catalog-maintenance",
+        "namespace": "default"
        },
        "spec": {
-        "containers": [
-         {
-          "command": [
-           "psql",
-           "-h",
-           "astronomy-db",
-           "-U",
-           "postgres",
-           "-d",
-           "astronomy_db",
-           "-c",
-           "BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);"
-          ],
-          "env": [
-           {
-            "name": "PGPASSWORD",
-            "value": "changeit"
-           }
-          ],
-          "image": "postgres:18.4",
-          "name": "reindex",
-          "resources": {
-           "limits": {
-            "memory": "64Mi"
-           }
-          }
+        "replicas": 1,
+        "selector": {
+         "matchLabels": {
+          "app": "catalog-maintenance"
          }
-        ]
+        },
+        "template": {
+         "metadata": {
+          "labels": {
+           "app": "catalog-maintenance"
+          }
+         },
+         "spec": {
+          "containers": [
+           {
+            "command": [
+             "sh",
+             "-c",
+             "trap 'exit 0' TERM; while true; do psql -h astronomy-db -U postgres -d astronomy_db -c \"BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);\" & wait $!; sleep 2; done"
+            ],
+            "env": [
+             {
+              "name": "PGPASSWORD",
+              "value": "changeit"
+             }
+            ],
+            "image": "postgres:18.4",
+            "name": "reindex",
+            "resources": {
+             "limits": {
+              "memory": "64Mi"
+             }
+            }
+           }
+          ]
+         }
+        }
        }
       }
-     }
+     ],
+     "type": "create_objects"
     }
    ],
-   "type": "create_objects"
+   "type": "composite"
   },
   "forbidden": [
    "delete_namespace",
@@ -4698,16 +5298,17 @@
   "invariants": [
    "shop_health"
   ],
-  "prompt": "Product pages hang until they time out. Find the cause and fix it.",
+  "prompt": "Product pages fail for every shopper. Find the cause and fix it.",
   "solution": [
-   "kubectl delete deployment catalog-maintenance"
+   "kubectl delete deployment catalog-maintenance --wait=true",
+   "kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()\""
   ],
   "validation": {
    "baseline_timeout_s": 120,
    "detect_timeout_s": 240,
    "hold_s": 60,
    "poll_s": 10,
-   "recover_timeout_s": 300,
+   "recover_timeout_s": 360,
    "restart_settle_s": 45
   }
  },
@@ -5030,6 +5631,133 @@
    "restart_settle_s": 45
   }
  },
+ "priority-preemption-126": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "browse",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 2,
+    "type": "journey"
+   },
+   {
+    "selector": "",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [],
+  "fault": {
+   "manifests": [
+    {
+     "apiVersion": "scheduling.k8s.io/v1",
+     "description": "nightly batch (copied from the platform's critical class)",
+     "kind": "PriorityClass",
+     "metadata": {
+      "name": "batch-critical"
+     },
+     "value": 1000000
+    },
+    {
+     "apiVersion": "apps/v1",
+     "kind": "Deployment",
+     "metadata": {
+      "labels": {
+       "app.kubernetes.io/name": "nightly-batch"
+      },
+      "name": "nightly-batch",
+      "namespace": "default"
+     },
+     "spec": {
+      "replicas": 2,
+      "selector": {
+       "matchLabels": {
+        "app.kubernetes.io/name": "nightly-batch"
+       }
+      },
+      "template": {
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "nightly-batch"
+        }
+       },
+       "spec": {
+        "affinity": {
+         "podAntiAffinity": {
+          "requiredDuringSchedulingIgnoredDuringExecution": [
+           {
+            "labelSelector": {
+             "matchLabels": {
+              "app.kubernetes.io/name": "nightly-batch"
+             }
+            },
+            "topologyKey": "kubernetes.io/hostname"
+           }
+          ]
+         }
+        },
+        "containers": [
+         {
+          "command": [
+           "sh",
+           "-c",
+           "echo crunching; sleep 86400"
+          ],
+          "image": "busybox:latest",
+          "imagePullPolicy": "IfNotPresent",
+          "name": "batch",
+          "resources": {
+           "limits": {
+            "memory": "31Gi"
+           },
+           "requests": {
+            "cpu": "10m",
+            "memory": "31Gi"
+           }
+          }
+         }
+        ],
+        "priorityClassName": "batch-critical"
+       }
+      }
+     }
+    }
+   ],
+   "type": "create_objects"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "The whole shop went down a few minutes ago. Every page fails, and most of the shop's pods are Pending. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete deployment nightly-batch"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 480,
+   "restart_settle_s": 45
+  }
+ },
  "prometheus-otlp-disabled-088": {
   "budget": {
    "max_steps": 30,
@@ -5090,6 +5818,92 @@
    "restart_settle_s": 45
   }
  },
+ "prometheus-sa-token-not-mounted-123": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "min_value": 1,
+    "query": "count(up{job=\"kubernetes-nodes-cadvisor\"})",
+    "type": "prometheus"
+   },
+   {
+    "min_value": 1,
+    "query": "count(up{job=\"kubernetes-pods\"})",
+    "type": "prometheus"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/prometheus"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "ops": [
+      {
+       "op": "add",
+       "path": "/spec/template/spec/automountServiceAccountToken",
+       "value": false
+      }
+     ],
+     "target": "prometheus",
+     "type": "workload_patch"
+    },
+    {
+     "noise": true,
+     "ops": [
+      {
+       "op": "add",
+       "path": "/spec/template/spec/automountServiceAccountToken",
+       "value": false
+      }
+     ],
+     "target": "quote",
+     "type": "workload_patch"
+    },
+    {
+     "noise": true,
+     "ops": [
+      {
+       "op": "add",
+       "path": "/spec/template/spec/automountServiceAccountToken",
+       "value": false
+      }
+     ],
+     "target": "currency",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Alert \"container metrics absent\": Prometheus has had no container CPU or memory metrics for the last few minutes, while the shop's application metrics still arrive. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch deployment prometheus --type json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/automountServiceAccountToken\"}]'",
+   "kubectl rollout status deployment/prometheus --timeout=240s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 360,
+   "restart_settle_s": 45
+  }
+ },
  "proxy-upstream-misroute-042": {
   "budget": {
    "max_steps": 30,
@@ -5142,6 +5956,113 @@
   "solution": [
    "kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080",
    "kubectl rollout status deployment/frontend-proxy --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
+ "pvc-storageclass-missing-121": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=valkey-cart",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/valkey-cart"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "kind": "PersistentVolumeClaim",
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "valkey-cart"
+        },
+        "name": "valkey-data",
+        "namespace": "default"
+       },
+       "spec": {
+        "accessModes": [
+         "ReadWriteOnce"
+        ],
+        "resources": {
+         "requests": {
+          "storage": "1Gi"
+         }
+        },
+        "storageClassName": "premium-rwo"
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "ops": [
+      {
+       "op": "append",
+       "path": "/spec/template/spec/volumes",
+       "value": {
+        "name": "data",
+        "persistentVolumeClaim": {
+         "claimName": "valkey-data"
+        }
+       }
+      },
+      {
+       "op": "append",
+       "path": "/spec/template/spec/containers/$c/volumeMounts",
+       "value": {
+        "mountPath": "/data",
+        "name": "data"
+       }
+      }
+     ],
+     "strategy": "Recreate",
+     "target": "valkey-cart",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Since this morning's change to the cart's data store, adding items to the cart times out for every shopper. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete pvc valkey-data --wait=false",
+   "kubectl delete pod -l opentelemetry.io/name=valkey-cart --wait=false",
+   "sleep 10",
+   "cat <<'EOF' | kubectl apply -f -\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata: {name: valkey-data, namespace: default}\nspec:\n  accessModes: [ReadWriteOnce]\n  resources: {requests: {storage: 1Gi}}\nEOF",
+   "kubectl rollout status deployment/valkey-cart --timeout=180s"
   ],
   "validation": {
    "baseline_timeout_s": 120,
@@ -5211,6 +6132,132 @@
    "kubectl delete resourcequota namespace-pod-quota",
    "kubectl rollout restart deployment/shipping",
    "kubectl rollout status deployment/shipping --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
+ "rollback-configmap-not-versioned-120": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=checkout",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "v1",
+       "data": {
+        "PAYMENT_ADDR": "payment:8080"
+       },
+       "kind": "ConfigMap",
+       "metadata": {
+        "labels": {
+         "app.kubernetes.io/name": "checkout"
+        },
+        "name": "checkout-settings",
+        "namespace": "default"
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "change_cause": "checkout 3.1.1: move runtime settings to ConfigMap checkout-settings (PLAT-2301)",
+     "ops": [
+      {
+       "op": "remove",
+       "path": "/spec/template/spec/containers/$c/env/$name:PAYMENT_ADDR"
+      },
+      {
+       "op": "add",
+       "path": "/spec/template/spec/containers/$c/envFrom",
+       "value": [
+        {
+         "configMapRef": {
+          "name": "checkout-settings"
+         }
+        }
+       ]
+      },
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.1.1"
+      }
+     ],
+     "pause_s": 30,
+     "target": "checkout",
+     "type": "k8s.bad_rollout",
+     "wait_s": 180
+    },
+    {
+     "kind": "configmap",
+     "name": "checkout-settings",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/data/PAYMENT_ADDR",
+       "value": "payment:8081"
+      }
+     ],
+     "type": "object_patch"
+    },
+    {
+     "change_cause": "checkout 3.1.2: payment client v2 (PAY-77)",
+     "ops": [
+      {
+       "op": "replace",
+       "path": "/spec/template/metadata/labels/app.kubernetes.io~1version",
+       "value": "3.1.2"
+      }
+     ],
+     "target": "checkout",
+     "type": "k8s.bad_rollout",
+     "wait_s": 180
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Every order fails at checkout since this morning's checkout releases. Find the cause and fix it.",
+  "solution": [
+   "kubectl patch configmap checkout-settings --type merge -p '{\"data\":{\"PAYMENT_ADDR\":\"payment:8080\"}}'",
+   "kubectl rollout restart deployment/checkout",
+   "kubectl rollout status deployment/checkout --timeout=180s"
   ],
   "validation": {
    "baseline_timeout_s": 120,
@@ -5372,6 +6419,62 @@
    "hold_s": 60,
    "poll_s": 10,
    "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
+ "serviceaccount-deleted-122": {
+  "budget": {
+   "max_steps": 30,
+   "wall_s": 900
+  },
+  "checks": [
+   {
+    "journey": "cart",
+    "max_avg_ms": 2500,
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   },
+   {
+    "selector": "opentelemetry.io/name=cart",
+    "type": "pods_ready"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "opentelemetry.io/name=cart"
+   }
+  ],
+  "fault": {
+   "kind": "serviceaccount",
+   "name": "my-shop",
+   "recreate_pods_after": [
+    "opentelemetry.io/name=cart"
+   ],
+   "type": "delete_object"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Adding items to the cart fails for every shopper since a few minutes ago, and orders cannot be placed. Find the cause and fix it.",
+  "solution": [
+   "kubectl create serviceaccount my-shop",
+   "kubectl rollout restart deployment/cart",
+   "kubectl rollout status deployment/cart --timeout=300s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 120,
+   "detect_timeout_s": 240,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
    "restart_settle_s": 45
   }
  },

@@ -22,6 +22,9 @@ NODE_PROBE = "gym-node-probe"
 NODE_PROBE_IMAGE = "busybox:1.36"
 _PROBE_SRC = pathlib.Path(__file__).with_name("probe_script.py")
 _KEEP_ALIVE = ["sh", "-c", "trap 'exit 0' TERM INT; while true; do sleep 3600 & wait $!; done"]
+# Above every shop pod and below the system classes, so a scenario that preempts pods (scheduling/priority-preemption)
+# never takes the verifier's probes with it. preemptionPolicy Never: the gym's pods never preempt shop pods either.
+PRIORITY_CLASS = "gym-critical"
 
 
 def _deployment(name, image, env=None, limit="64Mi", volumes=None, mounts=None, annotations=None):
@@ -34,6 +37,7 @@ def _deployment(name, image, env=None, limit="64Mi", volumes=None, mounts=None, 
             "template": {
                 "metadata": {"labels": {"app": name}, "annotations": annotations or {}},
                 "spec": {
+                    "priorityClassName": PRIORITY_CLASS,
                     "terminationGracePeriodSeconds": 2,
                     # Services advertise short names (e.g. Kafka advertises "kafka:9092"),
                     # so let short names resolve as they would inside the app namespace.
@@ -62,6 +66,7 @@ def _node_probe():
             "template": {
                 "metadata": {"labels": labels},
                 "spec": {
+                    "priorityClassName": PRIORITY_CLASS,
                     "terminationGracePeriodSeconds": 2,
                     "containers": [{
                         "name": NODE_PROBE, "image": NODE_PROBE_IMAGE, "command": _KEEP_ALIVE,
@@ -78,6 +83,9 @@ def manifests():
     digest = hashlib.sha256(src.encode()).hexdigest()[:12]
     return [
         {"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": kube.GYM_NS}},
+        {"apiVersion": "scheduling.k8s.io/v1", "kind": "PriorityClass", "metadata": {"name": PRIORITY_CLASS},
+         "value": 1000000000, "preemptionPolicy": "Never", "globalDefault": False,
+         "description": "infra-gym helper pods (verifier probes); never preempted by scenario workloads"},
         {"apiVersion": "v1", "kind": "ConfigMap",
          "metadata": {"name": "gym-probe-script", "namespace": kube.GYM_NS},
          "data": {"probe.py": src}},

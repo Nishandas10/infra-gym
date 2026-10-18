@@ -6,8 +6,14 @@
 # need. It gets NO access to gym-system (the verifier's probe pods) or chaos-mesh, and
 # the container cannot see this repo, so it cannot read reference solutions or checks.
 set -euo pipefail
-CLUSTER=ai-gym
-KDIR="$HOME/.agent-kube"
+# The kind cluster behind the current context (KUBECONFIG=~/.kube/gym/<cluster>), so the agent's kubeconfig
+# points at the same cluster its token was created on.
+CTX=$(kubectl config current-context)
+CLUSTER="${CLUSTER:-${CTX#kind-}}"
+# The sandbox container and its kubeconfig. agent_bench.py passes SANDBOX=agent-box-<cluster>, so each cluster has its
+# own and oracles or runs on different clusters can go in parallel; without it, the single shared agent-box.
+SANDBOX="${SANDBOX:-agent-box}"
+if [ "$SANDBOX" = agent-box ]; then KDIR="$HOME/.agent-kube"; else KDIR="$HOME/.agent-kube-$SANDBOX"; fi
 APP_NS="${APP_NS:-default}"
 mkdir -p "$KDIR"
 
@@ -124,8 +130,8 @@ kubectl config --kubeconfig "$CFG" set-context agent --cluster=gym --user=agent 
 kubectl config --kubeconfig "$CFG" use-context agent >/dev/null
 chmod 600 "$CFG"
 
-docker rm -f agent-box >/dev/null 2>&1 || true
-docker run -d --name agent-box --network kind \
+docker rm -f "$SANDBOX" >/dev/null 2>&1 || true
+docker run -d --name "$SANDBOX" --network kind \
   -v /usr/local/bin/kubectl:/usr/local/bin/kubectl:ro \
   -v "$KDIR":/kube:ro -e KUBECONFIG=/kube/config \
   ubuntu:24.04 sleep infinity >/dev/null

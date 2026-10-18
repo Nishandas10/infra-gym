@@ -1,6 +1,6 @@
 spec_version: 2
 id: pg-lock-held-081
-version: 1
+version: 2
 title: A stuck maintenance job holds an exclusive table lock
 mechanism: datastore/db-lock-held
 split: train
@@ -10,16 +10,51 @@ bench_eligible: true
 task:
   kind: incident
   prompts:
-    page: Product pages hang until they time out. Find the cause and fix it.
-    ticket: Product pages hang until they time out; the database is up and not busy. Find the cause and fix it.
+    page: Product pages fail for every shopper. Find the cause and fix it.
+    ticket: Product pages fail for every shopper; the database is up and not busy. Find the cause and fix it.
 tags:
   layer: datastore
   symptom: hard-errors
   fix_type:
   - delete-object
+  - datastore-cmd
+  drivers:
+  - partial-fix-trap
   injector: k8s-api
 fault:
   steps:
+  # The shop's database role gives up waiting for a lock after 3 s (product-catalog restarted so its connections pick
+  # it up). Without it, waiting product queries piled up connections until astronomy-db (100Mi) was OOMKilled, which
+  # released the lock: v1 healed itself in 2 of 11 runs. Revert also ends the lock holder's session, which outlives its
+  # pod (Postgres does not notice a vanished client while pg_sleep runs).
+  - mechanism: runtime.exec
+    target: deploy/astronomy-db
+    commands:
+    - - psql
+      - -U
+      - postgres
+      - -d
+      - astronomy_db
+      - -c
+      - ALTER ROLE astronomy_user SET lock_timeout = '3s'
+    undo_commands:
+    - - psql
+      - -U
+      - postgres
+      - -d
+      - astronomy_db
+      - -c
+      - SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid
+        <> pg_backend_pid()
+    - - psql
+      - -U
+      - postgres
+      - -d
+      - astronomy_db
+      - -c
+      - ALTER ROLE astronomy_user RESET lock_timeout
+    restart_after:
+    - deployment/product-catalog
   - mechanism: k8s.create_objects
     manifests:
     - apiVersion: apps/v1
@@ -45,16 +80,12 @@ fault:
               env:
               - name: PGPASSWORD
                 value: changeit
+              # Takes the lock again whenever its session ends (a database restart, a terminated backend).
               command:
-              - psql
-              - -h
-              - astronomy-db
-              - -U
-              - postgres
-              - -d
-              - astronomy_db
+              - sh
               - -c
-              - BEGIN; LOCK TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);
+              - trap 'exit 0' TERM; while true; do psql -h astronomy-db -U postgres -d astronomy_db -c "BEGIN; LOCK
+                TABLE catalog.products IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(86400);" & wait $!; sleep 2; done
               resources:
                 limits:
                   memory: 64Mi
@@ -76,14 +107,34 @@ ground_truth:
   root_causes:
   - component: deployment/catalog-maintenance
     namespace: default
-    what: a stuck maintenance job holds an ACCESS EXCLUSIVE lock on catalog.products, so every product query waits
-  explanation: A `catalog-maintenance` job opened a transaction and took an ACCESS EXCLUSIVE lock on `catalog.products`,
-    then got stuck. Every product query waits behind the lock.
+    what: a stuck maintenance job holds an ACCESS EXCLUSIVE lock on catalog.products (and takes it again whenever its
+      session ends), so every product query waits and fails with a lock timeout
+  explanation: >-
+    A `catalog-maintenance` job opened a transaction, took an ACCESS EXCLUSIVE lock on `catalog.products` and then sat
+    in `pg_sleep`. Every product query waits behind the lock until the role's 3 s lock_timeout cancels it, so every
+    product page fails. The job retries in a loop, so ending only its database session gets the lock taken again
+    within seconds; deleting only the job leaves its session running (Postgres does not notice the vanished client
+    while the statement runs), still holding the lock. Both are needed: stop the job, then end its session.
   evidence:
-  - 'product-catalog: queries hang (no error, just timeouts).'
+  - '`kubectl logs deploy/product-catalog`: queries fail with "canceling statement due to lock timeout".'
   - '`psql -c "select pid, state, query, wait_event_type from pg_stat_activity"`: product queries waiting on a Lock;
-    one session idle in transaction holding it.'
-  - '`kubectl get pods`: `catalog-maintenance` is the lock holder. Stop it (or `pg_terminate_backend`).'
+    one postgres session running `BEGIN; LOCK TABLE catalog.products ...; SELECT pg_sleep(86400)`.'
+  - '`kubectl get pods`: `catalog-maintenance` runs the psql client of that session.'
+  red_herrings:
+  - The lock_timeout on astronomy_user only turns the hang into fast errors; removing it makes pages hang instead.
 reference:
   commands:
-  - kubectl delete deployment catalog-maintenance
+  - kubectl delete deployment catalog-maintenance --wait=true
+  - kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c "SELECT pg_terminate_backend(pid) FROM
+    pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()"
+  fix: >-
+    Delete (or scale to 0) the catalog-maintenance Deployment, then end its leftover database session with
+    `pg_terminate_backend(<pid>)` (the pid from pg_stat_activity). Either step alone leaves the lock in place: the job
+    takes it again, or the orphaned session keeps it.
+validation:
+  recover_timeout_s: 360
+notes:
+- 'v2 (2026-10-17): v1 was quarantined (SELF_HEALED in 2 of 11 runs). Spike s081: the waiting queries piled up
+  connections until astronomy-db (100Mi) was OOMKilled 14 times in 15 min, each time releasing the lock. Spike s081b
+  (lock_timeout 3s): steady failure for 14 min with no restart, and deleting the job alone left the lock held by its
+  orphaned session for 4 min.'

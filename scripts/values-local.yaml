@@ -13,6 +13,16 @@
 opensearch:
   enabled: false
 
+# The flag clients (OpenFeature flagd providers) cached flag values and flushed them only on a change event. After
+# `kubectl rollout restart deployment/flagd` flagd served the flag off, but ad kept burning 3.6 cores and checkout kept
+# failing for 7+ minutes on the cached value, and a revert that rewrote an unchanged value left the next episode
+# broken (oracle PROBLEMs of 007, 010 and 065, 2026-10-17). With the cache off every evaluation asks flagd.
+# default.envOverrides is added to every component that uses the chart's default env (all the flag clients).
+default:
+  envOverrides:
+    - name: FLAGD_CACHE
+      value: disabled
+
 components:
   # AI shopping-assistant services (~450 MB together). They need an LLM
   # provider to do anything useful and are not part of the shop's checkout path.
@@ -98,6 +108,15 @@ opentelemetry-collector:
         # The default logs pipeline exports to OpenSearch, which is disabled above.
         logs:
           exporters: [debug]
+
+# Prometheus sat at its 400Mi limit on every cluster (peak 400M, 2026-10-17). On ai-gym-3 it was OOMKilled and then
+# crash-looped (the WAL replay after the kill needs more memory again) until its pod was deleted, which failed the
+# world check of 125's long hold and its oracle episode.
+prometheus:
+  server:
+    resources:
+      limits:
+        memory: 768Mi
 
 # Grafana's default 300Mi limit got it OOM-killed during startup on the GCP VM.
 grafana:

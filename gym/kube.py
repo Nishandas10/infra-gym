@@ -117,6 +117,20 @@ def worker_nodes():
     return names
 
 
+def node_exec(node, cmd, timeout=60):
+    """Run a command on a node itself. A kind node is a Docker container named after the node, on the gym's host
+    (the agent's sandbox has no such access)."""
+    r = subprocess.run(["docker", "exec", node, *cmd], capture_output=True, text=True, timeout=timeout)
+    if r.returncode != 0:
+        raise KubeError(f"docker exec {node} {' '.join(cmd)}: {(r.stderr or r.stdout).strip()[:300]}")
+    return r.stdout
+
+
+def node_ready(node):
+    n = get("node", node, namespace=None)
+    return any(c["type"] == "Ready" and c["status"] == "True" for c in (n.get("status") or {}).get("conditions", []))
+
+
 def svc_url(service, port, path=""):
     """In-cluster URL of a service in the app namespace."""
     return f"http://{service}.{APP_NS}.svc.cluster.local:{port}{path}"

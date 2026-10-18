@@ -1,15 +1,31 @@
-10:10:43 === pg-lock-held-081 (k8s.create_objects)
-10:10:45   0. world healthy?
-10:10:59   1. baseline must PASS
-10:11:00       [PASS   ] journey:browse - 3/3 ok, avg 28ms
-10:11:00       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
-10:11:00   2. inject
-10:11:01   3. verifier must FAIL (<= 240s)
-10:11:48       [FAIL   ] journey:browse - 0/3 ok, avg 6024ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
-10:11:48       [FAIL   ] journey:catalog - 0/3 ok, avg 6016ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-10:11:48   4. do-nothing agent: still FAIL after 60s?
-10:12:49       [PASS   ] journey:browse - 3/3 ok, avg 36ms
-10:12:49       [PASS   ] journey:catalog - 3/3 ok, avg 30ms
-10:12:49       failing in 1/2 checks during the hold
-10:12:49   7. restore exactly
-10:13:03   => SELF_HEALED  {'world_ready_s': 15, 'detect_s': 47, 'restore_s': 14}
+19:47:27 === pg-lock-held-081 (composite)
+19:47:28   0. world healthy?
+19:47:37   1. baseline must PASS
+19:47:38       [PASS   ] journey:browse - 3/3 ok, avg 36ms
+19:47:38       [PASS   ] journey:catalog - 3/3 ok, avg 23ms
+19:47:38   2. inject
+19:47:41   3. verifier must FAIL (<= 240s)
+19:48:18       [FAIL   ] journey:browse - 0/3 ok, avg 6020ms; e.g. GET /api/products/L9ECAV7KIM -> no response b'TimeoutError: timed out'
+19:48:18       [FAIL   ] journey:catalog - 0/3 ok, avg 6017ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+19:48:18   4. do-nothing agent: still FAIL after 900s?
+20:03:37       [FAIL   ] journey:browse - 0/3 ok, avg 3022ms; e.g. GET /api/products/LS4PSXUNUM -> 500 b'Internal Server Error'
+20:03:37       [FAIL   ] journey:catalog - 0/3 ok, avg 3024ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+20:03:37       failing in 30/30 checks during the hold
+20:03:37   5. reference solution
+20:03:37     $ kubectl delete deployment catalog-maintenance --wait=true
+20:03:37       deployment.apps "catalog-maintenance" deleted from default namespace
+20:03:37     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()"
+20:03:37       pg_terminate_backend 
+20:03:37       ----------------------
+20:03:37        t
+20:03:37       (1 row)
+20:03:37   6. verifier must PASS (<= 360s)
+20:03:38       [PASS   ] journey:browse - 3/3 ok, avg 19ms
+20:03:38       [PASS   ] journey:catalog - 3/3 ok, avg 18ms
+20:03:38   6b. invariants must PASS (shop_health)
+20:03:39       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+20:03:39       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+20:03:39       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+20:03:39       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
+20:03:39   7. restore exactly
+20:04:27   => VALIDATED  {'world_ready_s': 9, 'detect_s': 37, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 47}

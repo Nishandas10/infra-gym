@@ -38,7 +38,7 @@ def main():
     ap.add_argument("--model", default="", help="only models whose ID contains one of these (comma-separated)")
     args = ap.parse_args()
     suite = R.suite_from_args(args)
-    latest = R.load(suite, args.any_version)
+    latest = R.load(suite, args.any_version, args.mode)
     if args.model:
         wanted = [w.strip() for w in args.model.split(",") if w.strip()]
         latest = [r for r in latest if any(w in r["model"] for w in wanted)]
@@ -74,7 +74,7 @@ def main():
                       "touched": touched, "worse": worse})
     stats.sort(key=lambda s: (-s["p"], s["model"]))
 
-    name = R.title(suite, args.any_version)
+    name = R.title(suite, args.any_version, args.mode)
     out = [f"# Leaderboard ({name})", "", *R.provenance(suite, latest, args.any_version), *notes, "",
            "| Rank | Model | Pass rate | 95% range | Passed / episodes | Clean fixes | Collateral changes | "
            "Made it worse | Forbidden | Avg commands | Avg tokens | Errors/invalid |",
