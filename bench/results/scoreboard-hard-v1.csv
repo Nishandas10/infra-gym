@@ -1,0 +1,2 @@
+Model,Episodes,Diag. (%),Mit. (%),E2E (%),TTD (s),TTM (s),Tokens,Clean (%),Worse,$/solved
+deepseek-v4-pro,13,not judged,76.9,not judged,54,122,320K,76.9,1,0.05
