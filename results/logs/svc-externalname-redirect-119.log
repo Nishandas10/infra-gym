@@ -1,29 +1,29 @@
-13:51:39 === svc-externalname-redirect-119 (k8s.object_patch)
-13:51:41   0. world healthy?
-13:51:51   1. baseline must PASS
-13:51:52       [PASS   ] journey:cart - 3/3 ok, avg 51ms
-13:51:52       [PASS   ] journey:checkout - 3/3 ok, avg 98ms
-13:51:52   2. inject
-13:52:08   3. verifier must FAIL (<= 240s)
-13:52:14       [FAIL   ] journey:cart - 0/3 ok, avg 1728ms; e.g. POST /api/cart -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
-13:52:14       [FAIL   ] journey:checkout - 0/3 ok, avg 20ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-13:52:14   4. do-nothing agent: still FAIL after 900s?
-14:07:14       [FAIL   ] journey:cart - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:07:14       [FAIL   ] journey:checkout - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:07:14       failing in 84/84 checks during the hold
-14:07:14   5. reference solution
-14:07:14     $ kubectl patch service cart --type merge -p '{"spec":{"type":"ClusterIP","externalName":null}}'
-14:07:14       service/cart patched
-14:07:14   6. verifier must PASS (<= 300s)
-14:09:14       [PASS   ] journey:cart - 3/3 ok, avg 55ms
-14:09:14       [PASS   ] journey:checkout - 3/3 ok, avg 342ms
-14:09:14   6b. invariants must PASS (shop_health)
-14:09:15       [PASS   ] journey:browse - 2/2 ok, avg 28ms
-14:09:15       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
-14:09:15       [PASS   ] journey:cart - 2/2 ok, avg 47ms
-14:09:15       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
-14:09:15   6c. the fix must survive a restart of deployment/frontend, deployment/checkout
-14:10:01       [PASS   ] journey:cart - 3/3 ok, avg 63ms
-14:10:01       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
-14:10:01   7. restore exactly
-14:10:14   => VALIDATED  {'world_ready_s': 10, 'detect_s': 6, 'recover_s': 119, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 12}
+00:29:00 === svc-externalname-redirect-119 (k8s.object_patch)
+00:29:01   0. world healthy?
+00:29:11   1. baseline must PASS
+00:29:12       [PASS   ] journey:cart - 3/3 ok, avg 45ms
+00:29:12       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
+00:29:12   2. inject
+00:29:28   3. verifier must FAIL (<= 240s)
+00:29:34       [FAIL   ] journey:cart - 0/3 ok, avg 1696ms; e.g. POST /api/cart -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+00:29:34       [FAIL   ] journey:checkout - 0/3 ok, avg 22ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+00:29:34   4. do-nothing agent: still FAIL after 60s?
+00:30:34       [FAIL   ] journey:cart - 0/3 ok, avg 18ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+00:30:34       [FAIL   ] journey:checkout - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+00:30:34       failing in 5/5 checks during the hold
+00:30:34   5. reference solution
+00:30:34     $ kubectl patch service cart --type merge -p '{"spec":{"type":"ClusterIP","externalName":null}}'
+00:30:34       service/cart patched
+00:30:34   6. verifier must PASS (<= 300s)
+00:31:09       [PASS   ] journey:cart - 3/3 ok, avg 68ms
+00:31:09       [PASS   ] journey:checkout - 3/3 ok, avg 622ms
+00:31:09   6b. invariants must PASS (shop_health)
+00:31:10       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+00:31:10       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+00:31:10       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+00:31:10       [PASS   ] journey:checkout - 2/2 ok, avg 140ms
+00:31:10   6c. the fix must survive a restart of deployment/frontend, deployment/checkout
+00:31:57       [PASS   ] journey:cart - 3/3 ok, avg 66ms
+00:31:57       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
+00:31:57   7. restore exactly
+00:32:31   => VALIDATED  {'world_ready_s': 10, 'detect_s': 6, 'recover_s': 35, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 34}

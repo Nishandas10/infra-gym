@@ -52,3 +52,25 @@ def test_repo_tools_are_recognised():
     for c in ("kubectl rollout restart deployment/flagd", "kubectl exec deploy/postgresql -- psql -c 'GRANT ...'",
               "kubectl get cm x -o yaml | sed 's/a/b/' | kubectl apply -f -", "kubectl set env deploy/x PYTHON_ENV=1"):
         assert not uses_repo_tools(c), c
+
+
+def test_damage_checks_leave_out_the_faults_own_decoys(monkeypatch, tmp_path):
+    """hard-egress-policy-blocks-db-102's decoy indexer crash-loops by design: namespace pod readiness passing or
+    failing at a given moment is luck and must not count as damage done by the agent."""
+    from gym import checks, faults, kube
+    from gym.spec import all_specs, load
+    from tests.fakes import FakeCluster, install
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    path = next(p for p in all_specs() if p.parent.name == "hard-egress-policy-blocks-db-102")
+    spec, sdir = load(path)
+    faults.inject(spec, sdir)
+    fake.apply({"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "catalog-search-indexer-5d8f-x2x9q",
+                "namespace": kube.APP_NS, "labels": {"app": "catalog-search-indexer"}},
+                "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": "False"}]}})
+    pods_ready = next(c for c in ab.damage_world_checks(spec["id"]) if c["type"] == "pods_ready")
+    assert {"catalog-search-indexer", "astronomy-db-backup-nightly"} <= set(pods_ready["exclude"])
+    assert checks.describe(pods_ready) == "pods_ready"
+    assert checks.c_pods_ready(**{k: v for k, v in pods_ready.items() if k != "type"})[0] == checks.PASS
+    assert checks.c_pods_ready(namespace=kube.APP_NS)[0] == checks.FAIL   # the plain check still sees it
+    assert not faults.revert(spec)

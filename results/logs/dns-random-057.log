@@ -1,22 +1,22 @@
-08:44:00 === dns-random-057 (chaos.mesh)
-08:44:01   0. world healthy?
-08:44:11   1. baseline must PASS
-08:44:12       [PASS   ] journey:recommendations - 3/3 ok, avg 62ms
-08:44:12   2. inject
-08:44:21   3. verifier must FAIL (<= 240s)
-08:44:39       [FAIL   ] journey:recommendations - 0/3 ok, avg 6027ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
-08:44:39   4. do-nothing agent: still FAIL after 60s?
-08:45:40       [FAIL   ] journey:recommendations - 0/3 ok, avg 40ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
-08:45:40       failing in 5/5 checks during the hold
-08:45:40   5. reference solution
-08:45:40     $ kubectl delete dnschaos.chaos-mesh.org catalog-dns-random
-08:45:40       dnschaos.chaos-mesh.org "catalog-dns-random" deleted from default namespace
-08:45:40   6. verifier must PASS (<= 300s)
-08:45:51       [PASS   ] journey:recommendations - 3/3 ok, avg 55ms
-08:45:51   6b. invariants must PASS (shop_health)
-08:45:53       [PASS   ] journey:browse - 2/2 ok, avg 48ms
-08:45:53       [PASS   ] journey:recommendations - 2/2 ok, avg 108ms
-08:45:53       [PASS   ] journey:cart - 2/2 ok, avg 105ms
-08:45:53       [PASS   ] journey:checkout - 2/2 ok, avg 184ms
-08:45:53   7. restore exactly
-08:46:04   => VALIDATED  {'world_ready_s': 10, 'detect_s': 19, 'recover_s': 11, 'invariants_s': 2, 'restore_s': 11}
+01:04:13 === dns-random-057 (chaos.mesh)
+01:04:14   0. world healthy?
+01:04:23   1. baseline must PASS
+01:04:24       [PASS   ] journey:recommendations - 3/3 ok, avg 80ms
+01:04:24   2. inject
+01:04:33   3. verifier must FAIL (<= 240s)
+01:04:51       [FAIL   ] journey:recommendations - 0/3 ok, avg 5938ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+01:04:51   4. do-nothing agent: still FAIL after 60s?
+01:05:52       [FAIL   ] journey:recommendations - 0/3 ok, avg 38ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+01:05:52       failing in 5/5 checks during the hold
+01:05:52   5. reference solution
+01:05:52     $ kubectl delete dnschaos.chaos-mesh.org catalog-dns-random
+01:05:52       dnschaos.chaos-mesh.org "catalog-dns-random" deleted from default namespace
+01:05:52   6. verifier must PASS (<= 300s)
+01:06:03       [PASS   ] journey:recommendations - 3/3 ok, avg 73ms
+01:06:03   6b. invariants must PASS (shop_health)
+01:06:04       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+01:06:04       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+01:06:04       [PASS   ] journey:cart - 2/2 ok, avg 64ms
+01:06:04       [PASS   ] journey:checkout - 2/2 ok, avg 115ms
+01:06:04   7. restore exactly
+01:06:15   => VALIDATED  {'world_ready_s': 9, 'detect_s': 18, 'recover_s': 11, 'invariants_s': 1, 'restore_s': 10}

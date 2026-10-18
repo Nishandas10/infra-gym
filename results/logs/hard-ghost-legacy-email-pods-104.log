@@ -1,22 +1,22 @@
-09:13:37 === hard-ghost-legacy-email-pods-104 (k8s.create_objects)
-09:13:38   0. world healthy?
-09:13:47   1. baseline must PASS
-09:13:48       [PASS   ] journey:email - 8/8 ok, avg 19ms
-09:13:48   2. inject
-09:13:48   3. verifier must FAIL (<= 300s)
-09:14:00       [FAIL   ] journey:email - 4/8 ok, avg 14ms; e.g. POST email/send_order_confirmation -> 501 b'<HTML><HEAD><TITLE>501 Not Implemented</TITLE></HEAD>\n<BODY><H1>501 Not Implemented</H1>\nThe requested m
-09:14:00   4. do-nothing agent: still FAIL after 60s?
-09:15:01       [FAIL   ] journey:email - 5/8 ok, avg 16ms; e.g. POST email/send_order_confirmation -> 501 b'<HTML><HEAD><TITLE>501 Not Implemented</TITLE></HEAD>\n<BODY><H1>501 Not Implemented</H1>\nThe requested m
-09:15:01       failing in 5/5 checks during the hold
-09:15:01   5. reference solution
-09:15:01     $ kubectl delete deployment email-v1-legacy
-09:15:01       deployment.apps "email-v1-legacy" deleted from default namespace
-09:15:01   6. verifier must PASS (<= 420s)
-09:15:01       [PASS   ] journey:email - 8/8 ok, avg 18ms
-09:15:01   6b. invariants must PASS (shop_health)
-09:15:02       [PASS   ] journey:browse - 2/2 ok, avg 38ms
-09:15:02       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
-09:15:02       [PASS   ] journey:cart - 2/2 ok, avg 47ms
-09:15:02       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
-09:15:03   7. restore exactly
-09:15:17   => VALIDATED  {'world_ready_s': 10, 'detect_s': 11, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 14}
+23:06:15 === hard-ghost-legacy-email-pods-104 (k8s.create_objects)
+23:06:16   0. world healthy?
+23:06:26   1. baseline must PASS
+23:06:26       [PASS   ] journey:email - 8/8 ok, avg 20ms
+23:06:26   2. inject
+23:06:27   3. verifier must FAIL (<= 300s)
+23:06:38       [FAIL   ] journey:email - 3/8 ok, avg 13ms; e.g. POST email/send_order_confirmation -> 501 b'<HTML><HEAD><TITLE>501 Not Implemented</TITLE></HEAD>\n<BODY><H1>501 Not Implemented</H1>\nThe requested m
+23:06:38   4. do-nothing agent: still FAIL after 60s?
+23:07:39       [FAIL   ] journey:email - 5/8 ok, avg 17ms; e.g. POST email/send_order_confirmation -> 501 b'<HTML><HEAD><TITLE>501 Not Implemented</TITLE></HEAD>\n<BODY><H1>501 Not Implemented</H1>\nThe requested m
+23:07:39       failing in 5/5 checks during the hold
+23:07:39   5. reference solution
+23:07:39     $ kubectl delete deployment email-v1-legacy
+23:07:39       deployment.apps "email-v1-legacy" deleted from default namespace
+23:07:39   6. verifier must PASS (<= 420s)
+23:07:40       [PASS   ] journey:email - 8/8 ok, avg 19ms
+23:07:40   6b. invariants must PASS (shop_health)
+23:07:41       [PASS   ] journey:browse - 2/2 ok, avg 38ms
+23:07:41       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+23:07:41       [PASS   ] journey:cart - 2/2 ok, avg 43ms
+23:07:41       [PASS   ] journey:checkout - 2/2 ok, avg 106ms
+23:07:41   7. restore exactly
+23:07:51   => VALIDATED  {'world_ready_s': 9, 'detect_s': 11, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 10}

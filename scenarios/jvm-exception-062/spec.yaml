@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:ee10517b3e7576de695d343093083f31fea99824d0ce2f568cd578b8f7cc718b
 validation_hash: sha256:3cbf969488d6818145388cadba708110802916267f87aea31f52c2d81932b197
-status: draft
+status: validated
 title: Exception injected into a JVM method at runtime
 mechanism: chaos/jvm-method-exception
 split: train

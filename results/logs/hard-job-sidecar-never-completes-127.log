@@ -1,23 +1,23 @@
-18:25:36 === hard-job-sidecar-never-completes-127 (composite)
-18:25:37   0. world healthy?
-18:25:51   1. baseline must PASS
-18:25:59       [PASS   ] orders_recorded - accounting recorded the new order (1157 -> 1158 rows)
-18:25:59       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
-18:25:59       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
-18:25:59   2. inject
-18:26:01   3. verifier must FAIL (<= 300s)
-18:27:41       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 1159 rows)
-18:27:41       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 8)
-18:27:41       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-gcdn9 (accounting: PodInitializing)
-18:27:41   4. do-nothing agent: still FAIL after 900s?
-18:45:38       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 1159 rows)
-18:45:38       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 77)
-18:45:38       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-gcdn9 (accounting: PodInitializing)
-18:45:38       failing in 9/9 checks during the hold
-18:45:38   5. reference solution
-18:45:38     $ kubectl delete job ledger-migrate-7 --wait=true
-18:45:38       job.batch "ledger-migrate-7" deleted from default namespace
-18:45:38     $ cat <<'EOF' | kubectl apply -f -
+23:31:07 === hard-job-sidecar-never-completes-127 (composite)
+23:31:08   0. world healthy?
+23:31:16   1. baseline must PASS
+23:31:22       [PASS   ] orders_recorded - accounting recorded the new order (388 -> 389 rows)
+23:31:22       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+23:31:22       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+23:31:22   2. inject
+23:31:23   3. verifier must FAIL (<= 300s)
+23:33:02       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 390 rows)
+23:33:02       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 6)
+23:33:02       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-dkcv9 (accounting: PodInitializing)
+23:33:02   4. do-nothing agent: still FAIL after 60s?
+23:36:32       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 390 rows)
+23:36:32       [FAIL   ] kafka_lag:accounting - consumer group accounting has no active members (lag 16)
+23:36:32       [FAIL   ] pods_ready:opentelemetry.io/name=accounting - 0/1 pods ready for opentelemetry.io/name=accounting; accounting-6b47d6cbb7-dkcv9 (accounting: PodInitializing)
+23:36:32       failing in 1/1 checks during the hold
+23:36:32   5. reference solution
+23:36:32     $ kubectl delete job ledger-migrate-7 --wait=true
+23:36:32       job.batch "ledger-migrate-7" deleted from default namespace
+23:36:32     $ cat <<'EOF' | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
 metadata: {name: ledger-migrate-7, namespace: default, labels: {app.kubernetes.io/name: ledger-migrate}}
@@ -39,25 +39,24 @@ spec:
         env: [{name: PGPASSWORD, value: changeit}]
         command: [sh, -c, 'psql -h astronomy-db -U postgres -d astronomy_db -v ON_ERROR_STOP=1 -c ANALYZE']
 EOF
-18:45:39       job.batch/ledger-migrate-7 created
-18:45:39     $ kubectl wait --for=condition=complete job/ledger-migrate-7 --timeout=120s
-18:45:45       job.batch/ledger-migrate-7 condition met
-18:45:45     $ kubectl rollout status deployment/accounting --timeout=180s
-18:45:45       error: deployment "accounting" exceeded its progress deadline
-18:45:45       (stale progress-deadline condition from the fault's rollout; retrying)
-18:45:55       deployment "accounting" successfully rolled out
-18:45:55   6. verifier must PASS (<= 360s)
-18:46:05       [PASS   ] orders_recorded - accounting recorded the new order (1159 -> 1165 rows)
-18:46:05       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
-18:46:05       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
-18:46:05   6b. invariants must PASS (shop_health)
-18:46:07       [PASS   ] journey:browse - 2/2 ok, avg 41ms
-18:46:07       [PASS   ] journey:recommendations - 2/2 ok, avg 111ms
-18:46:07       [PASS   ] journey:cart - 2/2 ok, avg 72ms
-18:46:07       [PASS   ] journey:checkout - 2/2 ok, avg 308ms
-18:46:07   6c. the fix must survive a restart of deployment/accounting
-18:46:58       [PASS   ] orders_recorded - accounting recorded the new order (1243 -> 1244 rows)
-18:46:58       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
-18:46:58       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
-18:46:58   7. restore exactly
-18:47:09   => VALIDATED  {'world_ready_s': 14, 'detect_s': 100, 'recover_s': 9, 'invariants_s': 2, 'durable_s': 6, 'restore_s': 10}
+23:36:32       job.batch/ledger-migrate-7 created
+23:36:32     $ kubectl wait --for=condition=complete job/ledger-migrate-7 --timeout=120s
+23:36:38       job.batch/ledger-migrate-7 condition met
+23:36:38     $ kubectl rollout status deployment/accounting --timeout=180s
+23:36:40       Waiting for deployment "accounting" rollout to finish: 0 of 1 updated replicas are available...
+23:36:40       deployment "accounting" successfully rolled out
+23:36:40   6. verifier must PASS (<= 360s)
+23:36:51       [PASS   ] orders_recorded - accounting recorded the new order (390 -> 407 rows)
+23:36:51       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+23:36:51       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+23:36:51   6b. invariants must PASS (shop_health)
+23:36:52       [PASS   ] journey:browse - 2/2 ok, avg 30ms
+23:36:52       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+23:36:52       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+23:36:52       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
+23:36:52   6c. the fix must survive a restart of deployment/accounting
+23:37:42       [PASS   ] orders_recorded - accounting recorded the new order (414 -> 415 rows)
+23:37:42       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+23:37:42       [PASS   ] pods_ready:opentelemetry.io/name=accounting - 1/1 pods ready for opentelemetry.io/name=accounting
+23:37:42   7. restore exactly
+23:38:14   => VALIDATED  {'world_ready_s': 9, 'detect_s': 99, 'recover_s': 10, 'invariants_s': 1, 'durable_s': 5, 'restore_s': 30}

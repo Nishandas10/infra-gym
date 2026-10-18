@@ -1,22 +1,22 @@
-10:00:31 === http-replace-059 (chaos.mesh)
-10:00:32   0. world healthy?
-10:00:41   1. baseline must PASS
-10:00:42       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
-10:00:42   2. inject
-10:00:47   3. verifier must FAIL (<= 240s)
-10:00:48       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:00:48   4. do-nothing agent: still FAIL after 60s?
-10:01:48       [FAIL   ] journey:checkout - 0/3 ok, avg 57ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:01:48       failing in 5/5 checks during the hold
-10:01:48   5. reference solution
-10:01:48     $ kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
-10:01:49       httpchaos.chaos-mesh.org "quote-http-garbage" deleted from default namespace
-10:01:49   6. verifier must PASS (<= 300s)
-10:01:49       [PASS   ] journey:checkout - 3/3 ok, avg 74ms
-10:01:49   6b. invariants must PASS (shop_health)
-10:01:50       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-10:01:50       [PASS   ] journey:recommendations - 2/2 ok, avg 45ms
-10:01:50       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-10:01:50       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
-10:01:50   7. restore exactly
-10:01:59   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+01:12:05 === http-replace-059 (chaos.mesh)
+01:12:06   0. world healthy?
+01:12:15   1. baseline must PASS
+01:12:16       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
+01:12:16   2. inject
+01:12:21   3. verifier must FAIL (<= 240s)
+01:12:22       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:12:22   4. do-nothing agent: still FAIL after 60s?
+01:13:23       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:13:23       failing in 5/5 checks during the hold
+01:13:23   5. reference solution
+01:13:23     $ kubectl delete httpchaos.chaos-mesh.org quote-http-garbage
+01:13:23       httpchaos.chaos-mesh.org "quote-http-garbage" deleted from default namespace
+01:13:23   6. verifier must PASS (<= 300s)
+01:13:24       [PASS   ] journey:checkout - 3/3 ok, avg 93ms
+01:13:24   6b. invariants must PASS (shop_health)
+01:13:25       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+01:13:25       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+01:13:25       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+01:13:25       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+01:13:25   7. restore exactly
+01:13:34   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

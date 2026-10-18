@@ -1,52 +1,52 @@
-11:35:47 === wl-jvm-heap-over-limit-031 (k8s.workload_patch)
-11:35:48   0. world healthy?
-11:35:56   1. baseline must PASS
-11:35:58       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-11:35:58       [PASS   ] pods_stable:opentelemetry.io/name=kafka - 1 pod(s) stable for >= 300s (opentelemetry.io/name=kafka)
-11:35:58       [PASS   ] orders_recorded - accounting recorded the new order (3970 -> 3971 rows)
-11:35:58   2. inject
-11:35:58   3. verifier must FAIL (<= 300s)
-11:37:04       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
-11:37:04       [FAIL   ] pods_stable:opentelemetry.io/name=kafka - no running pods for opentelemetry.io/name=kafka
-11:37:04       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 3971 rows)
-11:37:04   4. do-nothing agent: still FAIL after 330s?
-11:42:58       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/1 pods ready for opentelemetry.io/name=kafka; kafka-8449c8fd7b-s6z5g (kafka: CrashLoopBackOff)
-11:42:58       [FAIL   ] pods_stable:opentelemetry.io/name=kafka - kafka-8449c8fd7b-s6z5g/kafka restarted 145s ago (OOMKilled)
-11:42:58       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
-11:42:58       failing in 13/13 checks during the hold
-11:42:58   5. reference solution
-11:42:58     $ kubectl set resources deployment/kafka -c kafka --limits=memory=700Mi
-11:42:58       deployment.apps/kafka resource requirements updated
-11:42:58     $ kubectl rollout status deployment/kafka --timeout=300s
-11:42:59       Waiting for deployment "kafka" rollout to finish: 0 out of 1 new replicas have been updated...
-11:42:59       Waiting for deployment "kafka" rollout to finish: 0 out of 1 new replicas have been updated...
-11:42:59       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
-11:42:59       deployment "kafka" successfully rolled out
-11:42:59     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
-11:43:25       [2026-10-17 11:43:20,243] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-11:43:25       [2026-10-17 11:43:21,255] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-11:43:25       [2026-10-17 11:43:22,267] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-11:43:25       [2026-10-17 11:43:23,174] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-11:43:25     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
-11:43:25       deployment.apps/checkout restarted
-11:43:25       deployment.apps/accounting restarted
-11:43:25       deployment.apps/fraud-detection restarted
-11:43:25     $ kubectl rollout status deployment/checkout --timeout=300s
-11:43:28       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-11:43:28       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-11:43:28       deployment "checkout" successfully rolled out
-11:43:28     $ kubectl rollout status deployment/accounting --timeout=300s
-11:43:28       deployment "accounting" successfully rolled out
-11:43:28     $ kubectl rollout status deployment/fraud-detection --timeout=300s
-11:43:28       deployment "fraud-detection" successfully rolled out
-11:43:28   6. verifier must PASS (<= 600s)
-11:48:05       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-11:48:05       [PASS   ] pods_stable:opentelemetry.io/name=kafka - 1 pod(s) stable for >= 300s (opentelemetry.io/name=kafka)
-11:48:05       [PASS   ] orders_recorded - accounting recorded the new order (4013 -> 4014 rows)
-11:48:05   6b. invariants must PASS (shop_health)
-11:48:06       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-11:48:06       [PASS   ] journey:recommendations - 2/2 ok, avg 39ms
-11:48:06       [PASS   ] journey:cart - 2/2 ok, avg 34ms
-11:48:06       [PASS   ] journey:checkout - 2/2 ok, avg 66ms
-11:48:06   7. restore exactly
-11:51:07   => VALIDATED  {'world_ready_s': 8, 'detect_s': 66, 'recover_s': 277, 'invariants_s': 1, 'restore_s': 156}
+00:47:46 === wl-jvm-heap-over-limit-031 (k8s.workload_patch)
+00:47:47   0. world healthy?
+00:47:56   1. baseline must PASS
+00:47:57       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+00:47:57       [PASS   ] pods_stable:opentelemetry.io/name=kafka - 1 pod(s) stable for >= 300s (opentelemetry.io/name=kafka)
+00:47:57       [PASS   ] orders_recorded - accounting recorded the new order (876 -> 877 rows)
+00:47:57   2. inject
+00:47:57   3. verifier must FAIL (<= 300s)
+00:49:01       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+00:49:01       [FAIL   ] pods_stable:opentelemetry.io/name=kafka - no running pods for opentelemetry.io/name=kafka
+00:49:01       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 877 rows)
+00:49:01   4. do-nothing agent: still FAIL after 330s?
+00:54:55       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/1 pods ready for opentelemetry.io/name=kafka; kafka-55cccd4898-p755n (kafka: last exit OOMKilled)
+00:54:55       [FAIL   ] pods_stable:opentelemetry.io/name=kafka - kafka-55cccd4898-p755n/kafka restarted 211s ago (OOMKilled)
+00:54:55       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
+00:54:55       failing in 13/13 checks during the hold
+00:54:55   5. reference solution
+00:54:55     $ kubectl set resources deployment/kafka -c kafka --limits=memory=700Mi
+00:54:55       deployment.apps/kafka resource requirements updated
+00:54:55     $ kubectl rollout status deployment/kafka --timeout=300s
+00:54:56       Waiting for deployment "kafka" rollout to finish: 0 out of 1 new replicas have been updated...
+00:54:56       Waiting for deployment "kafka" rollout to finish: 0 out of 1 new replicas have been updated...
+00:54:56       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
+00:54:56       deployment "kafka" successfully rolled out
+00:54:56     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
+00:55:23       [2026-10-18 00:55:17,974] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.61.85:9092) could not be establ
+00:55:23       [2026-10-18 00:55:18,982] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.61.85:9092) could not be establ
+00:55:23       [2026-10-18 00:55:19,891] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.61.85:9092) could not be establ
+00:55:23       [2026-10-18 00:55:20,900] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.61.85:9092) could not be establ
+00:55:23     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+00:55:23       deployment.apps/checkout restarted
+00:55:23       deployment.apps/accounting restarted
+00:55:23       deployment.apps/fraud-detection restarted
+00:55:23     $ kubectl rollout status deployment/checkout --timeout=300s
+00:55:25       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+00:55:25       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+00:55:25       deployment "checkout" successfully rolled out
+00:55:25     $ kubectl rollout status deployment/accounting --timeout=300s
+00:55:26       deployment "accounting" successfully rolled out
+00:55:26     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+00:55:26       deployment "fraud-detection" successfully rolled out
+00:55:26   6. verifier must PASS (<= 600s)
+01:00:06       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+01:00:06       [PASS   ] pods_stable:opentelemetry.io/name=kafka - 1 pod(s) stable for >= 300s (opentelemetry.io/name=kafka)
+01:00:06       [PASS   ] orders_recorded - accounting recorded the new order (914 -> 916 rows)
+01:00:06   6b. invariants must PASS (shop_health)
+01:00:07       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+01:00:07       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
+01:00:07       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+01:00:07       [PASS   ] journey:checkout - 2/2 ok, avg 116ms
+01:00:07   7. restore exactly
+01:03:18   => VALIDATED  {'world_ready_s': 8, 'detect_s': 64, 'recover_s': 280, 'invariants_s': 1, 'restore_s': 161}

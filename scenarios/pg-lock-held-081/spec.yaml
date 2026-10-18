@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:cc58c306d4d0c03caddc34a7d3e1a264faf5b0bb6bf344ea998c538d7c2f6fc7
 validation_hash: sha256:4883b60ba36063b9c034e29d17c3a349e714647e5e51f323e7db3531a9c7f2e7
-status: draft
+status: validated
 title: A stuck maintenance job holds an exclusive table lock
 mechanism: datastore/db-lock-held
 split: train

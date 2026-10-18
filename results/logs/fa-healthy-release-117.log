@@ -1,20 +1,20 @@
-14:07:04 === fa-healthy-release-117 (k8s.bad_rollout)
-14:07:05   0. world healthy?
-14:07:14   1. baseline must PASS
-14:07:15       [PASS   ] journey:recommendations - 3/3 ok, avg 84ms
-14:07:15       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
-14:07:15   2. inject
-14:07:16   3. the alarm must be raised: alarm checks FAIL (<= 240s)
-14:07:16       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-84dc6d79b4-zdfps is only 1s old
-14:07:16   3b. nothing is broken: the checks must PASS (<= 300s)
-14:07:17       [PASS   ] journey:recommendations - 3/3 ok, avg 44ms
-14:07:17       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
-14:07:17   4. the checks must keep passing for 900s
-14:22:18       unconfirmed failures in 0/84 checks during the hold
-14:22:18   6b. invariants must PASS (shop_health)
-14:22:19       [PASS   ] journey:browse - 2/2 ok, avg 34ms
-14:22:19       [PASS   ] journey:recommendations - 2/2 ok, avg 72ms
-14:22:19       [PASS   ] journey:cart - 2/2 ok, avg 48ms
-14:22:19       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
-14:22:20   7. restore exactly
-14:22:33   => VALIDATED  {'world_ready_s': 9, 'alarm_s': 0, 'healthy_s': 1, 'invariants_s': 1, 'restore_s': 12}
+23:02:20 === fa-healthy-release-117 (k8s.bad_rollout)
+23:02:21   0. world healthy?
+23:02:31   1. baseline must PASS
+23:02:32       [PASS   ] journey:recommendations - 3/3 ok, avg 53ms
+23:02:32       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+23:02:32   2. inject
+23:02:34   3. the alarm must be raised: alarm checks FAIL (<= 240s)
+23:02:34       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-757559c969-6whwd is only 1s old
+23:02:34   3b. nothing is broken: the checks must PASS (<= 300s)
+23:02:35       [PASS   ] journey:recommendations - 3/3 ok, avg 81ms
+23:02:35       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+23:02:35   4. the checks must keep passing for 60s
+23:03:36       unconfirmed failures in 0/6 checks during the hold
+23:03:36   6b. invariants must PASS (shop_health)
+23:03:37       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+23:03:37       [PASS   ] journey:recommendations - 2/2 ok, avg 57ms
+23:03:37       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+23:03:37       [PASS   ] journey:checkout - 2/2 ok, avg 102ms
+23:03:37   7. restore exactly
+23:03:47   => VALIDATED  {'world_ready_s': 10, 'alarm_s': 0, 'healthy_s': 1, 'invariants_s': 1, 'restore_s': 9}

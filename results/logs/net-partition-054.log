@@ -1,22 +1,22 @@
-09:46:12 === net-partition-054 (chaos.mesh)
-09:46:13   0. world healthy?
-09:46:22   1. baseline must PASS
-09:46:23       [PASS   ] journey:checkout - 3/3 ok, avg 83ms
-09:46:23   2. inject
-09:46:28   3. verifier must FAIL (<= 240s)
-09:47:14       [FAIL   ] journey:checkout - 0/3 ok, avg 15061ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-09:47:14   4. do-nothing agent: still FAIL after 60s?
-09:49:00       [FAIL   ] journey:checkout - 0/3 ok, avg 15156ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-09:49:00       failing in 1/1 checks during the hold
-09:49:00   5. reference solution
-09:49:00     $ kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition
-09:49:01       networkchaos.chaos-mesh.org "checkout-payment-partition" deleted from default namespace
-09:49:01   6. verifier must PASS (<= 300s)
-09:50:18       [PASS   ] journey:checkout - 3/3 ok, avg 268ms
-09:50:18   6b. invariants must PASS (shop_health)
-09:50:19       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-09:50:19       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
-09:50:19       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-09:50:19       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
-09:50:19   7. restore exactly
-09:50:27   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 77, 'invariants_s': 1, 'restore_s': 8}
+01:17:13 === net-partition-054 (chaos.mesh)
+01:17:14   0. world healthy?
+01:17:24   1. baseline must PASS
+01:17:25       [PASS   ] journey:checkout - 3/3 ok, avg 122ms
+01:17:25   2. inject
+01:17:31   3. verifier must FAIL (<= 240s)
+01:18:16       [FAIL   ] journey:checkout - 0/3 ok, avg 15040ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+01:18:16   4. do-nothing agent: still FAIL after 60s?
+01:20:02       [FAIL   ] journey:checkout - 0/3 ok, avg 15057ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+01:20:02       failing in 1/1 checks during the hold
+01:20:02   5. reference solution
+01:20:02     $ kubectl delete networkchaos.chaos-mesh.org checkout-payment-partition
+01:20:02       networkchaos.chaos-mesh.org "checkout-payment-partition" deleted from default namespace
+01:20:02   6. verifier must PASS (<= 300s)
+01:21:06       [PASS   ] journey:checkout - 3/3 ok, avg 2353ms
+01:21:06   6b. invariants must PASS (shop_health)
+01:21:07       [PASS   ] journey:browse - 2/2 ok, avg 25ms
+01:21:07       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+01:21:07       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+01:21:07       [PASS   ] journey:checkout - 2/2 ok, avg 103ms
+01:21:07   7. restore exactly
+01:21:15   => VALIDATED  {'world_ready_s': 10, 'detect_s': 46, 'recover_s': 63, 'invariants_s': 1, 'restore_s': 9}

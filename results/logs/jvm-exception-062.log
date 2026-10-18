@@ -1,22 +1,22 @@
-09:30:26 === jvm-exception-062 (chaos.mesh)
-09:30:27   0. world healthy?
-09:30:35   1. baseline must PASS
-09:30:36       [PASS   ] journey:ads - 3/3 ok, avg 31ms
-09:30:36   2. inject
-09:30:42   3. verifier must FAIL (<= 240s)
-09:30:42       [FAIL   ] journey:ads - 0/3 ok, avg 39ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-09:30:42   4. do-nothing agent: still FAIL after 60s?
-09:31:43       [FAIL   ] journey:ads - 0/3 ok, avg 30ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-09:31:43       failing in 5/5 checks during the hold
-09:31:43   5. reference solution
-09:31:43     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
-09:31:43       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
-09:31:43   6. verifier must PASS (<= 300s)
-09:31:44       [PASS   ] journey:ads - 3/3 ok, avg 31ms
-09:31:44   6b. invariants must PASS (shop_health)
-09:31:45       [PASS   ] journey:browse - 2/2 ok, avg 28ms
-09:31:45       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
-09:31:45       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-09:31:45       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
-09:31:45   7. restore exactly
-09:31:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+01:12:40 === jvm-exception-062 (chaos.mesh)
+01:12:41   0. world healthy?
+01:12:50   1. baseline must PASS
+01:12:51       [PASS   ] journey:ads - 3/3 ok, avg 42ms
+01:12:51   2. inject
+01:12:56   3. verifier must FAIL (<= 240s)
+01:12:57       [FAIL   ] journey:ads - 0/3 ok, avg 34ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+01:12:57   4. do-nothing agent: still FAIL after 60s?
+01:13:58       [FAIL   ] journey:ads - 0/3 ok, avg 32ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+01:13:58       failing in 5/5 checks during the hold
+01:13:58   5. reference solution
+01:13:58     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
+01:13:58       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
+01:13:58   6. verifier must PASS (<= 300s)
+01:13:59       [PASS   ] journey:ads - 3/3 ok, avg 48ms
+01:13:59   6b. invariants must PASS (shop_health)
+01:14:00       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+01:14:00       [PASS   ] journey:recommendations - 2/2 ok, avg 57ms
+01:14:00       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+01:14:00       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
+01:14:00   7. restore exactly
+01:14:09   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

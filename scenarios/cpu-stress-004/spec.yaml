@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:e0203a66aa415d6fc60902c71ce8dfe109698e2ed72347270568d3e6081458f4
 validation_hash: sha256:434b60f44ae75e596ebb66aa1288efa20df2442a8e52c4553d17808102f1c265
-status: draft
+status: validated
 title: CPU stressor running inside a container
 mechanism: chaos/cpu-stress
 split: train

@@ -1,32 +1,32 @@
-12:07:56 === wl-scaled-to-zero-025 (k8s.workload_patch)
-12:07:57   0. world healthy?
-12:08:06   1. baseline must PASS
-12:08:07       [PASS   ] journey:checkout - 3/3 ok, avg 75ms
-12:08:07       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-12:08:07   2. inject
-12:08:07   3. verifier must FAIL (<= 240s)
-12:08:53       [FAIL   ] journey:checkout - 0/3 ok, avg 15041ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-12:08:53       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-12:08:53   4. do-nothing agent: still FAIL after 60s?
-12:10:21       [FAIL   ] journey:checkout - 0/3 ok, avg 9229ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-12:10:21       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
-12:10:21       failing in 1/1 checks during the hold
-12:10:21   5. reference solution
-12:10:21     $ kubectl scale deployment checkout --replicas=1
-12:10:21       deployment.apps/checkout scaled
-12:10:21     $ kubectl rollout status deployment/checkout --timeout=300s
-12:10:23       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
-12:10:23       deployment "checkout" successfully rolled out
-12:10:23   6. verifier must PASS (<= 300s)
-12:10:34       [PASS   ] journey:checkout - 3/3 ok, avg 78ms
-12:10:34       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-12:10:34   6b. invariants must PASS (shop_health)
-12:10:35       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-12:10:35       [PASS   ] journey:recommendations - 2/2 ok, avg 86ms
-12:10:35       [PASS   ] journey:cart - 2/2 ok, avg 36ms
-12:10:35       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
-12:10:35   6c. the fix must survive a restart of deployment/checkout
-12:11:21       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
-12:11:21       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
-12:11:21   7. restore exactly
-12:11:30   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 11, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+00:36:51 === wl-scaled-to-zero-025 (k8s.workload_patch)
+00:36:52   0. world healthy?
+00:37:01   1. baseline must PASS
+00:37:02       [PASS   ] journey:checkout - 3/3 ok, avg 150ms
+00:37:02       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+00:37:02   2. inject
+00:37:03   3. verifier must FAIL (<= 240s)
+00:37:48       [FAIL   ] journey:checkout - 0/3 ok, avg 15047ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+00:37:49       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+00:37:49   4. do-nothing agent: still FAIL after 60s?
+00:39:18       [FAIL   ] journey:checkout - 0/3 ok, avg 9674ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+00:39:18       [FAIL   ] endpoints:checkout - service checkout has 0 ready endpoint(s)
+00:39:18       failing in 1/1 checks during the hold
+00:39:18   5. reference solution
+00:39:18     $ kubectl scale deployment checkout --replicas=1
+00:39:18       deployment.apps/checkout scaled
+00:39:18     $ kubectl rollout status deployment/checkout --timeout=300s
+00:39:21       Waiting for deployment "checkout" rollout to finish: 0 of 1 updated replicas are available...
+00:39:21       deployment "checkout" successfully rolled out
+00:39:21   6. verifier must PASS (<= 300s)
+00:39:33       [PASS   ] journey:checkout - 3/3 ok, avg 155ms
+00:39:33       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+00:39:33   6b. invariants must PASS (shop_health)
+00:39:34       [PASS   ] journey:browse - 2/2 ok, avg 32ms
+00:39:34       [PASS   ] journey:recommendations - 2/2 ok, avg 41ms
+00:39:34       [PASS   ] journey:cart - 2/2 ok, avg 45ms
+00:39:34       [PASS   ] journey:checkout - 2/2 ok, avg 113ms
+00:39:34   6c. the fix must survive a restart of deployment/checkout
+00:40:20       [PASS   ] journey:checkout - 3/3 ok, avg 124ms
+00:40:20       [PASS   ] endpoints:checkout - service checkout has 1 ready endpoint(s)
+00:40:20   7. restore exactly
+00:40:29   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

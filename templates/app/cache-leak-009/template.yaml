@@ -63,6 +63,10 @@ reference:
   agent_commands:
   - 'kubectl rollout restart deployment/flagd'
   - 'kubectl rollout status deployment/flagd --timeout=120s'
+  # like the reference: the leaked memory stays until the pod restarts (fix-mode oracle 2026-10-18: without this
+  # restart recommendation was OOMKilled during the hold)
+  - 'kubectl rollout restart deployment/recommendation'
+  - 'kubectl rollout status deployment/recommendation --timeout=180s'
 validation:
   baseline_timeout_s: 700
   detect_timeout_s: 1200

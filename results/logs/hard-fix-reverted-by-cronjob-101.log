@@ -1,36 +1,35 @@
-09:04:32 === hard-fix-reverted-by-cronjob-101 (composite)
-09:04:33   0. world healthy?
-09:04:42   1. baseline must PASS
-09:04:43       [PASS   ] journey:checkout - 3/3 ok, avg 100ms
-09:04:43       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
-09:04:43   2. inject
-09:05:05   3. verifier must FAIL (<= 300s)
-09:05:07       [FAIL   ] journey:checkout - 0/3 ok, avg 476ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-09:05:07       [FAIL   ] pods_stable:opentelemetry.io/name=payment - payment-7b56ff468-5kmnb is only 24s old
-09:05:07   4. do-nothing agent: still FAIL after 180s?
-09:08:07       [FAIL   ] journey:checkout - 0/3 ok, avg 54ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-09:08:07       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
-09:08:07       failing in 14/14 checks during the hold
-09:08:07   5. reference solution
-09:08:07     $ kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s
-09:08:08       cronjob.batch "payment-config-sync" deleted from default namespace
-09:08:08     $ kubectl set env deployment/payment PAYMENT_PORT=8080
-09:08:08       deployment.apps/payment env updated
-09:08:08     $ kubectl rollout status deployment/payment --timeout=300s
-09:08:09       Waiting for deployment "payment" rollout to finish: 0 out of 1 new replicas have been updated...
-09:08:09       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-09:08:09       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-09:08:09       deployment "payment" successfully rolled out
-09:08:09   6. verifier must PASS (<= 420s)
-09:10:48       [PASS   ] journey:checkout - 3/3 ok, avg 401ms
-09:10:48       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
-09:10:48   6b. invariants must PASS (shop_health)
-09:10:49       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-09:10:49       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-09:10:49       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-09:10:49       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
-09:10:49   6c. the fix must survive a restart of deployment/payment
-09:13:24       [PASS   ] journey:checkout - 3/3 ok, avg 94ms
-09:13:24       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
-09:13:24   7. restore exactly
-09:13:37   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 159, 'invariants_s': 1, 'durable_s': 110, 'restore_s': 12}
+23:22:12 === hard-fix-reverted-by-cronjob-101 (composite)
+23:22:13   0. world healthy?
+23:22:21   1. baseline must PASS
+23:22:22       [PASS   ] journey:checkout - 3/3 ok, avg 128ms
+23:22:22       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+23:22:22   2. inject
+23:22:44   3. verifier must FAIL (<= 300s)
+23:22:45       [FAIL   ] journey:checkout - 0/3 ok, avg 78ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+23:22:45       [FAIL   ] pods_stable:opentelemetry.io/name=payment - payment-6c577dd786-c2hg6 is only 22s old
+23:22:45   4. do-nothing agent: still FAIL after 180s?
+23:25:45       [FAIL   ] journey:checkout - 0/3 ok, avg 58ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+23:25:45       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+23:25:45       failing in 16/16 checks during the hold
+23:25:45   5. reference solution
+23:25:45     $ kubectl delete cronjob payment-config-sync --cascade=foreground --wait --timeout=120s
+23:25:46       cronjob.batch "payment-config-sync" deleted from default namespace
+23:25:46     $ kubectl set env deployment/payment PAYMENT_PORT=8080
+23:25:46       deployment.apps/payment env updated
+23:25:46     $ kubectl rollout status deployment/payment --timeout=300s
+23:25:47       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+23:25:47       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+23:25:47       deployment "payment" successfully rolled out
+23:25:47   6. verifier must PASS (<= 420s)
+23:28:20       [PASS   ] journey:checkout - 3/3 ok, avg 246ms
+23:28:20       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+23:28:20   6b. invariants must PASS (shop_health)
+23:28:22       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+23:28:22       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+23:28:22       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+23:28:22       [PASS   ] journey:checkout - 2/2 ok, avg 112ms
+23:28:22   6c. the fix must survive a restart of deployment/payment
+23:30:57       [PASS   ] journey:checkout - 3/3 ok, avg 112ms
+23:30:57       [PASS   ] pods_stable:opentelemetry.io/name=payment - 1 pod(s) stable for >= 150s (opentelemetry.io/name=payment)
+23:30:57   7. restore exactly
+23:31:07   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 154, 'invariants_s': 1, 'durable_s': 110, 'restore_s': 9}

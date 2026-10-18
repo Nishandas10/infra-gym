@@ -2,13 +2,13 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: hard-pinned-endpoints-108
-version: 1
+version: 2
 instance_of:
   template: hard-pinned-endpoints-108
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:c8559d19cab041090dc28e80cdaaeb2d275d8708c597e0687cc4d1a449ed8531
-validation_hash: sha256:292e31bcfeb1466946e7862b28fc2c794fdd856b31bbae5328e6de1d1ae553a3
+content_hash: sha256:d2678d187e51a6cab06560455f40b6484b57e3b452eeb9e34844eee1853806fe
+validation_hash: sha256:b94a2b621ecc79d0efc9fce2f39d86d5e45dc86a2d5a3300dc3a19c832fc0cf5
 status: validated
 title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
 mechanism: hard/manual-endpoints-stale-ip
@@ -85,6 +85,7 @@ fault:
     annotations:
       ops.example.com/pinned-by: INC-5521 quote migration
       ops.example.com/expires: '2026-09-30'
+    clear_stale: true
 verifier:
   checks:
   - type: journey
@@ -140,3 +141,10 @@ meta:
   realistic_pattern: Manual EndpointSlice pinned during an incident and forgotten
   built_from:
   - new mechanism pin_endpoints
+notes:
+- 'v2 (2026-10-18): v1 SELF_HEALED in the merge revalidation (ai-gym, 2026-10-17 23:40). Spike s108: with the selector
+  removed, Kubernetes v1.37 keeps the old controller EndpointSlice and mirrors the stale Endpoints (still listing
+  the quote pod) into a new slice, so only 1 of 3 endpoints was the dead IP and checkout failed intermittently (0-3
+  of 4 per sample for 5 min). Spike s108b: deleting the stale Endpoints and controller slice gave 0/4 for 5 min
+  with nothing recreated, and restoring the selector + deleting quote-pinned was healthy 33 s later. v2 sets clear_stale:
+  true.'

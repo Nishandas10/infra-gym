@@ -1,22 +1,22 @@
-14:22:33 === fa-drained-consumer-lag-118 (composite)
-14:22:34   0. world healthy?
-14:22:46   1. baseline must PASS
-14:22:57       [PASS   ] journey:checkout - 2/2 ok, avg 132ms
-14:22:57       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 200)
-14:22:57       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
-14:22:57   2. inject
-14:25:27   3. the alarm must be raised: alarm checks FAIL (<= 240s)
-14:25:33       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 11)
-14:25:33   3b. nothing is broken: the checks must PASS (<= 300s)
-14:26:10       [PASS   ] journey:checkout - 2/2 ok, avg 144ms
-14:26:10       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 200)
-14:26:10       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
-14:26:10   4. the checks must keep passing for 900s
-14:41:18       unconfirmed failures in 0/48 checks during the hold
-14:41:18   6b. invariants must PASS (shop_health)
-14:41:19       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-14:41:19       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-14:41:19       [PASS   ] journey:cart - 2/2 ok, avg 46ms
-14:41:19       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
-14:41:19   7. restore exactly
-14:41:50   => VALIDATED  {'world_ready_s': 12, 'alarm_s': 6, 'healthy_s': 37, 'invariants_s': 1, 'restore_s': 30}
+22:39:22 === fa-drained-consumer-lag-118 (composite)
+22:39:23   0. world healthy?
+22:39:32   1. baseline must PASS
+22:39:40       [PASS   ] journey:checkout - 2/2 ok, avg 106ms
+22:39:40       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 3 (max 200)
+22:39:40       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+22:39:40   2. inject
+22:42:11   3. the alarm must be raised: alarm checks FAIL (<= 240s)
+22:42:15       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 5)
+22:42:15   3b. nothing is broken: the checks must PASS (<= 300s)
+22:42:47       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+22:42:47       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 200)
+22:42:47       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+22:42:47   4. the checks must keep passing for 60s
+22:43:56       unconfirmed failures in 0/4 checks during the hold
+22:43:56   6b. invariants must PASS (shop_health)
+22:43:57       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+22:43:57       [PASS   ] journey:recommendations - 2/2 ok, avg 43ms
+22:43:57       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+22:43:57       [PASS   ] journey:checkout - 2/2 ok, avg 142ms
+22:43:57   7. restore exactly
+22:44:29   => VALIDATED  {'world_ready_s': 10, 'alarm_s': 4, 'healthy_s': 32, 'invariants_s': 1, 'restore_s': 31}

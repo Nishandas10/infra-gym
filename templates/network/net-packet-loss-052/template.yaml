@@ -1,6 +1,6 @@
 spec_version: 2
 id: net-packet-loss-052
-version: 1
+version: 2
 title: Heavy packet loss on a service's network interface
 mechanism: chaos/network-packet-loss
 split: train
@@ -58,7 +58,9 @@ ground_truth:
     namespace: default
     what: a NetworkChaos experiment drops 60% of the packets leaving the product-catalog pod
   explanation: A Chaos Mesh NetworkChaos experiment drops 60% of packets leaving the product-catalog pod. TCP retransmits
-    turn that into multi-second latency and occasional timeouts.
+    turn that into multi-second latency and occasional timeouts. Now and then frontend's gRPC client to
+    product-catalog stays stuck on a dead connection after the experiment is gone, so browse keeps timing out until
+    frontend is restarted; the reference fix restarts it after deleting the experiment.
   evidence:
   - 'Jaeger: time spent waiting on product-catalog calls, not inside them.'
   - '`kubectl get pods`: nothing is crashing.'
@@ -66,3 +68,11 @@ ground_truth:
 reference:
   commands:
   - kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
+  - kubectl rollout restart deployment/frontend
+  - kubectl rollout status deployment/frontend --timeout=180s
+notes:
+- 'v2 (2026-10-18): in the merge revalidation (2nd cluster, 2026-10-17 23:29) v1 failed FIX_DID_NOT_RECOVER: under 60%
+  loss frontend''s gRPC client to product-catalog wedged (an ESTABLISHED socket the catalog side no longer had; no
+  request reached product-catalog per a goroutine dump), so deleting the chaos left browse, catalog and checkout
+  timing out; restarting product-catalog did not help, restarting frontend healed it at once. It happened in 1 of 5
+  runs. v2 restarts frontend after removing the chaos, as an SRE would for a client stuck after a network fault.'

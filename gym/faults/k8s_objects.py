@@ -159,4 +159,22 @@ def pin_endpoints(fault, undo, ctx):
     kube.apply(manifest, namespace=ns)
     undo.snapshot("service", name, ["/spec/selector"], namespace=ns)
     kube.patch("service", name, [{"op": "remove", "path": "/spec/selector"}], "json", namespace=ns)
+    if fault.get("clear_stale"):
+        _clear_controller_endpoints(name, ns)
     _after(fault, undo, ns)
+
+
+CONTROLLER_SLICES = ("endpointslice-controller.k8s.io", "endpointslicemirroring-controller.k8s.io")
+
+
+def _clear_controller_endpoints(name, ns):
+    """Without a selector, Kubernetes leaves the Service's old Endpoints object and EndpointSlice in place, and
+    the mirroring controller copies those Endpoints (still listing the real pods) into a new slice: the pinned IP
+    then gets only part of the traffic. Delete them, the Endpoints first so nothing is mirrored again. No undo is
+    needed: once the selector is back, the controllers recreate both."""
+    kube.delete("endpoints", name, namespace=ns)
+    for _ in range(2):   # a slice mirrored just before the Endpoints went away is caught the second time
+        for s in kube.items("endpointslices", namespace=ns, selector=f"kubernetes.io/service-name={name}"):
+            if s["metadata"].get("labels", {}).get("endpointslice.kubernetes.io/managed-by") in CONTROLLER_SLICES:
+                kube.delete("endpointslices", s["metadata"]["name"], namespace=ns)
+        time.sleep(3)

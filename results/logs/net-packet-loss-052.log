@@ -1,26 +1,26 @@
-10:20:06 === net-packet-loss-052 (chaos.mesh)
-10:20:07   0. world healthy?
-10:20:16   1. baseline must PASS
-10:20:16       [PASS   ] journey:browse - 4/4 ok, avg 22ms
-10:20:16       [PASS   ] journey:catalog - 4/4 ok, avg 17ms
-10:20:16   2. inject
-10:20:22   3. verifier must FAIL (<= 240s)
-10:20:50       [FAIL   ] journey:browse - 4/4 ok, avg 2005ms (> 1500ms)
-10:20:50       [FAIL   ] journey:catalog - 2/4 ok, avg 4834ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-10:20:50   4. do-nothing agent: still FAIL after 60s?
-10:23:44       [FAIL   ] journey:browse - 0/4 ok, avg 8022ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
-10:23:44       [FAIL   ] journey:catalog - 0/4 ok, avg 8022ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-10:23:44       failing in 2/2 checks during the hold
-10:23:44   5. reference solution
-10:23:44     $ kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
-10:23:45       networkchaos.chaos-mesh.org "catalog-packet-loss" deleted from default namespace
-10:23:45   6. verifier must PASS (<= 300s)
-10:23:47       [PASS   ] journey:browse - 4/4 ok, avg 377ms
-10:23:47       [PASS   ] journey:catalog - 4/4 ok, avg 19ms
-10:23:47   6b. invariants must PASS (shop_health)
-10:23:48       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-10:23:48       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-10:23:48       [PASS   ] journey:cart - 2/2 ok, avg 33ms
-10:23:48       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
-10:23:48   7. restore exactly
-10:23:56   => VALIDATED  {'world_ready_s': 9, 'detect_s': 28, 'recover_s': 2, 'invariants_s': 1, 'restore_s': 9}
+01:13:34 === net-packet-loss-052 (chaos.mesh)
+01:13:34   0. world healthy?
+01:13:43   1. baseline must PASS
+01:13:44       [PASS   ] journey:browse - 4/4 ok, avg 20ms
+01:13:44       [PASS   ] journey:catalog - 4/4 ok, avg 17ms
+01:13:44   2. inject
+01:13:49   3. verifier must FAIL (<= 240s)
+01:14:26       [FAIL   ] journey:browse - 3/4 ok, avg 2866ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+01:14:26       [FAIL   ] journey:catalog - 2/4 ok, avg 6044ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+01:14:26   4. do-nothing agent: still FAIL after 60s?
+01:16:46       [FAIL   ] journey:browse - 0/4 ok, avg 8023ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'TimeoutError: timed out'
+01:16:46       [FAIL   ] journey:catalog - 0/4 ok, avg 8030ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+01:16:46       failing in 1/1 checks during the hold
+01:16:46   5. reference solution
+01:16:46     $ kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
+01:16:46       networkchaos.chaos-mesh.org "catalog-packet-loss" deleted from default namespace
+01:16:46   6. verifier must PASS (<= 300s)
+01:18:44       [PASS   ] journey:browse - 4/4 ok, avg 26ms
+01:18:44       [PASS   ] journey:catalog - 4/4 ok, avg 16ms
+01:18:44   6b. invariants must PASS (shop_health)
+01:18:45       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+01:18:45       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+01:18:45       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+01:18:45       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+01:18:45   7. restore exactly
+01:18:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 36, 'recover_s': 118, 'invariants_s': 1, 'restore_s': 9}

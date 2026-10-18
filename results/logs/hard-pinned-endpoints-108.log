@@ -1,26 +1,44 @@
-09:52:45 === hard-pinned-endpoints-108 (composite)
-09:52:46   0. world healthy?
-09:52:56   1. baseline must PASS
-09:52:57       [PASS   ] journey:checkout - 4/4 ok, avg 91ms
-09:52:57   2. inject
-09:52:58   3. verifier must FAIL (<= 300s)
-09:53:13       [FAIL   ] journey:checkout - 1/4 ok, avg 3808ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-09:53:13   4. do-nothing agent: still FAIL after 60s?
-09:54:24       [FAIL   ] journey:checkout - 2/4 ok, avg 2568ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-09:54:24       failing in 3/3 checks during the hold
-09:54:24   5. reference solution
-09:54:24     $ kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
-09:54:24       service/quote patched
-09:54:24     $ kubectl delete endpointslice quote-pinned
-09:54:24       endpointslice.discovery.k8s.io "quote-pinned" deleted from default namespace
-09:54:24   6. verifier must PASS (<= 420s)
-09:54:41       [PASS   ] journey:checkout - 4/4 ok, avg 94ms
-09:54:41   6b. invariants must PASS (shop_health)
-09:54:42       [PASS   ] journey:browse - 2/2 ok, avg 34ms
-09:54:42       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
-09:54:42       [PASS   ] journey:cart - 2/2 ok, avg 82ms
-09:54:42       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
-09:54:42   6c. the fix must survive a restart of deployment/quote
-09:55:28       [PASS   ] journey:checkout - 4/4 ok, avg 85ms
-09:55:28   7. restore exactly
-09:55:38   => VALIDATED  {'world_ready_s': 10, 'detect_s': 16, 'recover_s': 17, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+01:53:15 === hard-pinned-endpoints-108 (composite)
+01:53:16   0. world healthy?
+01:53:26   1. baseline must PASS
+01:53:27       [PASS   ] journey:checkout - 4/4 ok, avg 159ms
+01:53:27   2. inject
+01:53:35   3. verifier must FAIL (<= 300s)
+01:53:56       [FAIL   ] journey:checkout - 0/4 ok, avg 5062ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:53:56   4. do-nothing agent: still FAIL after 60s?
+01:55:18       [FAIL   ] journey:checkout - 0/4 ok, avg 5064ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+01:55:18       failing in 2/2 checks during the hold
+01:55:18   5. reference solution
+01:55:18     $ kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
+01:55:18       service/quote patched
+01:55:18     $ kubectl delete endpointslice quote-pinned
+01:55:19       endpointslice.discovery.k8s.io "quote-pinned" deleted from default namespace
+01:55:19   6. verifier must PASS (<= 420s)
+01:55:36       [PASS   ] journey:checkout - 4/4 ok, avg 112ms
+01:55:36   6b. invariants must PASS (shop_health)
+01:55:37       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+01:55:37       [PASS   ] journey:recommendations - 2/2 ok, avg 64ms
+01:55:37       [PASS   ] journey:cart - 2/2 ok, avg 50ms
+01:55:37       [PASS   ] journey:checkout - 2/2 ok, avg 134ms
+01:55:37   6c. the fix must survive a restart of deployment/quote
+01:56:23       [PASS   ] journey:checkout - 4/4 ok, avg 115ms
+01:56:23   7. restore exactly
+01:56:33   => VALIDATED  {'world_ready_s': 11, 'detect_s': 21, 'recover_s': 17, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+02:07:39       [FAIL   ] journey:checkout - 0/4 ok, avg 5058ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+02:07:39       failing in 39/39 checks during the hold
+02:07:39   5. reference solution
+02:07:39     $ kubectl patch service quote --type=merge -p '{"spec":{"selector":{"opentelemetry.io/name":"quote"}}}'
+02:07:39       service/quote patched
+02:07:39     $ kubectl delete endpointslice quote-pinned
+02:07:39       endpointslice.discovery.k8s.io "quote-pinned" deleted from default namespace
+02:07:39   6. verifier must PASS (<= 420s)
+02:07:56       [PASS   ] journey:checkout - 4/4 ok, avg 101ms
+02:07:56   6b. invariants must PASS (shop_health)
+02:07:57       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+02:07:57       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+02:07:57       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+02:07:57       [PASS   ] journey:checkout - 2/2 ok, avg 99ms
+02:07:57   6c. the fix must survive a restart of deployment/quote
+02:08:43       [PASS   ] journey:checkout - 4/4 ok, avg 111ms
+02:08:43   7. restore exactly
+02:08:52   => VALIDATED  {'world_ready_s': 12, 'detect_s': 21, 'recover_s': 17, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

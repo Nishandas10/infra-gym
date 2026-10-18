@@ -1,33 +1,33 @@
-10:32:54 === node-cordoned-045 (k8s.object_patch)
-10:32:55   0. world healthy?
-10:33:05   1. baseline must PASS
-10:33:06       [PASS   ] journey:cart - 3/3 ok, avg 48ms
-10:33:06       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-10:33:06   2. inject
-10:33:10   3. verifier must FAIL (<= 240s)
-10:33:11       [FAIL   ] journey:cart - 0/3 ok, avg 23ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-10:33:11       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-5c788db849-24r5k (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
-10:33:11   4. do-nothing agent: still FAIL after 60s?
-10:34:12       [FAIL   ] journey:cart - 0/3 ok, avg 14ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-10:34:12       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-5c788db849-24r5k (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
-10:34:12       failing in 5/5 checks during the hold
-10:34:12   5. reference solution
-10:34:12     $ kubectl uncordon -l '!node-role.kubernetes.io/control-plane'
-10:34:12       node/ai-gym-2-worker uncordoned
-10:34:12       node/ai-gym-2-worker2 uncordoned
-10:34:12     $ kubectl rollout status deployment/cart --timeout=300s
-10:34:14       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
-10:34:14       deployment "cart" successfully rolled out
-10:34:14   6. verifier must PASS (<= 300s)
-10:34:37       [PASS   ] journey:cart - 3/3 ok, avg 70ms
-10:34:37       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-10:34:37   6b. invariants must PASS (shop_health)
-10:34:38       [PASS   ] journey:browse - 2/2 ok, avg 27ms
-10:34:38       [PASS   ] journey:recommendations - 2/2 ok, avg 124ms
-10:34:38       [PASS   ] journey:cart - 2/2 ok, avg 59ms
-10:34:38       [PASS   ] journey:checkout - 2/2 ok, avg 155ms
-10:34:38   6c. the fix must survive a restart of opentelemetry.io/name=cart
-10:35:24       [PASS   ] journey:cart - 3/3 ok, avg 61ms
-10:35:24       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-10:35:24   7. restore exactly
-10:35:34   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 9}
+23:36:25 === node-cordoned-045 (k8s.object_patch)
+23:36:26   0. world healthy?
+23:38:15   1. baseline must PASS
+23:38:16       [PASS   ] journey:cart - 3/3 ok, avg 52ms
+23:38:16       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+23:38:16   2. inject
+23:38:19   3. verifier must FAIL (<= 240s)
+23:38:20       [FAIL   ] journey:cart - 0/3 ok, avg 25ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:38:20       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-646fdf69b6-d7nqn (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+23:38:20   4. do-nothing agent: still FAIL after 60s?
+23:39:21       [FAIL   ] journey:cart - 0/3 ok, avg 21ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+23:39:21       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-646fdf69b6-d7nqn (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 node(s) were unschedulable.)
+23:39:21       failing in 5/5 checks during the hold
+23:39:21   5. reference solution
+23:39:21     $ kubectl uncordon -l '!node-role.kubernetes.io/control-plane'
+23:39:21       node/ai-gym-2-worker uncordoned
+23:39:21       node/ai-gym-2-worker2 uncordoned
+23:39:21     $ kubectl rollout status deployment/cart --timeout=300s
+23:39:23       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+23:39:23       deployment "cart" successfully rolled out
+23:39:23   6. verifier must PASS (<= 300s)
+23:39:45       [PASS   ] journey:cart - 3/3 ok, avg 74ms
+23:39:45       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+23:39:45   6b. invariants must PASS (shop_health)
+23:39:46       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+23:39:46       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+23:39:46       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+23:39:46       [PASS   ] journey:checkout - 2/2 ok, avg 172ms
+23:39:46   6c. the fix must survive a restart of opentelemetry.io/name=cart
+23:40:32       [PASS   ] journey:cart - 3/3 ok, avg 70ms
+23:40:32       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+23:40:32   7. restore exactly
+23:40:42   => VALIDATED  {'world_ready_s': 108, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

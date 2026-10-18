@@ -1,34 +1,33 @@
-10:56:19 === rollout-two-bad-releases-114 (composite)
-10:56:20   0. world healthy?
-10:56:29   1. baseline must PASS
-10:56:30       [PASS   ] journey:checkout - 4/4 ok, avg 74ms
-10:56:30       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
-10:56:30   2. inject
-10:56:36   3. verifier must FAIL (<= 300s)
-10:56:58       [FAIL   ] journey:checkout - 0/4 ok, avg 5089ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:56:58       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
-10:56:58   4. do-nothing agent: still FAIL after 60s?
-10:58:22       [FAIL   ] journey:checkout - 0/4 ok, avg 5051ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:58:22       [FAIL   ] jaeger_traces:shipping - 0 trace(s) from shipping in the last 1m
-10:58:22       failing in 2/2 checks during the hold
-10:58:22   5. reference solution
-10:58:22     $ REV=$(kubectl get deploy shipping -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}') && kubectl rollout undo deployment/shipping --to-revision=$((REV - 2))
-10:58:22       deployment.apps/shipping rolled back
-10:58:22     $ kubectl rollout status deployment/shipping --timeout=300s
-10:58:24       Waiting for deployment "shipping" rollout to finish: 0 out of 1 new replicas have been updated...
-10:58:24       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
-10:58:24       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
-10:58:24       deployment "shipping" successfully rolled out
-10:58:24   6. verifier must PASS (<= 300s)
-10:58:38       [PASS   ] journey:checkout - 4/4 ok, avg 94ms
-10:58:38       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
-10:58:38   6b. invariants must PASS (shop_health)
-10:58:39       [PASS   ] journey:browse - 2/2 ok, avg 28ms
-10:58:39       [PASS   ] journey:recommendations - 2/2 ok, avg 77ms
-10:58:39       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-10:58:39       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
-10:58:39   6c. the fix must survive a restart of deployment/shipping
-10:59:26       [PASS   ] journey:checkout - 4/4 ok, avg 101ms
-10:59:26       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
-10:59:26   7. restore exactly
-10:59:41   => VALIDATED  {'world_ready_s': 8, 'detect_s': 22, 'recover_s': 13, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}
+00:00:05 === rollout-two-bad-releases-114 (composite)
+00:00:06   0. world healthy?
+00:00:17   1. baseline must PASS
+00:00:20       [PASS   ] journey:checkout - 4/4 ok, avg 458ms
+00:00:20       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
+00:00:20   2. inject
+00:00:26   3. verifier must FAIL (<= 300s)
+00:00:47       [FAIL   ] journey:checkout - 0/4 ok, avg 5061ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:00:47       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
+00:00:47   4. do-nothing agent: still FAIL after 60s?
+00:02:11       [FAIL   ] journey:checkout - 0/4 ok, avg 5059ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:02:11       [FAIL   ] jaeger_traces:shipping - 0 trace(s) from shipping in the last 1m
+00:02:11       failing in 2/2 checks during the hold
+00:02:11   5. reference solution
+00:02:11     $ REV=$(kubectl get deploy shipping -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}') && kubectl rollout undo deployment/shipping --to-revision=$((REV - 2))
+00:02:11       deployment.apps/shipping rolled back
+00:02:11     $ kubectl rollout status deployment/shipping --timeout=300s
+00:02:14       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+00:02:14       Waiting for deployment "shipping" rollout to finish: 1 old replicas are pending termination...
+00:02:14       deployment "shipping" successfully rolled out
+00:02:14   6. verifier must PASS (<= 300s)
+00:02:27       [PASS   ] journey:checkout - 4/4 ok, avg 186ms
+00:02:27       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
+00:02:27   6b. invariants must PASS (shop_health)
+00:02:30       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+00:02:30       [PASS   ] journey:recommendations - 2/2 ok, avg 80ms
+00:02:30       [PASS   ] journey:cart - 2/2 ok, avg 47ms
+00:02:30       [PASS   ] journey:checkout - 2/2 ok, avg 580ms
+00:02:30   6c. the fix must survive a restart of deployment/shipping
+00:03:16       [PASS   ] journey:checkout - 4/4 ok, avg 113ms
+00:03:16       [PASS   ] jaeger_traces:shipping - 1 trace(s) from shipping in the last 1m
+00:03:16   7. restore exactly
+00:03:28   => VALIDATED  {'world_ready_s': 11, 'detect_s': 21, 'recover_s': 14, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 9}

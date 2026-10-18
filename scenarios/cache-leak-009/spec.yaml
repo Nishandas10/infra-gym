@@ -88,6 +88,8 @@ reference:
   agent_commands:
   - kubectl rollout restart deployment/flagd
   - kubectl rollout status deployment/flagd --timeout=120s
+  - kubectl rollout restart deployment/recommendation
+  - kubectl rollout status deployment/recommendation --timeout=180s
 validation:
   baseline_timeout_s: 700
   detect_timeout_s: 1200

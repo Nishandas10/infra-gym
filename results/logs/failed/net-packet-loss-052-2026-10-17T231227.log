@@ -1,0 +1,28 @@
+23:12:27 === net-packet-loss-052 (chaos.mesh)
+23:12:28   0. world healthy?
+23:12:37   1. baseline must PASS
+23:12:38       [PASS   ] journey:browse - 4/4 ok, avg 26ms
+23:12:38       [PASS   ] journey:catalog - 4/4 ok, avg 20ms
+23:12:38   2. inject
+23:12:44   3. verifier must FAIL (<= 240s)
+23:13:21       [FAIL   ] journey:browse - 4/4 ok, avg 2302ms (> 1500ms)
+23:13:21       [FAIL   ] journey:catalog - 1/4 ok, avg 6935ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+23:13:21   4. do-nothing agent: still FAIL after 60s?
+23:15:34       [FAIL   ] journey:browse - 0/4 ok, avg 8022ms; e.g. GET /api/products/66VCHSJNUP -> no response b'TimeoutError: timed out'
+23:15:34       [FAIL   ] journey:catalog - 0/4 ok, avg 8020ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+23:15:34       failing in 1/1 checks during the hold
+23:15:34   5. reference solution
+23:15:34     $ kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss
+23:15:35       networkchaos.chaos-mesh.org "catalog-packet-loss" deleted from default namespace
+23:15:35   6. verifier must PASS (<= 300s)
+23:21:39       [FAIL   ] journey:browse - 0/4 ok, avg 8024ms; e.g. GET /api/products/HQTGWGPNH4 -> no response b'TimeoutError: timed out'
+23:21:39       [FAIL   ] journey:catalog - 0/4 ok, avg 8020ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+23:21:39   7. restore exactly
+23:29:26       [FAIL   ] journey:browse - 0/2 ok, avg 8028ms; e.g. GET /api/products/66VCHSJNUP -> no response b'TimeoutError: timed out'
+23:29:26       [FAIL   ] journey:recommendations - 0/2 ok, avg 8016ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+23:29:26       [FAIL   ] journey:cart - 0/2 ok, avg 8046ms; e.g. GET /api/cart -> no response b'TimeoutError: timed out'
+23:29:26       [FAIL   ] journey:checkout - 0/2 ok, avg 15048ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+23:29:26       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+23:29:26       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+23:29:26       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 200)
+23:29:26   => FIX_DID_NOT_RECOVER  {'world_ready_s': 9, 'detect_s': 38, 'recover_s': 364, 'restore_s': 379}

@@ -1,28 +1,28 @@
-09:00:49 === hard-duplicate-env-override-109 (composite)
-09:00:49   0. world healthy?
-09:01:05   1. baseline must PASS
-09:01:05       [PASS   ] journey:recommendations - 3/3 ok, avg 52ms
-09:01:05   2. inject
-09:01:06   3. verifier must FAIL (<= 300s)
-09:01:58       [FAIL   ] journey:recommendations - 0/3 ok, avg 6714ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
-09:01:58   4. do-nothing agent: still FAIL after 60s?
-09:02:59       [FAIL   ] journey:recommendations - 0/3 ok, avg 49ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
-09:02:59       failing in 5/5 checks during the hold
-09:02:59   5. reference solution
-09:02:59     $ kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env; print(json.dumps(d))' | kubectl replace -f -
-09:02:59       deployment.apps/recommendation replaced
-09:02:59     $ kubectl rollout status deployment/recommendation --timeout=300s
-09:03:00       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-09:03:00       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-09:03:00       deployment "recommendation" successfully rolled out
-09:03:00   6. verifier must PASS (<= 420s)
-09:03:33       [PASS   ] journey:recommendations - 3/3 ok, avg 61ms
-09:03:33   6b. invariants must PASS (shop_health)
-09:03:34       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-09:03:34       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
-09:03:34       [PASS   ] journey:cart - 2/2 ok, avg 44ms
-09:03:34       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
-09:03:34   6c. the fix must survive a restart of deployment/recommendation
-09:04:20       [PASS   ] journey:recommendations - 3/3 ok, avg 77ms
-09:04:20   7. restore exactly
-09:04:32   => VALIDATED  {'world_ready_s': 15, 'detect_s': 53, 'recover_s': 33, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}
+22:40:15 === hard-duplicate-env-override-109 (composite)
+22:40:16   0. world healthy?
+22:40:25   1. baseline must PASS
+22:40:26       [PASS   ] journey:recommendations - 3/3 ok, avg 55ms
+22:40:26   2. inject
+22:40:26   3. verifier must FAIL (<= 300s)
+22:41:18       [FAIL   ] journey:recommendations - 0/3 ok, avg 6633ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+22:41:18   4. do-nothing agent: still FAIL after 60s?
+22:42:19       [FAIL   ] journey:recommendations - 0/3 ok, avg 61ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+22:42:19       failing in 5/5 checks during the hold
+22:42:19   5. reference solution
+22:42:19     $ kubectl get deployment recommendation -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); c=d["spec"]["template"]["spec"]["containers"][0]; seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env; print(json.dumps(d))' | kubectl replace -f -
+22:42:20       deployment.apps/recommendation replaced
+22:42:20     $ kubectl rollout status deployment/recommendation --timeout=300s
+22:42:21       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:42:21       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:42:21       deployment "recommendation" successfully rolled out
+22:42:21   6. verifier must PASS (<= 420s)
+22:42:54       [PASS   ] journey:recommendations - 3/3 ok, avg 64ms
+22:42:54   6b. invariants must PASS (shop_health)
+22:42:55       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+22:42:55       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
+22:42:55       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+22:42:55       [PASS   ] journey:checkout - 2/2 ok, avg 122ms
+22:42:55   6c. the fix must survive a restart of deployment/recommendation
+22:43:41       [PASS   ] journey:recommendations - 3/3 ok, avg 63ms
+22:43:41   7. restore exactly
+22:43:51   => VALIDATED  {'world_ready_s': 9, 'detect_s': 52, 'recover_s': 33, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

@@ -68,8 +68,10 @@ def _live(pods):
             and p.get("status", {}).get("phase") not in ("Succeeded", "Failed")]
 
 
-def c_pods_ready(selector="", namespace=kube.APP_NS, min_ready=1, **_):
-    pods = _live(kube.pods(selector, namespace=namespace))
+def c_pods_ready(selector="", namespace=kube.APP_NS, min_ready=1, exclude=(), **_):
+    """exclude: workload names whose pods are left out (a fault's own decoys, which may crash-loop by design)."""
+    pods = [p for p in _live(kube.pods(selector, namespace=namespace))
+            if not any(p["metadata"]["name"].startswith(f"{n}-") for n in exclude)]
     ready = [p for p in pods if kube.pod_ready(p)]
     bad = [f"{p['metadata']['name']} ({_pod_problem(p)})" for p in pods if not kube.pod_ready(p)]
     what = selector or f"namespace {namespace}"

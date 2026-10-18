@@ -1,28 +1,28 @@
-09:15:58 === flag-ad-manual-gc-066 (app.flag)
-09:15:59   0. world healthy?
-09:16:08   1. baseline must PASS
-09:16:08       [PASS   ] journey:ads - 4/4 ok, avg 27ms
-09:16:08   2. inject
-09:16:09   3. verifier must FAIL (<= 300s)
-09:16:18       [FAIL   ] journey:ads - 4/4 ok, avg 1964ms (> 700ms)
-09:16:18   4. do-nothing agent: still FAIL after 60s?
-09:17:29       [FAIL   ] journey:ads - 4/4 ok, avg 1698ms (> 700ms)
-09:17:29       failing in 4/4 checks during the hold
-09:17:29   5. reference solution
-09:17:29     $ python injectors/toggle_flag.py adManualGc --off
-09:17:30       'adManualGc' -> off (flagd is serving it now)
-09:17:30     $ kubectl rollout restart deployment/ad
-09:17:30       deployment.apps/ad restarted
-09:17:30     $ kubectl rollout status deployment/ad --timeout=300s
-09:17:31       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
-09:17:31       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
-09:17:31       deployment "ad" successfully rolled out
-09:17:31   6. verifier must PASS (<= 300s)
-09:17:54       [PASS   ] journey:ads - 4/4 ok, avg 108ms
-09:17:54   6b. invariants must PASS (shop_health)
-09:17:55       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-09:17:55       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
-09:17:55       [PASS   ] journey:cart - 2/2 ok, avg 36ms
-09:17:55       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
-09:17:55   7. restore exactly
-09:18:07   => VALIDATED  {'world_ready_s': 9, 'detect_s': 8, 'recover_s': 23, 'invariants_s': 1, 'restore_s': 12}
+22:31:52 === flag-ad-manual-gc-066 (app.flag)
+22:31:53   0. world healthy?
+22:32:04   1. baseline must PASS
+22:32:05       [PASS   ] journey:ads - 4/4 ok, avg 38ms
+22:32:05   2. inject
+22:32:05   3. verifier must FAIL (<= 300s)
+22:32:13       [FAIL   ] journey:ads - 4/4 ok, avg 1820ms (> 700ms)
+22:32:13   4. do-nothing agent: still FAIL after 60s?
+22:33:20       [FAIL   ] journey:ads - 4/4 ok, avg 1584ms (> 700ms)
+22:33:20       failing in 3/3 checks during the hold
+22:33:20   5. reference solution
+22:33:20     $ python injectors/toggle_flag.py adManualGc --off
+22:33:21       'adManualGc' -> off (flagd is serving it now)
+22:33:21     $ kubectl rollout restart deployment/ad
+22:33:21       deployment.apps/ad restarted
+22:33:21     $ kubectl rollout status deployment/ad --timeout=300s
+22:33:22       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
+22:33:22       Waiting for deployment "ad" rollout to finish: 1 old replicas are pending termination...
+22:33:22       deployment "ad" successfully rolled out
+22:33:22   6. verifier must PASS (<= 300s)
+22:33:45       [PASS   ] journey:ads - 4/4 ok, avg 144ms
+22:33:45   6b. invariants must PASS (shop_health)
+22:33:46       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+22:33:46       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+22:33:46       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+22:33:46       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+22:33:46   7. restore exactly
+22:33:58   => VALIDATED  {'world_ready_s': 11, 'detect_s': 8, 'recover_s': 23, 'invariants_s': 1, 'restore_s': 11}

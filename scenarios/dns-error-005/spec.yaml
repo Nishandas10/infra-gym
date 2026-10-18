@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:2af71ab5630e35b032c967b781e9641297f0438cd6ba6c109f563e41030d7fda
 validation_hash: sha256:da7ff1d6d22b0bb88936ef7050970a102660eb59cb0f23728f71393ffb8bfe87
-status: draft
+status: validated
 title: DNS lookups of one dependency fail from one service
 mechanism: chaos/dns-error
 split: train

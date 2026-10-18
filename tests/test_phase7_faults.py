@@ -159,3 +159,32 @@ def test_kubelet_revert_fails_if_the_node_stays_not_ready(monkeypatch, tmp_path)
     monkeypatch.setattr(kube, "node_ready", lambda node: False)
     errors = faults.revert(spec)
     assert errors and "not Ready" in str(errors)
+
+
+def quote_slice(name, managed_by, ip):
+    return {"apiVersion": "discovery.k8s.io/v1", "kind": "EndpointSlice",
+            "metadata": {"name": name, "namespace": kube.APP_NS,
+                         "labels": {"kubernetes.io/service-name": "quote",
+                                    "endpointslice.kubernetes.io/managed-by": managed_by}},
+            "addressType": "IPv4", "endpoints": [{"addresses": [ip]}]}
+
+
+def test_pin_endpoints_clears_what_the_controllers_left(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    fake.apply({"apiVersion": "v1", "kind": "Endpoints", "metadata": {"name": "quote", "namespace": kube.APP_NS},
+                "subsets": [{"addresses": [{"ip": "10.244.1.5"}]}]})
+    fake.apply(quote_slice("quote-abcde", "endpointslice-controller.k8s.io", "10.244.1.5"))
+    fake.apply(quote_slice("quote-mirror", "endpointslicemirroring-controller.k8s.io", "10.244.1.5"))
+    fake.apply(quote_slice("shipping-abcde", "endpointslice-controller.k8s.io", "10.244.1.6"))
+    fake.obj("endpointslice", "shipping-abcde")["metadata"]["labels"]["kubernetes.io/service-name"] = "shipping"
+    spec, sdir = load(SPECS["hard-pinned-endpoints-108"])
+    faults.inject(spec, sdir)
+    assert "selector" not in fake.obj("service", "quote")["spec"]
+    assert fake.obj("endpoints", "quote") is None
+    slices = {s["metadata"]["name"] for s in fake.items("endpointslice")}
+    # only the hand-made slice serves quote; another Service's slice is left alone
+    assert slices == {"quote-pinned", "shipping-abcde"}
+    assert not faults.revert(spec)
+    assert fake.obj("service", "quote")["spec"]["selector"]
+    assert fake.obj("endpointslice", "quote-pinned") is None

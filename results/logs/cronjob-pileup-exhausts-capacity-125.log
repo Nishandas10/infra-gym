@@ -1,37 +1,37 @@
-17:25:38 === cronjob-pileup-exhausts-capacity-125 (k8s.create_objects)
-17:25:40   0. world healthy?
-17:25:51   1. baseline must PASS
-17:25:52       [PASS   ] journey:recommendations - 2/2 ok, avg 64ms
-17:25:52       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
-17:25:52   2. inject
-17:32:52   3. verifier must FAIL (<= 300s)
-17:32:53       [PASS   ] journey:recommendations - 2/2 ok, avg 86ms
-17:32:53       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-6ddcbf45f5-xltg5 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
-17:32:53   4. do-nothing agent: still FAIL after 900s?
-17:47:54       [FAIL   ] journey:recommendations - 0/2 ok, avg 29ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
-17:47:54       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-6ddcbf45f5-xltg5 (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
-17:47:54       failing in 83/83 checks during the hold
-17:47:54   5. reference solution
-17:47:54     $ kubectl patch cronjob report-export --type merge -p '{"spec":{"suspend":true}}'
-17:47:54       cronjob.batch/report-export patched
-17:47:54     $ kubectl delete jobs -l app.kubernetes.io/name=report-export --wait=false
-17:47:56       job.batch "report-export-29870984" deleted from default namespace
-17:47:56       job.batch "report-export-29870985" deleted from default namespace
-17:47:56       job.batch "report-export-29870986" deleted from default namespace
-17:47:56       job.batch "report-export-29870987" deleted from default namespace
-17:47:56     $ kubectl rollout status deployment/recommendation --timeout=300s
-17:48:44       Waiting for deployment "recommendation" rollout to finish: 0 of 1 updated replicas are available...
-17:48:44       deployment "recommendation" successfully rolled out
-17:48:44   6. verifier must PASS (<= 420s)
-17:50:43       [PASS   ] journey:recommendations - 2/2 ok, avg 82ms
-17:50:43       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
-17:50:43   6b. invariants must PASS (shop_health)
-17:50:44       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-17:50:44       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
-17:50:44       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-17:50:44       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
-17:50:44   6c. the fix must survive a restart of opentelemetry.io/name=recommendation
-17:51:30       [PASS   ] journey:recommendations - 2/2 ok, avg 72ms
-17:51:30       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
-17:51:30   7. restore exactly
-17:51:39   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 119, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+22:28:52 === cronjob-pileup-exhausts-capacity-125 (k8s.create_objects)
+22:28:53   0. world healthy?
+22:29:01   1. baseline must PASS
+22:29:02       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+22:29:02       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+22:29:02   2. inject
+22:36:02   3. verifier must FAIL (<= 300s)
+22:36:03       [PASS   ] journey:recommendations - 2/2 ok, avg 78ms
+22:36:03       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-6ddcbf45f5-l7c5x (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
+22:36:03   4. do-nothing agent: still FAIL after 60s?
+22:37:04       [FAIL   ] journey:recommendations - 0/2 ok, avg 19ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+22:37:04       [FAIL   ] pods_ready:opentelemetry.io/name=recommendation - 0/1 pods ready for opentelemetry.io/name=recommendation; recommendation-6ddcbf45f5-l7c5x (Pending: Unschedulable 0/3 nodes are available: 1 node(s) had untolerated taint(s), 2 Insufficient memory. preemp)
+22:37:04       failing in 5/5 checks during the hold
+22:37:04   5. reference solution
+22:37:04     $ kubectl patch cronjob report-export --type merge -p '{"spec":{"suspend":true}}'
+22:37:04       cronjob.batch/report-export patched
+22:37:04     $ kubectl delete jobs -l app.kubernetes.io/name=report-export --wait=false
+22:37:04       job.batch "report-export-29871274" deleted from default namespace
+22:37:04       job.batch "report-export-29871275" deleted from default namespace
+22:37:04       job.batch "report-export-29871276" deleted from default namespace
+22:37:04       job.batch "report-export-29871277" deleted from default namespace
+22:37:04     $ kubectl rollout status deployment/recommendation --timeout=300s
+22:37:48       Waiting for deployment "recommendation" rollout to finish: 0 of 1 updated replicas are available...
+22:37:48       deployment "recommendation" successfully rolled out
+22:37:48   6. verifier must PASS (<= 420s)
+22:38:24       [PASS   ] journey:recommendations - 2/2 ok, avg 150ms
+22:38:24       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+22:38:24   6b. invariants must PASS (shop_health)
+22:38:26       [PASS   ] journey:browse - 2/2 ok, avg 136ms
+22:38:26       [PASS   ] journey:recommendations - 2/2 ok, avg 149ms
+22:38:26       [PASS   ] journey:cart - 2/2 ok, avg 72ms
+22:38:26       [PASS   ] journey:checkout - 2/2 ok, avg 214ms
+22:38:26   6c. the fix must survive a restart of opentelemetry.io/name=recommendation
+22:39:12       [PASS   ] journey:recommendations - 2/2 ok, avg 74ms
+22:39:12       [PASS   ] pods_ready:opentelemetry.io/name=recommendation - 1/1 pods ready for opentelemetry.io/name=recommendation
+22:39:12   7. restore exactly
+22:39:21   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 35, 'invariants_s': 2, 'durable_s': 1, 'restore_s': 9}

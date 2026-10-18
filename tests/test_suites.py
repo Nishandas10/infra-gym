@@ -52,7 +52,7 @@ def test_expected_public_suites_exist():
 
 # Hard-tier scenarios added after hard-v1 was frozen; `make_suite.py --refreeze` before Phase 6 takes them in, and
 # then this set is emptied again.
-HARD_SINCE_FREEZE = {"hard-job-sidecar-never-completes-127"}
+HARD_SINCE_FREEZE: set[str] = set()
 
 
 def test_hard_suite_is_the_whole_hard_tier():

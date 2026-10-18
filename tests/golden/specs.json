@@ -2876,6 +2876,7 @@
       "ops.example.com/expires": "2026-09-30",
       "ops.example.com/pinned-by": "INC-5521 quote migration"
      },
+     "clear_stale": true,
      "ips": [
       "10.244.250.17"
      ],
@@ -4210,7 +4211,9 @@
   ],
   "prompt": "Product pages load slowly and sometimes fail; retries sometimes help. Find the cause and fix it.",
   "solution": [
-   "kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss"
+   "kubectl delete networkchaos.chaos-mesh.org catalog-packet-loss",
+   "kubectl rollout restart deployment/frontend",
+   "kubectl rollout status deployment/frontend --timeout=180s"
   ],
   "validation": {
    "baseline_timeout_s": 120,

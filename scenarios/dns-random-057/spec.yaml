@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:b293c5a3b6c37e286348c041243bc4607f9f89074c7886993327d3cdf1089aad
 validation_hash: sha256:66bbf4eca1f65b211752179b1066125ca4f26b5569af85d49affc5dba713b1c1
-status: draft
+status: validated
 title: DNS returns random addresses for one name
 mechanism: chaos/dns-wrong-answers
 split: train

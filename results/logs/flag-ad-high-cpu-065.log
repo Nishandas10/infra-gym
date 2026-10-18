@@ -1,26 +1,26 @@
-08:46:04 === flag-ad-high-cpu-065 (app.flag)
-08:46:05   0. world healthy?
-08:46:16   1. baseline must PASS
-08:46:17       [PASS   ] journey:ads - 3/3 ok, avg 37ms
-08:46:17       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-64dcc8d686-6rjvb/ad=0.01 (max 0.5)
-08:46:17   2. inject
-08:46:17   3. verifier must FAIL (<= 300s)
-08:46:30       [PASS   ] journey:ads - 3/3 ok, avg 37ms
-08:46:30       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-64dcc8d686-6rjvb/ad=1.45 (max 0.5)
-08:46:30   4. do-nothing agent: still FAIL after 60s?
-08:47:31       [PASS   ] journey:ads - 3/3 ok, avg 49ms
-08:47:31       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-64dcc8d686-6rjvb/ad=3.61 (max 0.5)
-08:47:31       failing in 5/5 checks during the hold
-08:47:31   5. reference solution
-08:47:31     $ python injectors/toggle_flag.py adHighCpu --off
-08:47:32       'adHighCpu' -> off (flagd is serving it now)
-08:47:32   6. verifier must PASS (<= 300s)
-08:48:06       [PASS   ] journey:ads - 3/3 ok, avg 34ms
-08:48:06       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-64dcc8d686-6rjvb/ad=0.01 (max 0.5)
-08:48:06   6b. invariants must PASS (shop_health)
-08:48:07       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-08:48:07       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
-08:48:07       [PASS   ] journey:cart - 2/2 ok, avg 43ms
-08:48:07       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
-08:48:07   7. restore exactly
-08:48:25   => VALIDATED  {'world_ready_s': 11, 'detect_s': 12, 'recover_s': 34, 'invariants_s': 1, 'restore_s': 17}
+23:03:47 === flag-ad-high-cpu-065 (app.flag)
+23:03:48   0. world healthy?
+23:03:58   1. baseline must PASS
+23:03:59       [PASS   ] journey:ads - 3/3 ok, avg 42ms
+23:03:59       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-6c7449696-zm5ns/ad=0.01 (max 0.5)
+23:03:59   2. inject
+23:03:59   3. verifier must FAIL (<= 300s)
+23:04:11       [PASS   ] journey:ads - 3/3 ok, avg 52ms
+23:04:11       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-6c7449696-zm5ns/ad=0.82 (max 0.5)
+23:04:11   4. do-nothing agent: still FAIL after 60s?
+23:05:12       [PASS   ] journey:ads - 3/3 ok, avg 56ms
+23:05:12       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-6c7449696-zm5ns/ad=3.60 (max 0.5)
+23:05:12       failing in 5/5 checks during the hold
+23:05:12   5. reference solution
+23:05:12     $ python injectors/toggle_flag.py adHighCpu --off
+23:05:14       'adHighCpu' -> off (flagd is serving it now)
+23:05:14   6. verifier must PASS (<= 300s)
+23:05:36       [PASS   ] journey:ads - 3/3 ok, avg 44ms
+23:05:36       [PASS   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-6c7449696-zm5ns/ad=0.01 (max 0.5)
+23:05:36   6b. invariants must PASS (shop_health)
+23:05:38       [PASS   ] journey:browse - 2/2 ok, avg 38ms
+23:05:38       [PASS   ] journey:recommendations - 2/2 ok, avg 78ms
+23:05:38       [PASS   ] journey:cart - 2/2 ok, avg 60ms
+23:05:38       [PASS   ] journey:checkout - 2/2 ok, avg 120ms
+23:05:38   7. restore exactly
+23:05:48   => VALIDATED  {'world_ready_s': 10, 'detect_s': 12, 'recover_s': 23, 'invariants_s': 1, 'restore_s': 10}

@@ -1,28 +1,28 @@
-09:34:06 === kafka-message-too-large-082 (runtime.exec)
-09:34:08   0. world healthy?
-09:34:19   1. baseline must PASS
-09:34:22       [PASS   ] journey:checkout - 2/2 ok, avg 200ms
-09:34:22       [PASS   ] orders_recorded - accounting recorded the new order (600 -> 601 rows)
-09:34:22   2. inject
-09:34:27   3. verifier must FAIL (<= 240s)
-09:35:32       [PASS   ] journey:checkout - 2/2 ok, avg 168ms
-09:35:32       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 601 rows)
-09:35:32   4. do-nothing agent: still FAIL after 60s?
-09:37:53       [PASS   ] journey:checkout - 2/2 ok, avg 383ms
-09:37:53       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 601 rows)
-09:37:53       failing in 1/1 checks during the hold
-09:37:53   5. reference solution
-09:37:53     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
-09:37:59       Completed updating config for topic orders.
-09:37:59       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-09:37:59       [otel.javaagent 2026-10-17 09:37:55:838 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
-09:37:59   6. verifier must PASS (<= 300s)
-09:38:01       [PASS   ] journey:checkout - 2/2 ok, avg 280ms
-09:38:01       [PASS   ] orders_recorded - accounting recorded the new order (603 -> 604 rows)
-09:38:01   6b. invariants must PASS (shop_health)
-09:38:04       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-09:38:04       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
-09:38:04       [PASS   ] journey:cart - 2/2 ok, avg 60ms
-09:38:04       [PASS   ] journey:checkout - 2/2 ok, avg 924ms
-09:38:04   7. restore exactly
-09:40:53   => VALIDATED  {'world_ready_s': 12, 'detect_s': 65, 'recover_s': 2, 'invariants_s': 3, 'restore_s': 164}
+23:49:05 === kafka-message-too-large-082 (runtime.exec)
+23:49:06   0. world healthy?
+23:49:15   1. baseline must PASS
+23:49:16       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+23:49:16       [PASS   ] orders_recorded - accounting recorded the new order (520 -> 522 rows)
+23:49:16   2. inject
+23:49:21   3. verifier must FAIL (<= 240s)
+23:50:26       [PASS   ] journey:checkout - 2/2 ok, avg 148ms
+23:50:26       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 522 rows)
+23:50:26   4. do-nothing agent: still FAIL after 60s?
+23:52:47       [PASS   ] journey:checkout - 2/2 ok, avg 250ms
+23:52:47       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 522 rows)
+23:52:47       failing in 1/1 checks during the hold
+23:52:47   5. reference solution
+23:52:47     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
+23:52:55       Completed updating config for topic orders.
+23:52:55       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+23:52:55       [otel.javaagent 2026-10-17 23:52:49:824 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
+23:52:55   6. verifier must PASS (<= 300s)
+23:52:58       [PASS   ] journey:checkout - 2/2 ok, avg 344ms
+23:52:58       [PASS   ] orders_recorded - accounting recorded the new order (524 -> 525 rows)
+23:52:58   6b. invariants must PASS (shop_health)
+23:53:00       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+23:53:00       [PASS   ] journey:recommendations - 2/2 ok, avg 102ms
+23:53:00       [PASS   ] journey:cart - 2/2 ok, avg 58ms
+23:53:00       [PASS   ] journey:checkout - 2/2 ok, avg 151ms
+23:53:00   7. restore exactly
+23:53:50   => VALIDATED  {'world_ready_s': 9, 'detect_s': 65, 'recover_s': 3, 'invariants_s': 2, 'restore_s': 43}

@@ -11,6 +11,9 @@ usage:
                                                                 one run per member whose do-nothing hold lasts
                                                                 the agent's whole budget (budget.wall_s); skips
                                                                 members that already passed one (resumable)
+  python scripts/validate_scenario.py --suite bench-v1-dev --long-hold --since 2026-10-17T20:00:00
+                                                                the same, counting only long holds run since then
+                                                                (after a world change)
   options: --split hard|train   only that tier;  --hard-first   Hard tier first
            --suite NAME   only the members of that suite (repeatable)
            --shard 2/3   only every 3rd scenario starting with the 2nd (one worker per cluster)
@@ -63,10 +66,16 @@ def select(args):
     return specs
 
 
-def needs_long_hold(spec, records):
-    """No VALIDATED long-hold run of this version yet (and not quarantined)."""
+def needs_long_hold(spec, records, since=None):
+    """No VALIDATED long-hold run of this version yet (and not quarantined). With `since`, only runs started at or
+    after that time count (a world change makes the older ones stale)."""
     st = status.of_spec(spec, records)
-    return st.status != "quarantined" and not st.long_holds
+    if st.status == "quarantined":
+        return False
+    if since is None:
+        return not st.long_holds
+    return not any(r.get("hold_mode") == "long" and r.get("verdict") == "VALIDATED" and r.get("started", "") >= since
+                   for r in records.get(spec["validation_hash"], []))
 
 
 def still_needed(spec, want, records):
@@ -87,6 +96,9 @@ def main():
     p.add_argument("--long-hold", action="store_true",
                    help="hold for the agent's whole budget (budget.wall_s) instead of hold_s; one run per scenario "
                         "that has no VALIDATED long-hold run yet")
+    p.add_argument("--since", metavar="TIME",
+                   help="with --long-hold: count only long-hold runs started at or after this time "
+                        "(e.g. 2026-10-17T20:00:00, after a world change), so older ones are run again")
     g = p.add_mutually_exclusive_group()
     g.add_argument("--repeat", type=int, default=1, help="runs per scenario (default 1)")
     g.add_argument("--fill", type=int, help="top each scenario up to this many runs of its current version")
@@ -98,6 +110,8 @@ def main():
         p.error("give scenario paths, or --all / --eligible / --split / --suite")
     if args.long_hold and (args.fill or args.repeat != 1):
         p.error("--long-hold runs each scenario once (until it has a passing long-hold run); drop --fill / --repeat")
+    if args.since and not args.long_hold:
+        p.error("--since only applies to --long-hold")
     if args.shard and not os.environ.get("KUBECONFIG"):
         p.error("--shard needs its own KUBECONFIG (one cluster per worker): `kind create cluster` and others switch the "
                 "default context, which would send this worker's commands to another world")
@@ -109,7 +123,7 @@ def main():
     for n in range(passes):
         records = status.load_records()
         if args.long_hold:
-            todo = [s for s in specs if needs_long_hold(s, records)]
+            todo = [s for s in specs if needs_long_hold(s, records, args.since)]
         else:
             todo = [s for s in specs if (still_needed(s, args.fill, records) > 0 if args.fill else True)]
         if not todo:

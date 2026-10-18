@@ -1,22 +1,22 @@
-13:51:39 === fa-node-maintenance-116 (k8s.object_patch)
-13:51:41   0. world healthy?
-13:51:51   1. baseline must PASS
-13:51:52       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-13:51:52       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
-13:51:52       [PASS   ] pods_ready - 27/27 pods ready for namespace default
-13:51:52   2. inject
-13:51:52   3. the alarm must be raised: alarm checks FAIL (<= 240s)
-13:51:52       [FAIL   ] nodes_ready - ai-gym-2-worker cordoned; ai-gym-2-worker taint node.kubernetes.io/unschedulable:NoSchedule
-13:51:52   3b. nothing is broken: the checks must PASS (<= 300s)
-13:51:53       [PASS   ] journey:browse - 2/2 ok, avg 18ms
-13:51:53       [PASS   ] journey:checkout - 2/2 ok, avg 72ms
-13:51:53       [PASS   ] pods_ready - 27/27 pods ready for namespace default
-13:51:53   4. the checks must keep passing for 900s
-14:06:54       unconfirmed failures in 0/83 checks during the hold
-14:06:54   6b. invariants must PASS (shop_health)
-14:06:55       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-14:06:55       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
-14:06:55       [PASS   ] journey:cart - 2/2 ok, avg 39ms
-14:06:55       [PASS   ] journey:checkout - 2/2 ok, avg 83ms
-14:06:55   7. restore exactly
-14:07:04   => VALIDATED  {'world_ready_s': 10, 'alarm_s': 0, 'healthy_s': 1, 'invariants_s': 1, 'restore_s': 9}
+22:30:29 === fa-node-maintenance-116 (k8s.object_patch)
+22:30:30   0. world healthy?
+22:30:39   1. baseline must PASS
+22:30:39       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+22:30:39       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
+22:30:39       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+22:30:39   2. inject
+22:30:40   3. the alarm must be raised: alarm checks FAIL (<= 240s)
+22:30:40       [FAIL   ] nodes_ready - ai-gym-2-worker cordoned; ai-gym-2-worker taint node.kubernetes.io/unschedulable:NoSchedule
+22:30:40   3b. nothing is broken: the checks must PASS (<= 300s)
+22:30:41       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+22:30:41       [PASS   ] journey:checkout - 2/2 ok, avg 91ms
+22:30:41       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+22:30:41   4. the checks must keep passing for 60s
+22:31:42       unconfirmed failures in 0/6 checks during the hold
+22:31:42   6b. invariants must PASS (shop_health)
+22:31:43       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+22:31:43       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+22:31:43       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+22:31:43       [PASS   ] journey:checkout - 2/2 ok, avg 106ms
+22:31:43   7. restore exactly
+22:31:52   => VALIDATED  {'world_ready_s': 9, 'alarm_s': 0, 'healthy_s': 1, 'invariants_s': 1, 'restore_s': 9}

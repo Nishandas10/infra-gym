@@ -1,6 +1,6 @@
 spec_version: 2
 id: hard-pinned-endpoints-108
-version: 1
+version: 2
 title: The quote Service was pinned to a fixed IP during an old incident and never unpinned
 mechanism: hard/manual-endpoints-stale-ip
 split: hard
@@ -71,6 +71,7 @@ fault:
     annotations:
       ops.example.com/pinned-by: INC-5521 quote migration
       ops.example.com/expires: '2026-09-30'
+    clear_stale: true
 verifier:
   checks:
   - type: journey
@@ -119,3 +120,10 @@ meta:
   realistic_pattern: Manual EndpointSlice pinned during an incident and forgotten
   built_from:
   - new mechanism pin_endpoints
+notes:
+- 'v2 (2026-10-18): v1 SELF_HEALED in the merge revalidation (ai-gym, 2026-10-17 23:40). Spike s108: with the selector
+  removed, Kubernetes v1.37 keeps the old controller EndpointSlice and mirrors the stale Endpoints (still listing the
+  quote pod) into a new slice, so only 1 of 3 endpoints was the dead IP and checkout failed intermittently (0-3 of 4
+  per sample for 5 min). Spike s108b: deleting the stale Endpoints and controller slice gave 0/4 for 5 min with
+  nothing recreated, and restoring the selector + deleting quote-pinned was healthy 33 s later. v2 sets
+  clear_stale: true.'

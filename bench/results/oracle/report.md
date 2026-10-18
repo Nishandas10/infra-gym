@@ -4,4 +4,4 @@ Every bench-eligible scenario played end to end by `python bench/agent_bench.py 
 
 | Scenario | Result | Problems |
 |---|---|---|
-| `pg-lock-held-081` | ok |  |
+| `hard-pinned-endpoints-108` | ok |  |

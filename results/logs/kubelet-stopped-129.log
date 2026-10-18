@@ -1,48 +1,29 @@
-19:43:55 === kubelet-stopped-129 (node.kubelet_stop)
-19:43:56   0. world healthy?
-19:44:05   1. baseline must PASS
-19:44:06       [PASS   ] nodes_ready - all nodes Ready and schedulable
-19:44:06       [PASS   ] pods_ready - 27/27 pods ready for namespace default
-19:44:06   2. inject
-19:44:06   3. verifier must FAIL (<= 240s)
-19:44:58       [FAIL   ] nodes_ready - ai-gym-worker NotReady; ai-gym-worker taint node.kubernetes.io/unreachable:NoSchedule; ai-gym-worker taint node.kubernetes.io/unreachable:NoExecute
-19:44:58       [FAIL   ] pods_ready - not ready: ad-6c7449696-k646r (Running); astronomy-db-85db75f6fd-96rdz (Running); cart-64d96444f5-kmnch (Running); currency-78485ddbb8-7zz57 (Running); flagd-6d5c49bdfd-jfckl (Running); grafana-7b59ccf69d-vrs69 (Running); image-provider-6d999697d4-kcnwh (Running); load-generator-5568b7dcf6-vgwfw (Running); ote
-19:44:58   4. do-nothing agent: still FAIL after 900s?
-19:52:42       [FAIL   ] nodes_ready - ai-gym-2-worker NotReady; ai-gym-2-worker taint node.kubernetes.io/unreachable:NoSchedule; ai-gym-2-worker taint node.kubernetes.io/unreachable:NoExecute
-19:52:42       [FAIL   ] pods_ready - not ready: otel-collector-agent-h6dmr (Running)
-19:52:42       failing in 87/87 checks during the hold
-19:52:42   5. reference solution
-19:52:42     $ docker exec "$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name | sort | head -1 | cut -d/ -f2)" systemctl start kubelet
-19:52:43     $ kubectl wait --for=condition=Ready node --all --timeout=180s
-19:52:43       node/ai-gym-2-control-plane condition met
-19:52:43       node/ai-gym-2-worker condition met
-19:52:43       node/ai-gym-2-worker2 condition met
-19:52:43   6. verifier must PASS (<= 420s)
-19:52:54       [PASS   ] nodes_ready - all nodes Ready and schedulable
-19:52:54       [PASS   ] pods_ready - 27/27 pods ready for namespace default
-19:52:54   6b. invariants must PASS (shop_health)
-19:52:55       [PASS   ] journey:browse - 2/2 ok, avg 40ms
-19:52:55       [PASS   ] journey:recommendations - 2/2 ok, avg 74ms
-19:52:55       [PASS   ] journey:cart - 2/2 ok, avg 54ms
-19:52:55       [PASS   ] journey:checkout - 2/2 ok, avg 138ms
-19:52:55   7. restore exactly
-19:53:05   => VALIDATED  {'world_ready_s': 9, 'detect_s': 52, 'recover_s': 11, 'invariants_s': 1, 'restore_s': 9}
-19:59:58       [FAIL   ] nodes_ready - ai-gym-worker NotReady; ai-gym-worker taint node.kubernetes.io/unreachable:NoSchedule; ai-gym-worker taint node.kubernetes.io/unreachable:NoExecute
-19:59:58       [FAIL   ] pods_ready - not ready: otel-collector-agent-frj84 (Running)
-19:59:58       failing in 87/87 checks during the hold
-19:59:58   5. reference solution
-19:59:58     $ docker exec "$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name | sort | head -1 | cut -d/ -f2)" systemctl start kubelet
-19:59:58     $ kubectl wait --for=condition=Ready node --all --timeout=180s
-19:59:59       node/ai-gym-control-plane condition met
-19:59:59       node/ai-gym-worker condition met
-19:59:59       node/ai-gym-worker2 condition met
-19:59:59   6. verifier must PASS (<= 420s)
-20:00:10       [PASS   ] nodes_ready - all nodes Ready and schedulable
-20:00:10       [PASS   ] pods_ready - 27/27 pods ready for namespace default
-20:00:10   6b. invariants must PASS (shop_health)
-20:00:14       [PASS   ] journey:browse - 2/2 ok, avg 92ms
-20:00:14       [PASS   ] journey:recommendations - 2/2 ok, avg 112ms
-20:00:14       [PASS   ] journey:cart - 2/2 ok, avg 72ms
-20:00:14       [PASS   ] journey:checkout - 2/2 ok, avg 244ms
-20:00:14   7. restore exactly
-20:00:30   => VALIDATED  {'world_ready_s': 9, 'detect_s': 52, 'recover_s': 11, 'invariants_s': 4, 'restore_s': 15}
+23:24:04 === kubelet-stopped-129 (node.kubelet_stop)
+23:24:05   0. world healthy?
+23:24:15   1. baseline must PASS
+23:24:15       [PASS   ] nodes_ready - all nodes Ready and schedulable
+23:24:15       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+23:24:15   2. inject
+23:24:16   3. verifier must FAIL (<= 240s)
+23:24:57       [FAIL   ] nodes_ready - ai-gym-3-worker NotReady; ai-gym-3-worker taint node.kubernetes.io/unreachable:NoSchedule
+23:24:57       [FAIL   ] pods_ready - not ready: checkout-849b844f5d-8c7xq (Running); email-57f987df4d-b7zbq (Running); flagd-575dddcd78-f5hd7 (Running); load-generator-5568b7dcf6-jnctv (Running); quote-674f79cdc-2gblk (Running); telemetry-docs-66bcf77d66-q9vvt (Running)
+23:24:57   4. do-nothing agent: still FAIL after 60s?
+23:25:58       [FAIL   ] nodes_ready - ai-gym-3-worker NotReady; ai-gym-3-worker taint node.kubernetes.io/unreachable:NoSchedule; ai-gym-3-worker taint node.kubernetes.io/unreachable:NoExecute
+23:25:58       [FAIL   ] pods_ready - not ready: checkout-849b844f5d-8c7xq (Running); email-57f987df4d-b7zbq (Running); flagd-575dddcd78-f5hd7 (Running); frontend-6fb5f7c99c-7xj8g (Running); grafana-7b59ccf69d-5nzq2 (Running); kafka-5945bf9c6f-xm5v6 (Running); load-generator-5568b7dcf6-jnctv (Running); otel-collector-agent-lmqqn (Running); quote-6
+23:25:58       failing in 5/5 checks during the hold
+23:25:58   5. reference solution
+23:25:58     $ docker exec "$(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o name | sort | head -1 | cut -d/ -f2)" systemctl start kubelet
+23:25:58     $ kubectl wait --for=condition=Ready node --all --timeout=180s
+23:25:59       node/ai-gym-3-control-plane condition met
+23:25:59       node/ai-gym-3-worker condition met
+23:25:59       node/ai-gym-3-worker2 condition met
+23:25:59   6. verifier must PASS (<= 420s)
+23:26:09       [PASS   ] nodes_ready - all nodes Ready and schedulable
+23:26:09       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+23:26:09   6b. invariants must PASS (shop_health)
+23:26:10       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+23:26:10       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+23:26:10       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+23:26:10       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+23:26:10   7. restore exactly
+23:26:21   => VALIDATED  {'world_ready_s': 10, 'detect_s': 42, 'recover_s': 11, 'invariants_s': 1, 'restore_s': 10}

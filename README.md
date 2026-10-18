@@ -277,6 +277,7 @@ least one passing long-hold run can enter a suite:
 
 ```bash
 python scripts/validate_scenario.py --suite bench-v1-dev --long-hold   # resumable; skips members that already passed
+python scripts/validate_scenario.py --suite bench-v1-dev --long-hold --since 2026-10-17T20:00:00   # after a world change
 ```
 
 ## Benchmark

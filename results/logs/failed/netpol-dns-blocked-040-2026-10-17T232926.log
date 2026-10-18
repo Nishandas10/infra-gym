@@ -1,0 +1,10 @@
+23:29:26 === netpol-dns-blocked-040 (k8s.create_objects)
+23:29:27   0. world healthy?
+23:36:25       [FAIL   ] journey:browse - 0/2 ok, avg 8025ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+23:36:25       [FAIL   ] journey:recommendations - 0/2 ok, avg 8026ms; e.g. GET /api/recommendations -> no response b'TimeoutError: timed out'
+23:36:25       [FAIL   ] journey:cart - 0/2 ok, avg 8040ms; e.g. GET /api/cart -> no response b'TimeoutError: timed out'
+23:36:25       [FAIL   ] journey:checkout - 0/2 ok, avg 15038ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+23:36:25       [PASS   ] pods_ready - 27/27 pods ready for namespace default
+23:36:25       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 200)
+23:36:25       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 200)
+23:36:25   => ENV_UNHEALTHY  {'world_ready_s': 331}

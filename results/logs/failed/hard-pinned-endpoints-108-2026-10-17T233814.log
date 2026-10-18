@@ -1,0 +1,12 @@
+23:38:14 === hard-pinned-endpoints-108 (composite)
+23:38:15   0. world healthy?
+23:38:25   1. baseline must PASS
+23:38:26       [PASS   ] journey:checkout - 4/4 ok, avg 102ms
+23:38:26   2. inject
+23:38:27   3. verifier must FAIL (<= 300s)
+23:38:37       [FAIL   ] journey:checkout - 2/4 ok, avg 2575ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+23:38:37   4. do-nothing agent: still FAIL after 60s?
+23:39:38       [PASS   ] journey:checkout - 4/4 ok, avg 100ms
+23:39:38       failing in 2/2 checks during the hold
+23:39:38   7. restore exactly
+23:40:13   => SELF_HEALED  {'world_ready_s': 10, 'detect_s': 11, 'restore_s': 34}

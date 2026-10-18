@@ -1,34 +1,34 @@
-10:21:56 === quota-blocks-pods-047 (k8s.create_objects)
-10:21:56   0. world healthy?
-10:22:05   1. baseline must PASS
-10:22:05       [PASS   ] journey:checkout - 3/3 ok, avg 71ms
-10:22:05       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-10:22:05   2. inject
-10:22:09   3. verifier must FAIL (<= 240s)
-10:22:24       [FAIL   ] journey:checkout - 0/3 ok, avg 5045ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:22:24       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
-10:22:24   4. do-nothing agent: still FAIL after 60s?
-10:23:25       [FAIL   ] journey:checkout - 0/3 ok, avg 49ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:23:25       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
-10:23:25       failing in 5/5 checks during the hold
-10:23:25   5. reference solution
-10:23:25     $ kubectl delete resourcequota namespace-pod-quota
-10:23:25       resourcequota "namespace-pod-quota" deleted from default namespace
-10:23:25     $ kubectl rollout restart deployment/shipping
-10:23:25       deployment.apps/shipping restarted
-10:23:25     $ kubectl rollout status deployment/shipping --timeout=300s
-10:23:27       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
-10:23:27       deployment "shipping" successfully rolled out
-10:23:27   6. verifier must PASS (<= 300s)
-10:23:28       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
-10:23:28       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-10:23:28   6b. invariants must PASS (shop_health)
-10:23:29       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-10:23:29       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-10:23:29       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-10:23:29       [PASS   ] journey:checkout - 2/2 ok, avg 81ms
-10:23:29   6c. the fix must survive a restart of opentelemetry.io/name=shipping
-10:24:15       [PASS   ] journey:checkout - 3/3 ok, avg 97ms
-10:24:15       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
-10:24:15   7. restore exactly
-10:24:26   => VALIDATED  {'world_ready_s': 8, 'detect_s': 16, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}
+00:23:07 === quota-blocks-pods-047 (k8s.create_objects)
+00:23:08   0. world healthy?
+00:23:17   1. baseline must PASS
+00:23:18       [PASS   ] journey:checkout - 3/3 ok, avg 100ms
+00:23:18       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+00:23:18   2. inject
+00:23:21   3. verifier must FAIL (<= 240s)
+00:23:37       [FAIL   ] journey:checkout - 0/3 ok, avg 5056ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:23:37       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+00:23:37   4. do-nothing agent: still FAIL after 60s?
+00:24:38       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:24:38       [FAIL   ] pods_ready:opentelemetry.io/name=shipping - 0/0 pods ready for opentelemetry.io/name=shipping; no pods exist
+00:24:38       failing in 5/5 checks during the hold
+00:24:38   5. reference solution
+00:24:38     $ kubectl delete resourcequota namespace-pod-quota
+00:24:38       resourcequota "namespace-pod-quota" deleted from default namespace
+00:24:38     $ kubectl rollout restart deployment/shipping
+00:24:38       deployment.apps/shipping restarted
+00:24:38     $ kubectl rollout status deployment/shipping --timeout=300s
+00:24:40       Waiting for deployment "shipping" rollout to finish: 0 of 1 updated replicas are available...
+00:24:40       deployment "shipping" successfully rolled out
+00:24:40   6. verifier must PASS (<= 300s)
+00:24:41       [PASS   ] journey:checkout - 3/3 ok, avg 110ms
+00:24:41       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+00:24:41   6b. invariants must PASS (shop_health)
+00:24:42       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+00:24:42       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+00:24:42       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+00:24:42       [PASS   ] journey:checkout - 2/2 ok, avg 89ms
+00:24:42   6c. the fix must survive a restart of opentelemetry.io/name=shipping
+00:25:28       [PASS   ] journey:checkout - 3/3 ok, avg 112ms
+00:25:28       [PASS   ] pods_ready:opentelemetry.io/name=shipping - 1/1 pods ready for opentelemetry.io/name=shipping
+00:25:28   7. restore exactly
+00:25:39   => VALIDATED  {'world_ready_s': 9, 'detect_s': 16, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 11}

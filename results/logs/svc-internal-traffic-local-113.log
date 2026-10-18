@@ -1,34 +1,34 @@
-10:27:02 === svc-internal-traffic-local-113 (composite)
-10:27:03   0. world healthy?
-10:27:16   1. baseline must PASS
-10:27:19       [PASS   ] journey:currency - 8/8 ok, avg 36ms
-10:27:19       [PASS   ] journey:checkout - 8/8 ok, avg 99ms
-10:27:19       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
-10:27:19   2. inject
-10:27:25   3. verifier must FAIL (<= 240s)
-10:28:39       [FAIL   ] journey:currency - 0/8 ok, avg 8021ms; e.g. GET /api/products?currencyCode=EUR -> no response b'TimeoutError: timed out'
-10:28:39       [PASS   ] journey:checkout - 8/8 ok, avg 678ms
-10:28:39       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-3-worker (1/2 worker nodes reach it)
-10:28:39   4. do-nothing agent: still FAIL after 90s?
-10:30:16       [FAIL   ] journey:currency - 0/8 ok, avg 26ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
-10:30:16       [PASS   ] journey:checkout - 8/8 ok, avg 208ms
-10:30:16       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-3-worker (1/2 worker nodes reach it)
-10:30:16       failing in 2/2 checks during the hold
-10:30:16   5. reference solution
-10:30:16     $ kubectl patch service currency --type=json -p '[{"op":"replace","path":"/spec/internalTrafficPolicy","value":"Cluster"}]'
-10:30:16       service/currency patched
-10:30:16   6. verifier must PASS (<= 300s)
-10:30:30       [PASS   ] journey:currency - 8/8 ok, avg 31ms
-10:30:30       [PASS   ] journey:checkout - 8/8 ok, avg 84ms
-10:30:30       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
-10:30:30   6b. invariants must PASS (shop_health)
-10:30:31       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-10:30:31       [PASS   ] journey:recommendations - 2/2 ok, avg 45ms
-10:30:31       [PASS   ] journey:cart - 2/2 ok, avg 44ms
-10:30:31       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
-10:30:31   6c. the fix must survive a restart of deployment/currency
-10:31:19       [PASS   ] journey:currency - 8/8 ok, avg 41ms
-10:31:19       [PASS   ] journey:checkout - 8/8 ok, avg 123ms
-10:31:19       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
-10:31:20   7. restore exactly
-10:31:30   => VALIDATED  {'world_ready_s': 14, 'detect_s': 74, 'recover_s': 15, 'invariants_s': 1, 'durable_s': 3, 'restore_s': 10}
+00:08:03 === svc-internal-traffic-local-113 (composite)
+00:08:04   0. world healthy?
+00:08:14   1. baseline must PASS
+00:08:17       [PASS   ] journey:currency - 8/8 ok, avg 31ms
+00:08:17       [PASS   ] journey:checkout - 8/8 ok, avg 113ms
+00:08:17       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+00:08:17   2. inject
+00:08:23   3. verifier must FAIL (<= 240s)
+00:08:48       [PASS   ] journey:currency - 8/8 ok, avg 31ms
+00:08:48       [FAIL   ] journey:checkout - 0/8 ok, avg 2575ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+00:08:48       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-2-worker2 (1/2 worker nodes reach it)
+00:08:48   4. do-nothing agent: still FAIL after 90s?
+00:10:24       [PASS   ] journey:currency - 8/8 ok, avg 30ms
+00:10:24       [FAIL   ] journey:checkout - 0/8 ok, avg 52ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+00:10:24       [FAIL   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 unreachable from ai-gym-2-worker2 (1/2 worker nodes reach it)
+00:10:24       failing in 6/6 checks during the hold
+00:10:24   5. reference solution
+00:10:24     $ kubectl patch service currency --type=json -p '[{"op":"replace","path":"/spec/internalTrafficPolicy","value":"Cluster"}]'
+00:10:24       service/currency patched
+00:10:24   6. verifier must PASS (<= 300s)
+00:10:39       [PASS   ] journey:currency - 8/8 ok, avg 27ms
+00:10:39       [PASS   ] journey:checkout - 8/8 ok, avg 111ms
+00:10:39       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+00:10:39   6b. invariants must PASS (shop_health)
+00:10:40       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+00:10:40       [PASS   ] journey:recommendations - 2/2 ok, avg 87ms
+00:10:40       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+00:10:40       [PASS   ] journey:checkout - 2/2 ok, avg 128ms
+00:10:40   6c. the fix must survive a restart of deployment/currency
+00:11:28       [PASS   ] journey:currency - 8/8 ok, avg 34ms
+00:11:28       [PASS   ] journey:checkout - 8/8 ok, avg 118ms
+00:11:28       [PASS   ] reachable_from_nodes:currency - currency.default.svc.cluster.local:8080 reachable from all 2 worker nodes
+00:11:28   7. restore exactly
+00:11:37   => VALIDATED  {'world_ready_s': 10, 'detect_s': 25, 'recover_s': 15, 'invariants_s': 1, 'durable_s': 3, 'restore_s': 9}

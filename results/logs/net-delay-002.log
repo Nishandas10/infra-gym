@@ -1,22 +1,22 @@
-09:44:06 === net-delay-002 (chaos.mesh)
-09:44:06   0. world healthy?
-09:44:16   1. baseline must PASS
-09:44:16       [PASS   ] journey:recommendations - 3/3 ok, avg 56ms
-09:44:16   2. inject
-09:44:22   3. verifier must FAIL (<= 120s)
-09:44:42       [FAIL   ] journey:recommendations - 3/3 ok, avg 6597ms (> 1500ms)
-09:44:42   4. do-nothing agent: still FAIL after 60s?
-09:46:01       [FAIL   ] journey:recommendations - 3/3 ok, avg 6123ms (> 1500ms)
-09:46:01       failing in 2/2 checks during the hold
-09:46:01   5. reference solution
-09:46:01     $ kubectl delete networkchaos.chaos-mesh.org net-delay-002
-09:46:01       networkchaos.chaos-mesh.org "net-delay-002" deleted from default namespace
-09:46:01   6. verifier must PASS (<= 120s)
-09:46:02       [PASS   ] journey:recommendations - 3/3 ok, avg 58ms
-09:46:02   6b. invariants must PASS (shop_health)
-09:46:03       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-09:46:03       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
-09:46:03       [PASS   ] journey:cart - 2/2 ok, avg 39ms
-09:46:03       [PASS   ] journey:checkout - 2/2 ok, avg 79ms
-09:46:03   7. restore exactly
-09:46:12   => VALIDATED  {'world_ready_s': 9, 'detect_s': 20, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+01:30:50 === net-delay-002 (chaos.mesh)
+01:30:51   0. world healthy?
+01:31:01   1. baseline must PASS
+01:31:02       [PASS   ] journey:recommendations - 3/3 ok, avg 60ms
+01:31:02   2. inject
+01:31:07   3. verifier must FAIL (<= 120s)
+01:31:31       [FAIL   ] journey:recommendations - 3/3 ok, avg 7883ms (> 1500ms)
+01:31:31   4. do-nothing agent: still FAIL after 60s?
+01:32:52       [FAIL   ] journey:recommendations - 3/3 ok, avg 6701ms (> 1500ms)
+01:32:52       failing in 2/2 checks during the hold
+01:32:52   5. reference solution
+01:32:52     $ kubectl delete networkchaos.chaos-mesh.org net-delay-002
+01:32:52       networkchaos.chaos-mesh.org "net-delay-002" deleted from default namespace
+01:32:52   6. verifier must PASS (<= 120s)
+01:32:53       [PASS   ] journey:recommendations - 3/3 ok, avg 57ms
+01:32:53   6b. invariants must PASS (shop_health)
+01:32:54       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+01:32:54       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+01:32:54       [PASS   ] journey:cart - 2/2 ok, avg 43ms
+01:32:54       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
+01:32:54   7. restore exactly
+01:33:03   => VALIDATED  {'world_ready_s': 10, 'detect_s': 24, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

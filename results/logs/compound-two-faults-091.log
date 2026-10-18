@@ -1,35 +1,36 @@
-09:03:49 === compound-two-faults-091 (composite)
-09:03:50   0. world healthy?
-09:03:59   1. baseline must PASS
-09:04:03       [PASS   ] journey:recommendations - 30/30 ok, avg 63ms
-09:04:03       [PASS   ] journey:ads - 30/30 ok, avg 29ms
-09:04:03   2. inject
-09:04:05   3. verifier must FAIL (<= 240s)
-09:04:09       [PASS   ] journey:recommendations - 30/30 ok, avg 50ms
-09:04:09       [FAIL   ] journey:ads - 28/30 ok, avg 37ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-09:04:09   4. do-nothing agent: still FAIL after 60s?
-09:05:15       [FAIL   ] journey:recommendations - 0/30 ok, avg 34ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
-09:05:15       [FAIL   ] journey:ads - 26/30 ok, avg 28ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-09:05:15       failing in 3/3 checks during the hold
-09:05:15   5. reference solution
-09:05:15     $ kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
-09:05:15       deployment.apps/recommendation env updated
-09:05:15     $ kubectl rollout status deployment/recommendation --timeout=300s
-09:05:16       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-09:05:16       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-09:05:16       deployment "recommendation" successfully rolled out
-09:05:16     $ python injectors/toggle_flag.py adFailure --off
-09:05:17       'adFailure' -> off (flagd is serving it now)
-09:05:17   6. verifier must PASS (<= 300s)
-09:05:49       [PASS   ] journey:recommendations - 30/30 ok, avg 63ms
-09:05:49       [PASS   ] journey:ads - 30/30 ok, avg 33ms
-09:05:49   6b. invariants must PASS (shop_health)
-09:05:50       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-09:05:50       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
-09:05:50       [PASS   ] journey:cart - 2/2 ok, avg 51ms
-09:05:50       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
-09:05:50   6c. the fix must survive a restart of deployment/recommendation
-09:06:39       [PASS   ] journey:recommendations - 30/30 ok, avg 48ms
-09:06:39       [PASS   ] journey:ads - 30/30 ok, avg 28ms
-09:06:39   7. restore exactly
-09:06:49   => VALIDATED  {'world_ready_s': 9, 'detect_s': 4, 'recover_s': 32, 'invariants_s': 1, 'durable_s': 4, 'restore_s': 9}
+22:23:22 === compound-two-faults-091 (composite)
+22:23:23   0. world healthy?
+22:23:32   1. baseline must PASS
+22:23:37       [PASS   ] journey:recommendations - 30/30 ok, avg 65ms
+22:23:37       [PASS   ] journey:ads - 30/30 ok, avg 48ms
+22:23:37   2. inject
+22:23:38   3. verifier must FAIL (<= 240s)
+22:23:44       [PASS   ] journey:recommendations - 30/30 ok, avg 77ms
+22:23:44       [FAIL   ] journey:ads - 26/30 ok, avg 48ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+22:23:44   4. do-nothing agent: still FAIL after 60s?
+22:24:50       [FAIL   ] journey:recommendations - 0/30 ok, avg 46ms; e.g. GET /api/recommendations -> 500 b'Internal Server Error'
+22:24:50       [FAIL   ] journey:ads - 29/30 ok, avg 41ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+22:24:50       failing in 3/3 checks during the hold
+22:24:50   5. reference solution
+22:24:50     $ kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
+22:24:50       deployment.apps/recommendation env updated
+22:24:50     $ kubectl rollout status deployment/recommendation --timeout=300s
+22:24:51       Waiting for deployment "recommendation" rollout to finish: 0 out of 1 new replicas have been updated...
+22:24:51       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:24:51       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:24:51       deployment "recommendation" successfully rolled out
+22:24:51     $ python injectors/toggle_flag.py adFailure --off
+22:24:53       'adFailure' -> off (flagd is serving it now)
+22:24:53   6. verifier must PASS (<= 300s)
+22:25:26       [PASS   ] journey:recommendations - 30/30 ok, avg 57ms
+22:25:26       [PASS   ] journey:ads - 30/30 ok, avg 44ms
+22:25:26   6b. invariants must PASS (shop_health)
+22:25:27       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+22:25:27       [PASS   ] journey:recommendations - 2/2 ok, avg 64ms
+22:25:27       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+22:25:27       [PASS   ] journey:checkout - 2/2 ok, avg 118ms
+22:25:27   6c. the fix must survive a restart of deployment/recommendation
+22:26:17       [PASS   ] journey:recommendations - 30/30 ok, avg 57ms
+22:26:17       [PASS   ] journey:ads - 30/30 ok, avg 38ms
+22:26:17   7. restore exactly
+22:26:26   => VALIDATED  {'world_ready_s': 9, 'detect_s': 5, 'recover_s': 33, 'invariants_s': 1, 'durable_s': 4, 'restore_s': 9}

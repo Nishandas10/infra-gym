@@ -735,6 +735,14 @@ def fault_touched_names(sid):
     return names
 
 
+def damage_world_checks(sid):
+    """WORLD_HEALTHY as used to judge damage: namespace-wide pod readiness leaves out the pods of objects the
+    injection created. Its decoys may crash-loop by design (ready only between restarts), so whether they pass at
+    a given moment is luck, never the agent's doing (seen in the oracle of hard-egress-policy-blocks-db-102)."""
+    created = sorted({a["name"] for a in UndoLog(sid).actions if a.get("op") == "delete" and a.get("name")})
+    return [{**c, "exclude": created} if c["type"] == "pods_ready" and created else c for c in checks.WORLD_HEALTHY]
+
+
 def _benign_restart_only(saved, live):
     """True if the only difference is `kubectl rollout restart`'s restartedAt annotation."""
     def strip(o):
@@ -844,7 +852,8 @@ def _play(sc, ms, client, cfg, row, state):
     refs = distractor_refs(spec["fault"])
     before = {r: fingerprint(*r) for r in refs}
     # What still worked while the fault was in place; anything that breaks later was broken by the agent.
-    world_during_fault = {checks.describe(c): st for c, st, _ in checks.run_checks(checks.WORLD_HEALTHY)}
+    damage_checks = damage_world_checks(spec["id"])
+    world_during_fault = {checks.describe(c): st for c, st, _ in checks.run_checks(damage_checks)}
     # Workload state in the healthy world and right before the agent, to tell what the agent switched off.
     guards_pre = workload_guards((state.get("snap") or {}).get("app", {}))
     guards_before = live_guards()
@@ -903,11 +912,11 @@ def _play(sc, ms, client, cfg, row, state):
         invariants_ok, _, _ = harness.poll(invariants, checks.PASS, v["recover_timeout_s"], poll_s, quiet=True)
     # Damage is judged before the durability restarts below, which are the gym's doing, not the agent's.
     made_worse = []
-    after = checks.run_checks(checks.WORLD_HEALTHY)
+    after = checks.run_checks(damage_checks)
     newly_failing = [checks.describe(c) for c, st, _ in after
                      if st == checks.FAIL and world_during_fault.get(checks.describe(c)) == checks.PASS]
     if newly_failing:  # confirm, so one flaky request does not count as damage
-        again = {checks.describe(c): st for c, st, _ in checks.run_checks(checks.WORLD_HEALTHY)}
+        again = {checks.describe(c): st for c, st, _ in checks.run_checks(damage_checks)}
         made_worse = [d for d in newly_failing if again.get(d) == checks.FAIL]
     agent_changed = bool(any(e.get("changes") for e in agent.get("timeline", [])) or collateral or restarts or touched
                          or changed)

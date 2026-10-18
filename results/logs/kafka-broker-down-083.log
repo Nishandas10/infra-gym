@@ -1,47 +1,47 @@
-10:09:27 === kafka-broker-down-083 (k8s.workload_patch)
-10:09:28   0. world healthy?
-10:09:38   1. baseline must PASS
-10:09:39       [PASS   ] orders_recorded - accounting recorded the new order (3512 -> 3513 rows)
-10:09:39       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-10:09:39   2. inject
-10:09:39   3. verifier must FAIL (<= 240s)
-10:10:41       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 3514 rows)
-10:10:41       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
-10:10:41   4. do-nothing agent: still FAIL after 60s?
-10:12:21       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
-10:12:21       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
-10:12:21       failing in 1/1 checks during the hold
-10:12:21   5. reference solution
-10:12:21     $ kubectl scale deployment kafka --replicas=1
-10:12:21       deployment.apps/kafka scaled
-10:12:21     $ kubectl rollout status deployment/kafka --timeout=300s
-10:12:22       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
-10:12:22       deployment "kafka" successfully rolled out
-10:12:22     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
-10:12:57       [2026-10-17 10:12:51,599] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-10:12:57       [2026-10-17 10:12:52,615] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-10:12:57       [2026-10-17 10:12:53,539] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-10:12:57       [2026-10-17 10:12:54,460] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.9.186:9092) could not be establ
-10:12:57     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
-10:12:57       deployment.apps/checkout restarted
-10:12:57       deployment.apps/accounting restarted
-10:12:57       deployment.apps/fraud-detection restarted
-10:12:57     $ kubectl rollout status deployment/checkout --timeout=300s
-10:13:00       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-10:13:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-10:13:00       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-10:13:00       deployment "checkout" successfully rolled out
-10:13:00     $ kubectl rollout status deployment/accounting --timeout=300s
-10:13:00       deployment "accounting" successfully rolled out
-10:13:00     $ kubectl rollout status deployment/fraud-detection --timeout=300s
-10:13:01       deployment "fraud-detection" successfully rolled out
-10:13:01   6. verifier must PASS (<= 480s)
-10:13:09       [PASS   ] orders_recorded - accounting recorded the new order (3514 -> 3516 rows)
-10:13:09       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
-10:13:09   6b. invariants must PASS (shop_health)
-10:13:10       [PASS   ] journey:browse - 2/2 ok, avg 42ms
-10:13:10       [PASS   ] journey:recommendations - 2/2 ok, avg 66ms
-10:13:10       [PASS   ] journey:cart - 2/2 ok, avg 70ms
-10:13:10       [PASS   ] journey:checkout - 2/2 ok, avg 175ms
-10:13:10   7. restore exactly
-10:13:50   => VALIDATED  {'world_ready_s': 9, 'detect_s': 62, 'recover_s': 8, 'invariants_s': 2, 'restore_s': 32}
+23:20:27 === kafka-broker-down-083 (k8s.workload_patch)
+23:20:28   0. world healthy?
+23:20:38   1. baseline must PASS
+23:20:39       [PASS   ] orders_recorded - accounting recorded the new order (997 -> 998 rows)
+23:20:39       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+23:20:39   2. inject
+23:20:39   3. verifier must FAIL (<= 240s)
+23:21:43       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 999 rows)
+23:21:43       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+23:21:43   4. do-nothing agent: still FAIL after 60s?
+23:22:59       [UNKNOWN] orders_recorded - could not place a test order: ["POST /api/checkout -> 504 b'upstream request timeout'"]
+23:22:59       [FAIL   ] pods_ready:opentelemetry.io/name=kafka - 0/0 pods ready for opentelemetry.io/name=kafka; no pods exist
+23:22:59       failing in 2/2 checks during the hold
+23:22:59   5. reference solution
+23:22:59     $ kubectl scale deployment kafka --replicas=1
+23:22:59       deployment.apps/kafka scaled
+23:22:59     $ kubectl rollout status deployment/kafka --timeout=300s
+23:23:00       Waiting for deployment "kafka" rollout to finish: 0 of 1 updated replicas are available...
+23:23:00       deployment "kafka" successfully rolled out
+23:23:00     $ for i in $(seq 1 24); do kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 5; done
+23:23:29       [2026-10-17 23:23:24,351] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.186.179:9092) could not be esta
+23:23:29       [2026-10-17 23:23:25,157] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.186.179:9092) could not be esta
+23:23:29       [2026-10-17 23:23:25,970] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.186.179:9092) could not be esta
+23:23:29       [2026-10-17 23:23:26,779] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (kafka.default.svc.cluster.local/10.96.186.179:9092) could not be esta
+23:23:29     $ kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+23:23:29       deployment.apps/checkout restarted
+23:23:29       deployment.apps/accounting restarted
+23:23:29       deployment.apps/fraud-detection restarted
+23:23:29     $ kubectl rollout status deployment/checkout --timeout=300s
+23:23:32       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+23:23:32       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+23:23:32       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+23:23:32       deployment "checkout" successfully rolled out
+23:23:32     $ kubectl rollout status deployment/accounting --timeout=300s
+23:23:32       deployment "accounting" successfully rolled out
+23:23:32     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+23:23:32       deployment "fraud-detection" successfully rolled out
+23:23:32   6. verifier must PASS (<= 480s)
+23:23:40       [PASS   ] orders_recorded - accounting recorded the new order (999 -> 1001 rows)
+23:23:40       [PASS   ] pods_ready:opentelemetry.io/name=kafka - 1/1 pods ready for opentelemetry.io/name=kafka
+23:23:40   6b. invariants must PASS (shop_health)
+23:23:41       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+23:23:41       [PASS   ] journey:recommendations - 2/2 ok, avg 70ms
+23:23:41       [PASS   ] journey:cart - 2/2 ok, avg 76ms
+23:23:41       [PASS   ] journey:checkout - 2/2 ok, avg 127ms
+23:23:41   7. restore exactly
+23:24:04   => VALIDATED  {'world_ready_s': 10, 'detect_s': 64, 'recover_s': 8, 'invariants_s': 1, 'restore_s': 16}

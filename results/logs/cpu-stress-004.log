@@ -1,26 +1,26 @@
-08:42:07 === cpu-stress-004 (chaos.mesh)
-08:42:08   0. world healthy?
-08:42:17   1. baseline must PASS
-08:42:18       [PASS   ] journey:home - 3/3 ok, avg 18ms
-08:42:18       [PASS   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-7bbccdf79b-dqtgw/frontend=0.03 (max 0.8)
-08:42:18   2. inject
-08:42:23   3. verifier must FAIL (<= 150s)
-08:42:35       [PASS   ] journey:home - 3/3 ok, avg 30ms
-08:42:35       [FAIL   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-7bbccdf79b-dqtgw/frontend=1.46 (max 0.8)
-08:42:35   4. do-nothing agent: still FAIL after 60s?
-08:43:36       [PASS   ] journey:home - 3/3 ok, avg 26ms
-08:43:36       [FAIL   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-7bbccdf79b-dqtgw/frontend=1.96 (max 0.8)
-08:43:36       failing in 5/5 checks during the hold
-08:43:36   5. reference solution
-08:43:36     $ kubectl delete stresschaos.chaos-mesh.org cpu-stress-004
-08:43:36       stresschaos.chaos-mesh.org "cpu-stress-004" deleted from default namespace
-08:43:36   6. verifier must PASS (<= 180s)
-08:43:48       [PASS   ] journey:home - 3/3 ok, avg 42ms
-08:43:48       [PASS   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-7bbccdf79b-dqtgw/frontend=0.33 (max 0.8)
-08:43:48   6b. invariants must PASS (shop_health)
-08:43:49       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-08:43:49       [PASS   ] journey:recommendations - 2/2 ok, avg 78ms
-08:43:49       [PASS   ] journey:cart - 2/2 ok, avg 43ms
-08:43:49       [PASS   ] journey:checkout - 2/2 ok, avg 99ms
-08:43:49   7. restore exactly
-08:44:00   => VALIDATED  {'world_ready_s': 9, 'detect_s': 12, 'recover_s': 12, 'invariants_s': 1, 'restore_s': 11}
+01:02:22 === cpu-stress-004 (chaos.mesh)
+01:02:23   0. world healthy?
+01:02:32   1. baseline must PASS
+01:02:32       [PASS   ] journey:home - 3/3 ok, avg 19ms
+01:02:32       [PASS   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-6c575dbb67-48hv2/frontend=0.03 (max 0.8)
+01:02:32   2. inject
+01:02:38   3. verifier must FAIL (<= 150s)
+01:02:50       [PASS   ] journey:home - 3/3 ok, avg 30ms
+01:02:50       [FAIL   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-6c575dbb67-48hv2/frontend=1.87 (max 0.8)
+01:02:50   4. do-nothing agent: still FAIL after 60s?
+01:03:51       [PASS   ] journey:home - 3/3 ok, avg 20ms
+01:03:51       [FAIL   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-6c575dbb67-48hv2/frontend=1.99 (max 0.8)
+01:03:51       failing in 5/5 checks during the hold
+01:03:51   5. reference solution
+01:03:51     $ kubectl delete stresschaos.chaos-mesh.org cpu-stress-004
+01:03:51       stresschaos.chaos-mesh.org "cpu-stress-004" deleted from default namespace
+01:03:51   6. verifier must PASS (<= 180s)
+01:04:03       [PASS   ] journey:home - 3/3 ok, avg 21ms
+01:04:03       [PASS   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-6c575dbb67-48hv2/frontend=0.33 (max 0.8)
+01:04:03   6b. invariants must PASS (shop_health)
+01:04:04       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+01:04:04       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+01:04:04       [PASS   ] journey:cart - 2/2 ok, avg 46ms
+01:04:04       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+01:04:04   7. restore exactly
+01:04:13   => VALIDATED  {'world_ready_s': 9, 'detect_s': 12, 'recover_s': 12, 'invariants_s': 1, 'restore_s': 9}

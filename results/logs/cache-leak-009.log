@@ -1,36 +1,36 @@
-08:34:27 === cache-leak-009 (app.flag)
-08:34:28   0. world healthy?
-08:34:41   1. baseline must PASS
-08:34:42       [PASS   ] journey:recommendations - 3/3 ok, avg 61ms
-08:34:42       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=53Mi (max 150Mi)
-08:34:42       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-08:34:42   2. inject
-08:34:43   3. verifier must FAIL (<= 1200s)
-08:39:51       [FAIL   ] journey:recommendations - 3/3 ok, avg 326ms (> 300ms)
-08:39:51       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=94Mi (max 150Mi)
-08:39:51       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-08:39:51   4. do-nothing agent: still FAIL after 630s?
-08:50:22       [PASS   ] journey:recommendations - 3/3 ok, avg 40ms
-08:50:22       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=55Mi (max 150Mi)
-08:50:22       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-556fd56449-5xdvl/recommendation restarted 150s ago (OOMKilled)
-08:50:22       failing in 38/38 checks during the hold
-08:50:22   5. reference solution
-08:50:22     $ python injectors/toggle_flag.py recommendationCacheFailure --off
-08:50:23       'recommendationCacheFailure' -> off (flagd is serving it now)
-08:50:23     $ kubectl rollout restart deployment/recommendation
-08:50:23       deployment.apps/recommendation restarted
-08:50:23     $ kubectl rollout status deployment/recommendation --timeout=180s
-08:50:24       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-08:50:24       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
-08:50:24       deployment "recommendation" successfully rolled out
-08:50:24   6. verifier must PASS (<= 900s)
-09:00:38       [PASS   ] journey:recommendations - 3/3 ok, avg 64ms
-09:00:38       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=75Mi (max 150Mi)
-09:00:38       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
-09:00:38   6b. invariants must PASS (shop_health)
-09:00:39       [PASS   ] journey:browse - 2/2 ok, avg 33ms
-09:00:39       [PASS   ] journey:recommendations - 2/2 ok, avg 82ms
-09:00:39       [PASS   ] journey:cart - 2/2 ok, avg 62ms
-09:00:39       [PASS   ] journey:checkout - 2/2 ok, avg 156ms
-09:00:39   7. restore exactly
-09:00:51   => VALIDATED  {'world_ready_s': 12, 'detect_s': 308, 'recover_s': 614, 'invariants_s': 1, 'restore_s': 11}
+22:21:51 === cache-leak-009 (app.flag)
+22:21:53   0. world healthy?
+22:22:05   1. baseline must PASS
+22:22:06       [PASS   ] journey:recommendations - 3/3 ok, avg 71ms
+22:22:06       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=46Mi (max 150Mi)
+22:22:06       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+22:22:06   2. inject
+22:22:07   3. verifier must FAIL (<= 1200s)
+22:28:53       [FAIL   ] journey:recommendations - 3/3 ok, avg 400ms (> 300ms)
+22:28:53       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=87Mi (max 150Mi)
+22:28:53       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+22:28:53   4. do-nothing agent: still FAIL after 630s?
+22:39:24       [PASS   ] journey:recommendations - 3/3 ok, avg 61ms
+22:39:24       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=54Mi (max 150Mi)
+22:39:24       [FAIL   ] pods_stable:opentelemetry.io/name=recommendation - recommendation-6ffdcd468b-m6x5p/recommendation restarted 131s ago (OOMKilled)
+22:39:24       failing in 37/37 checks during the hold
+22:39:24   5. reference solution
+22:39:24     $ python injectors/toggle_flag.py recommendationCacheFailure --off
+22:39:25       'recommendationCacheFailure' -> off (flagd is serving it now)
+22:39:25     $ kubectl rollout restart deployment/recommendation
+22:39:26       deployment.apps/recommendation restarted
+22:39:26     $ kubectl rollout status deployment/recommendation --timeout=180s
+22:39:27       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:39:27       Waiting for deployment "recommendation" rollout to finish: 1 old replicas are pending termination...
+22:39:27       deployment "recommendation" successfully rolled out
+22:39:27   6. verifier must PASS (<= 900s)
+22:49:38       [PASS   ] journey:recommendations - 3/3 ok, avg 55ms
+22:49:38       [PASS   ] memory_usage:opentelemetry.io/name=recommendation - memory: recommendation=45Mi (max 150Mi)
+22:49:38       [PASS   ] pods_stable:opentelemetry.io/name=recommendation - 1 pod(s) stable for >= 600s (opentelemetry.io/name=recommendation)
+22:49:38   6b. invariants must PASS (shop_health)
+22:49:39       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+22:49:39       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
+22:49:39       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+22:49:39       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
+22:49:39   7. restore exactly
+22:49:48   => VALIDATED  {'world_ready_s': 12, 'detect_s': 406, 'recover_s': 612, 'invariants_s': 1, 'restore_s': 9}

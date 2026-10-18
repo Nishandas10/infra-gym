@@ -1,26 +1,26 @@
-10:44:51 === pay-fail-006 (app.flag)
-10:44:52   0. world healthy?
-10:45:01   1. baseline must PASS
-10:45:02       [PASS   ] journey:checkout - 3/3 ok, avg 73ms
-10:45:02       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-10:45:02   2. inject
-10:45:03   3. verifier must FAIL (<= 120s)
-10:45:03       [FAIL   ] journey:checkout - 0/3 ok, avg 55ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-10:45:03       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-10:45:03   4. do-nothing agent: still FAIL after 60s?
-10:46:04       [FAIL   ] journey:checkout - 0/3 ok, avg 73ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-10:46:04       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-10:46:04       failing in 5/5 checks during the hold
-10:46:04   5. reference solution
-10:46:04     $ python injectors/toggle_flag.py paymentFailure --off
-10:46:05       'paymentFailure' -> off (flagd is serving it now)
-10:46:05   6. verifier must PASS (<= 120s)
-10:46:06       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
-10:46:06       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-10:46:06   6b. invariants must PASS (shop_health)
-10:46:07       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-10:46:07       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
-10:46:07       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-10:46:07       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
-10:46:07   7. restore exactly
-10:46:16   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 8}
+23:43:45 === pay-fail-006 (app.flag)
+23:43:46   0. world healthy?
+23:43:55   1. baseline must PASS
+23:43:56       [PASS   ] journey:checkout - 3/3 ok, avg 108ms
+23:43:56       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+23:43:56   2. inject
+23:43:57   3. verifier must FAIL (<= 120s)
+23:43:58       [FAIL   ] journey:checkout - 0/3 ok, avg 82ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+23:43:58       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+23:43:58   4. do-nothing agent: still FAIL after 60s?
+23:44:59       [FAIL   ] journey:checkout - 0/3 ok, avg 81ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+23:44:59       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+23:44:59       failing in 5/5 checks during the hold
+23:44:59   5. reference solution
+23:44:59     $ python injectors/toggle_flag.py paymentFailure --off
+23:45:00       'paymentFailure' -> off (flagd is serving it now)
+23:45:00   6. verifier must PASS (<= 120s)
+23:45:01       [PASS   ] journey:checkout - 3/3 ok, avg 100ms
+23:45:01       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+23:45:01   6b. invariants must PASS (shop_health)
+23:45:02       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+23:45:02       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+23:45:02       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+23:45:02       [PASS   ] journey:checkout - 2/2 ok, avg 115ms
+23:45:02   7. restore exactly
+23:45:11   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
