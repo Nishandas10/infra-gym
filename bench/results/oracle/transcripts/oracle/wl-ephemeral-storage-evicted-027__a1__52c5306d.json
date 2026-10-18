@@ -1,0 +1,104 @@
+{
+ "episode": "52c5306d173b4fdab891241df90cd07d",
+ "scenario": "wl-ephemeral-storage-evicted-027",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:4875671285a8bc45f80441873a2ec272eac71252094e7bd879f04bf8c2a373e9",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Traces keep disappearing from Jaeger for minutes at a time, and the telemetry collector pods keep being replaced. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch daemonset otel-collector-agent --type=json -p '[{\\\"op\\\":\\\"remove\\\",\\\"path\\\":\\\"/spec/template/spec/containers/0/resources/limits/ephemeral-storage\\\"}]'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "daemonset.apps/otel-collector-agent patched"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status daemonset/otel-collector-agent --timeout=240s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "Waiting for daemon set \"otel-collector-agent\" rollout to finish: 0 out of 2 new pods have been updated...\nWaiting for daemon set \"otel-collector-agent\" rollout to finish: 0 out of 2 new pods have been updated...\nWaiting for daemon set \"otel-collector-agent\" rollout to finish: 1 out of 2 new pods have been updated...\nWaiting for daemon set \"otel-collector-agent\" rollout to finish: 0 of 2 updated pods are available...\nWaiting for daemon set \"otel-collector-agent\" rollout to finish: 1 of 2 updated pods are available...\ndaemon set \"otel-collector-agent\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-3",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl delete pods --field-selector=status.phase=Failed\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-3",
+   "content": "No resources found"
+  },
+  {
+   "role": "assistant",
+   "content": "The collector DaemonSet got an `ephemeral-storage` limit of 64Ki. Container logs count toward that limit, and the collector's debug exporter logs continuously, so the kubelet evicts the pods soon after they start."
+  }
+ ],
+ "cleanup": [
+  "restored daemonsets.apps/otel-collector-agent"
+ ],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch daemonset otel-collector-agent --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/resources/limits/ephemeral-storage\"}]'",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.3,
+   "cmd": "kubectl rollout status daemonset/otel-collector-agent --timeout=240s",
+   "changes": false
+  },
+  {
+   "step": 3,
+   "t": 14.5,
+   "cmd": "kubectl delete pods --field-selector=status.phase=Failed",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 190.9
+}

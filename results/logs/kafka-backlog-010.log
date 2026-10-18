@@ -1,26 +1,26 @@
-23:00:23 === kafka-backlog-010 (app.flag)
-23:00:24   0. world healthy?
-23:00:33   1. baseline must PASS
-23:00:37       [PASS   ] journey:checkout - 2/2 ok, avg 102ms
-23:00:37       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 50)
-23:00:37   2. inject
-23:00:38   3. verifier must FAIL (<= 600s)
-23:00:42       [PASS   ] journey:checkout - 2/2 ok, avg 99ms
-23:00:42       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 203 (max 50)
-23:00:42   4. do-nothing agent: still FAIL after 60s?
-23:01:47       [PASS   ] journey:checkout - 2/2 ok, avg 122ms
-23:01:47       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1011 (max 50)
-23:01:47       failing in 3/3 checks during the hold
-23:01:47   5. reference solution
-23:01:47     $ python injectors/toggle_flag.py kafkaQueueProblems --off
-23:01:48       'kafkaQueueProblems' -> off (flagd is serving it now)
-23:01:48   6. verifier must PASS (<= 900s)
-23:02:13       [PASS   ] journey:checkout - 2/2 ok, avg 174ms
-23:02:13       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 50)
-23:02:13   6b. invariants must PASS (shop_health)
-23:02:14       [PASS   ] journey:browse - 2/2 ok, avg 30ms
-23:02:14       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
-23:02:14       [PASS   ] journey:cart - 2/2 ok, avg 52ms
-23:02:14       [PASS   ] journey:checkout - 2/2 ok, avg 107ms
-23:02:14   7. restore exactly
-23:02:25   => VALIDATED  {'world_ready_s': 9, 'detect_s': 5, 'recover_s': 25, 'invariants_s': 1, 'restore_s': 10}
+05:19:33 === kafka-backlog-010 (app.flag)
+05:19:34   0. world healthy?
+05:19:42   1. baseline must PASS
+05:19:47       [PASS   ] journey:checkout - 2/2 ok, avg 123ms
+05:19:47       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 50)
+05:19:47   2. inject
+05:19:47   3. verifier must FAIL (<= 600s)
+05:19:53       [PASS   ] journey:checkout - 2/2 ok, avg 110ms
+05:19:53       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 202 (max 50)
+05:19:53   4. do-nothing agent: still FAIL after 1800s?
+05:49:58       [PASS   ] journey:checkout - 2/2 ok, avg 111ms
+05:49:58       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 29795 (max 50)
+05:49:58       failing in 91/91 checks during the hold
+05:49:58   5. reference solution
+05:49:58     $ python injectors/toggle_flag.py kafkaQueueProblems --off
+05:49:59       'kafkaQueueProblems' -> off (flagd is serving it now)
+05:49:59   6. verifier must PASS (<= 900s)
+05:51:05       [PASS   ] journey:checkout - 2/2 ok, avg 184ms
+05:51:05       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 2 (max 50)
+05:51:05   6b. invariants must PASS (shop_health)
+05:51:06       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+05:51:06       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+05:51:06       [PASS   ] journey:cart - 2/2 ok, avg 36ms
+05:51:06       [PASS   ] journey:checkout - 2/2 ok, avg 121ms
+05:51:06   7. restore exactly
+05:51:15   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 66, 'invariants_s': 1, 'restore_s': 9}

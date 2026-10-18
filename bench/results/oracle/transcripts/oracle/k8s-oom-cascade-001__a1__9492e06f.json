@@ -1,0 +1,77 @@
+{
+ "episode": "9492e06f94454e5987811a045eb9afd7",
+ "scenario": "k8s-oom-cascade-001",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:d4117b57a3a5fa53f51f7275a7404fa1ccd93697e46af0618eeba2a73931b2e0",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Users are complaining that clicking 'Add to Cart' or 'Pay Now' fails or hangs. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps/cart resource requirements updated"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/cart --timeout=180s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "Waiting for deployment \"cart\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"cart\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"cart\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"cart\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"cart\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The cart Deployment's memory limit was set to 3Mi, far below what the service needs to even start, and it was rolled out with the Recreate strategy, so the old healthy pod is gone. Every start attempt is OOM-killed, so the cart, and with it checkout, is down."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl set resources deployment/cart -c cart --limits=memory=160Mi --requests=memory=64Mi",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.3,
+   "cmd": "kubectl rollout status deployment/cart --timeout=180s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 121.6
+}

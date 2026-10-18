@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:32c652d13faed531356800d7497e43125288fd7cb815ed5b20a3118a705887e3
 validation_hash: sha256:5536d0475922161a2942c874287393afac8a1bc417e27db147c0049323607975
-status: draft
+status: validated
 title: Heavy packet loss on a service's network interface
 mechanism: chaos/network-packet-loss
 split: train

@@ -1,37 +1,37 @@
-22:52:14 === coredns-rewrite-poison-044 (k8s.configmap_edit)
-22:52:15   0. world healthy?
-22:52:25   1. baseline must PASS
-22:52:25       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
-22:52:25   2. inject
-22:53:06   3. verifier must FAIL (<= 300s)
-22:53:52       [FAIL   ] journey:checkout - 0/3 ok, avg 15056ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-22:53:52   4. do-nothing agent: still FAIL after 60s?
-22:55:21       [FAIL   ] journey:checkout - 0/3 ok, avg 9426ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-22:55:21       failing in 1/1 checks during the hold
-22:55:21   5. reference solution
-22:55:21     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
-22:55:21       configmap/coredns configured
-22:55:21     $ kubectl -n kube-system rollout restart deployment/coredns
-22:55:21       deployment.apps/coredns restarted
-22:55:21     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
-22:55:23       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
-22:55:23       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
-22:55:23       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
-22:55:23       deployment "coredns" successfully rolled out
-22:55:23     $ kubectl rollout restart deployment/checkout
-22:55:23       deployment.apps/checkout restarted
-22:55:23     $ kubectl rollout status deployment/checkout --timeout=300s
-22:55:24       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-22:55:24       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-22:55:24       deployment "checkout" successfully rolled out
-22:55:24   6. verifier must PASS (<= 300s)
-22:57:51       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
-22:57:51   6b. invariants must PASS (shop_health)
-22:57:52       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-22:57:52       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
-22:57:52       [PASS   ] journey:cart - 2/2 ok, avg 43ms
-22:57:52       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
-22:57:52   6c. the fix must survive a restart of deployment/coredns, opentelemetry.io/name=checkout
-22:58:39       [PASS   ] journey:checkout - 3/3 ok, avg 114ms
-22:58:39   7. restore exactly
-22:59:10   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 147, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 31}
+06:06:38 === coredns-rewrite-poison-044 (k8s.configmap_edit)
+06:06:39   0. world healthy?
+06:06:48   1. baseline must PASS
+06:06:49       [PASS   ] journey:checkout - 3/3 ok, avg 102ms
+06:06:49   2. inject
+06:07:29   3. verifier must FAIL (<= 300s)
+06:08:15       [FAIL   ] journey:checkout - 0/3 ok, avg 15059ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+06:08:15   4. do-nothing agent: still FAIL after 900s?
+06:23:16       [FAIL   ] journey:checkout - 0/3 ok, avg 61ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+06:23:16       failing in 78/78 checks during the hold
+06:23:16   5. reference solution
+06:23:16     $ kubectl -n kube-system get configmap coredns -o yaml | sed '/rewrite name payment.default/d' | kubectl apply -f -
+06:23:16       configmap/coredns configured
+06:23:16     $ kubectl -n kube-system rollout restart deployment/coredns
+06:23:16       deployment.apps/coredns restarted
+06:23:16     $ kubectl -n kube-system rollout status deployment/coredns --timeout=300s
+06:23:18       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+06:23:18       Waiting for deployment "coredns" rollout to finish: 1 old replicas are pending termination...
+06:23:18       Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+06:23:18       deployment "coredns" successfully rolled out
+06:23:18     $ kubectl rollout restart deployment/checkout
+06:23:18       deployment.apps/checkout restarted
+06:23:18     $ kubectl rollout status deployment/checkout --timeout=300s
+06:23:20       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+06:23:20       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+06:23:20       deployment "checkout" successfully rolled out
+06:23:20   6. verifier must PASS (<= 300s)
+06:23:24       [PASS   ] journey:checkout - 3/3 ok, avg 1183ms
+06:23:24   6b. invariants must PASS (shop_health)
+06:23:26       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+06:23:26       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
+06:23:26       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+06:23:26       [PASS   ] journey:checkout - 2/2 ok, avg 101ms
+06:23:26   6c. the fix must survive a restart of deployment/coredns, opentelemetry.io/name=checkout
+06:24:12       [PASS   ] journey:checkout - 3/3 ok, avg 110ms
+06:24:12   7. restore exactly
+06:24:41   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 4, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 29}

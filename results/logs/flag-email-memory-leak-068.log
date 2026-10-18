@@ -1,33 +1,33 @@
-23:05:48 === flag-email-memory-leak-068 (app.flag)
-23:05:49   0. world healthy?
-23:05:59   1. baseline must PASS
-23:06:00       [PASS   ] journey:email - 3/3 ok, avg 26ms
-23:06:00       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-23:06:00   2. inject
-23:06:00   3. verifier must FAIL (<= 900s)
-23:06:03       [FAIL   ] journey:email - 0/3 ok, avg 570ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
-23:06:03       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-23:06:03   4. do-nothing agent: still FAIL after 330s?
-23:11:33       [FAIL   ] journey:email - 0/3 ok, avg 15ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
-23:11:33       [FAIL   ] pods_stable:opentelemetry.io/name=email - email-57d5d9f497-zhjpz/email restarted 192s ago (OOMKilled)
-23:11:33       failing in 10/10 checks during the hold
-23:11:33   5. reference solution
-23:11:33     $ python injectors/toggle_flag.py emailMemoryLeak --off
-23:11:34       'emailMemoryLeak' -> off (flagd is serving it now)
-23:11:34     $ kubectl rollout restart deployment/email
-23:11:35       deployment.apps/email restarted
-23:11:35     $ kubectl rollout status deployment/email --timeout=300s
-23:11:35       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-23:11:35       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-23:11:35       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
-23:11:35       deployment "email" successfully rolled out
-23:11:35   6. verifier must PASS (<= 600s)
-23:16:50       [PASS   ] journey:email - 3/3 ok, avg 21ms
-23:16:50       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
-23:16:50   6b. invariants must PASS (shop_health)
-23:16:50       [PASS   ] journey:browse - 2/2 ok, avg 38ms
-23:16:50       [PASS   ] journey:recommendations - 2/2 ok, avg 41ms
-23:16:50       [PASS   ] journey:cart - 2/2 ok, avg 34ms
-23:16:50       [PASS   ] journey:checkout - 2/2 ok, avg 82ms
-23:16:51   7. restore exactly
-23:16:59   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 314, 'invariants_s': 1, 'restore_s': 9}
+07:55:56 === flag-email-memory-leak-068 (app.flag)
+07:55:57   0. world healthy?
+07:56:06   1. baseline must PASS
+07:56:06       [PASS   ] journey:email - 3/3 ok, avg 23ms
+07:56:06       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+07:56:06   2. inject
+07:56:07   3. verifier must FAIL (<= 900s)
+07:56:08       [FAIL   ] journey:email - 0/3 ok, avg 118ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+07:56:08       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+07:56:08   4. do-nothing agent: still FAIL after 900s?
+08:11:09       [FAIL   ] journey:email - 0/3 ok, avg 7ms; e.g. POST email/send_order_confirmation -> no response b'URLError: <urlopen error [Errno 111] Connection refused>'
+08:11:09       [FAIL   ] pods_stable:opentelemetry.io/name=email - email-57f987df4d-b7zbq/email restarted 191s ago (OOMKilled)
+08:11:09       failing in 57/57 checks during the hold
+08:11:09   5. reference solution
+08:11:09     $ python injectors/toggle_flag.py emailMemoryLeak --off
+08:11:10       'emailMemoryLeak' -> off (flagd is serving it now)
+08:11:10     $ kubectl rollout restart deployment/email
+08:11:10       deployment.apps/email restarted
+08:11:10     $ kubectl rollout status deployment/email --timeout=300s
+08:11:11       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+08:11:11       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+08:11:11       Waiting for deployment "email" rollout to finish: 1 old replicas are pending termination...
+08:11:11       deployment "email" successfully rolled out
+08:11:11   6. verifier must PASS (<= 600s)
+08:16:25       [PASS   ] journey:email - 3/3 ok, avg 23ms
+08:16:25       [PASS   ] pods_stable:opentelemetry.io/name=email - 1 pod(s) stable for >= 300s (opentelemetry.io/name=email)
+08:16:25   6b. invariants must PASS (shop_health)
+08:16:26       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+08:16:26       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+08:16:26       [PASS   ] journey:cart - 2/2 ok, avg 54ms
+08:16:26       [PASS   ] journey:checkout - 2/2 ok, avg 105ms
+08:16:26   7. restore exactly
+08:16:35   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 314, 'invariants_s': 1, 'restore_s': 9}

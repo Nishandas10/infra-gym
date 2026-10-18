@@ -64,6 +64,20 @@ def mode(r):
     return r.get("mode") or "fix"
 
 
+def cost_usd(r, price):
+    """What one episode cost in dollars: what the provider billed (cost_billed_usd, OpenRouter) when recorded, else at
+    `price` ($ per 1M tokens: input, output, cache_read, cache_write) from its recorded tokens; None without either.
+    tokens_in counts every input token, cached ones included."""
+    if r.get("cost_billed_usd") is not None:
+        return r["cost_billed_usd"]
+    if not price:
+        return None
+    cr, cw = r.get("tokens_cache_read") or 0, r.get("tokens_cache_write") or 0
+    fresh = (r.get("tokens_in") or 0) - cr - cw
+    return (fresh * price["input"] + cw * price.get("cache_write", price["input"])
+            + cr * price.get("cache_read", price["input"]) + (r.get("tokens_out") or 0) * price["output"]) / 1e6
+
+
 def identity(r):
     return (r.get("scenario") or r.get("key"), r.get("model"), r.get("attempt"), r.get("content_hash"), hint_level(r),
             prompt_version(r), mode(r))

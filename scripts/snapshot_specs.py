@@ -1,4 +1,5 @@
-"""Record the behaviour-defining part of every scenario in tests/golden/specs.json.
+"""Record the behaviour-defining part of every scenario in tests/golden/specs.json, and a fingerprint
+of every fault mechanism's code in tests/golden/mechanisms.json.
 
 usage:
   python scripts/snapshot_specs.py          # write the snapshot (only when a change is intended)
@@ -24,6 +25,7 @@ from gym.faults import ALIASES  # noqa: E402
 from gym.spec import all_specs, load  # noqa: E402
 
 OUT = REPO / "tests" / "golden" / "specs.json"
+MECH_OUT = REPO / "tests" / "golden" / "mechanisms.json"
 V1_NAME = {new: old for old, new in ALIASES.items()}
 FAULT_LEVEL = ("restart_on_revert", "revert_hooks")
 
@@ -64,11 +66,29 @@ def snapshot():
     return out
 
 
+def mechanism_fingerprints():
+    """{mechanism: {version, module, source}}: source = sha256 of the module file the mechanism lives in, so a
+    change to it or to a helper next to it shows up (tests/test_mechanism_fingerprints.py)."""
+    import hashlib
+    import inspect
+
+    from gym import faults
+    out = {}
+    for name, m in sorted(faults.REGISTRY.items()):
+        path = pathlib.Path(inspect.getsourcefile(m["fn"])).resolve()
+        out[name] = {"version": m["version"], "module": str(path.relative_to(REPO)),
+                     "source": hashlib.sha256(path.read_bytes()).hexdigest()[:16]}
+    return out
+
+
 def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     snap = snapshot()
     OUT.write_text(json.dumps(snap, indent=1, sort_keys=True) + "\n")
     print(f"wrote {OUT.relative_to(REPO)} ({len(snap)} scenarios)")
+    mech = mechanism_fingerprints()
+    MECH_OUT.write_text(json.dumps(mech, indent=1, sort_keys=True) + "\n")
+    print(f"wrote {MECH_OUT.relative_to(REPO)} ({len(mech)} mechanisms)")
 
 
 if __name__ == "__main__":

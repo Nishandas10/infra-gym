@@ -1,0 +1,77 @@
+{
+ "episode": "9e285f76409b42738dc289b0e110edef",
+ "scenario": "pg-lock-held-081",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:cc58c306d4d0c03caddc34a7d3e1a264faf5b0bb6bf344ea998c538d7c2f6fc7",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Product pages fail for every shopper. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl delete deployment catalog-maintenance --wait=true\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps \"catalog-maintenance\" deleted from default namespace"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c \\\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()\\\"\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "pg_terminate_backend \n----------------------\n t\n(1 row)"
+  },
+  {
+   "role": "assistant",
+   "content": "A `catalog-maintenance` job opened a transaction, took an ACCESS EXCLUSIVE lock on `catalog.products` and then sat in `pg_sleep`. Every product query waits behind the lock until the role's 3 s lock_timeout cancels it, so every product page fails. The job retries in a loop, so ending only its database session gets the lock taken again within seconds; deleting only the job leaves its session running (Postgres does not notice the vanished client while the statement runs), still holding the lock. Both are needed: stop the job, then end its session."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl delete deployment catalog-maintenance --wait=true",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.2,
+   "cmd": "kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()\"",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 52.2
+}

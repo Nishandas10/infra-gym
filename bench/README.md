@@ -38,7 +38,13 @@ touched decoy. Otherwise the fault itself spread (a cascade, or intermittent dam
 - **No pod in the app namespace may run on the control-plane node.** `sandbox_up.sh` installs a
   ValidatingAdmissionPolicy (`gym-no-control-plane`) that rejects pods pinned there by `nodeName` and, for pods the
   scheduler places, tolerations of the control-plane taint (a wildcard toleration included). A pod pinned to a worker
-  may tolerate anything, so `kubectl debug node/<worker>` works. `preflight` checks it with server-side dry runs.
+  may tolerate anything. `preflight` checks it with server-side dry runs.
+- **The agent cannot reach the machine running the benchmark.** Admission policies (`gym-agent-host-*`) stop it from
+  giving any pod host access (privileged, host network/PID/IPC, hostPath, SYS_ADMIN), directly or through a workload
+  template, from changing the code of a workload that already has it (kube-proxy may still be rescheduled, not given
+  another image), and from attaching debug containers to such pods; so `kubectl debug node/<worker>` is refused. In
+  `kube-system` it cannot exec into pods. Its sandbox reaches only the kind network: no internet and no cloud metadata
+  server (`sandbox_firewall.sh`, run by `sandbox_up.sh` through `sudo -n`). `preflight` checks all of it.
 - **Every model gets the same system prompt, tools, temperature and per-scenario budget**
   (`budget` in spec.yaml). The system prompt states the command budget (`max_steps`), and the output of the command
   that leaves 5 commands is followed by `[5 of your N commands left]`.
@@ -90,8 +96,13 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted] [--api-key-env NAME] [--min-seconds-between-calls S]
+    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted] [--api-key-env NAME] [--min-seconds-between-calls S] [--shard i/N] [--max-cost USD]
     python bench/leaderboard.py --suite S [--common]
+
+`--shard i/N` (one worker per cluster, each with its own `KUBECONFIG`, all started together) splits the episodes over
+clusters; `--max-cost USD` stops a worker once its episodes cost that much. An episode's cost is what the provider
+billed when it says so (OpenRouter's `usage.cost`, which follows the host that served each reply; recorded as
+`cost_billed_usd`), else its tokens at the `config.yaml` prices.
 
 Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
 still works as an alias of `--suite` for one release; `.txt` set files are no longer accepted.

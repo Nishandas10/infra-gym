@@ -1,29 +1,29 @@
-22:51:45 === hard-allowlist-forgets-checkout-106 (composite)
-22:51:46   0. world healthy?
-22:51:55   1. baseline must PASS
-22:51:58       [PASS   ] journey:checkout - 3/3 ok, avg 575ms
-22:51:58       [PASS   ] journey:browse - 3/3 ok, avg 24ms
-22:51:58   2. inject
-22:52:22   3. verifier must FAIL (<= 300s)
-22:53:07       [FAIL   ] journey:checkout - 0/3 ok, avg 6694ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-22:53:07       [FAIL   ] journey:browse - 0/3 ok, avg 8032ms; e.g. GET /api/products/9SIQT8TOJO -> no response b'TimeoutError: timed out'
-22:53:07   4. do-nothing agent: still FAIL after 60s?
-22:54:39       [FAIL   ] journey:checkout - 0/3 ok, avg 95ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:54:39       [FAIL   ] journey:browse - 0/3 ok, avg 7390ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'TimeoutError: timed out'
-22:54:39       failing in 2/2 checks during the hold
-22:54:39   5. reference solution
-22:54:39     $ kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
-22:54:39       networkpolicy.networking.k8s.io/product-catalog-allow-clients patched
-22:54:39   6. verifier must PASS (<= 420s)
-22:54:51       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
-22:54:51       [PASS   ] journey:browse - 3/3 ok, avg 20ms
-22:54:51   6b. invariants must PASS (shop_health)
-22:54:53       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-22:54:53       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
-22:54:53       [PASS   ] journey:cart - 2/2 ok, avg 47ms
-22:54:53       [PASS   ] journey:checkout - 2/2 ok, avg 616ms
-22:54:53   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
-22:57:13       [PASS   ] journey:checkout - 3/3 ok, avg 562ms
-22:57:13       [PASS   ] journey:browse - 3/3 ok, avg 19ms
-22:57:13   7. restore exactly
-22:57:43   => VALIDATED  {'world_ready_s': 9, 'detect_s': 45, 'recover_s': 12, 'invariants_s': 2, 'durable_s': 95, 'restore_s': 29}
+06:23:56 === hard-allowlist-forgets-checkout-106 (composite)
+06:23:57   0. world healthy?
+06:24:06   1. baseline must PASS
+06:24:07       [PASS   ] journey:checkout - 3/3 ok, avg 109ms
+06:24:07       [PASS   ] journey:browse - 3/3 ok, avg 21ms
+06:24:07   2. inject
+06:24:30   3. verifier must FAIL (<= 300s)
+06:25:15       [FAIL   ] journey:checkout - 0/3 ok, avg 6687ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+06:25:15       [FAIL   ] journey:browse - 0/3 ok, avg 8027ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
+06:25:15   4. do-nothing agent: still FAIL after 1200s?
+06:45:16       [FAIL   ] journey:checkout - 0/3 ok, avg 38ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+06:45:16       [PASS   ] journey:browse - 3/3 ok, avg 18ms
+06:45:16       failing in 106/106 checks during the hold
+06:45:16   5. reference solution
+06:45:16     $ kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{"op":"add","path":"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-","value":"checkout"}]'
+06:45:16       networkpolicy.networking.k8s.io/product-catalog-allow-clients patched
+06:45:16   6. verifier must PASS (<= 420s)
+06:45:38       [PASS   ] journey:checkout - 3/3 ok, avg 93ms
+06:45:38       [PASS   ] journey:browse - 3/3 ok, avg 25ms
+06:45:38   6b. invariants must PASS (shop_health)
+06:45:39       [PASS   ] journey:browse - 2/2 ok, avg 18ms
+06:45:39       [PASS   ] journey:recommendations - 2/2 ok, avg 53ms
+06:45:39       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+06:45:39       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+06:45:39   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
+06:46:25       [PASS   ] journey:checkout - 3/3 ok, avg 97ms
+06:46:25       [PASS   ] journey:browse - 3/3 ok, avg 27ms
+06:46:25   7. restore exactly
+06:46:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 45, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 28}

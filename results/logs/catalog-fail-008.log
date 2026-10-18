@@ -1,26 +1,26 @@
-22:21:51 === catalog-fail-008 (app.flag)
-22:21:53   0. world healthy?
-22:22:05   1. baseline must PASS
-22:22:06       [PASS   ] journey:browse - 3/3 ok, avg 27ms
-22:22:06       [PASS   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 200 in 79ms
-22:22:06   2. inject
-22:22:07   3. verifier must FAIL (<= 120s)
-22:22:08       [PASS   ] journey:browse - 3/3 ok, avg 30ms
-22:22:08       [FAIL   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 500 in 56ms (expected 200) 'Internal Server Error'
-22:22:08   4. do-nothing agent: still FAIL after 60s?
-22:23:09       [PASS   ] journey:browse - 3/3 ok, avg 21ms
-22:23:09       [FAIL   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 500 in 37ms (expected 200) 'Internal Server Error'
-22:23:09       failing in 5/5 checks during the hold
-22:23:09   5. reference solution
-22:23:09     $ python injectors/toggle_flag.py productCatalogFailure --off
-22:23:10       'productCatalogFailure' -> off (flagd is serving it now)
-22:23:10   6. verifier must PASS (<= 120s)
-22:23:11       [PASS   ] journey:browse - 3/3 ok, avg 23ms
-22:23:11       [PASS   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 200 in 44ms
-22:23:11   6b. invariants must PASS (shop_health)
-22:23:13       [PASS   ] journey:browse - 2/2 ok, avg 27ms
-22:23:13       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
-22:23:13       [PASS   ] journey:cart - 2/2 ok, avg 52ms
-22:23:13       [PASS   ] journey:checkout - 2/2 ok, avg 118ms
-22:23:13   7. restore exactly
-22:23:22   => VALIDATED  {'world_ready_s': 12, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+05:01:50 === catalog-fail-008 (app.flag)
+05:01:51   0. world healthy?
+05:04:17   1. baseline must PASS
+05:04:18       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+05:04:18       [PASS   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 200 in 40ms
+05:04:18   2. inject
+05:04:19   3. verifier must FAIL (<= 120s)
+05:04:20       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+05:04:20       [FAIL   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 500 in 36ms (expected 200) 'Internal Server Error'
+05:04:20   4. do-nothing agent: still FAIL after 900s?
+05:19:21       [PASS   ] journey:browse - 3/3 ok, avg 19ms
+05:19:21       [FAIL   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 500 in 46ms (expected 200) 'Internal Server Error'
+05:19:21       failing in 81/81 checks during the hold
+05:19:21   5. reference solution
+05:19:21     $ python injectors/toggle_flag.py productCatalogFailure --off
+05:19:22       'productCatalogFailure' -> off (flagd is serving it now)
+05:19:22   6. verifier must PASS (<= 120s)
+05:19:23       [PASS   ] journey:browse - 3/3 ok, avg 19ms
+05:19:23       [PASS   ] http:http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z - GET http://frontend-proxy.default.svc.cluster.local:8080/api/products/OLJCESPC7Z -> 200 in 44ms
+05:19:23   6b. invariants must PASS (shop_health)
+05:19:24       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+05:19:24       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+05:19:24       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+05:19:24       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+05:19:24   7. restore exactly
+05:19:33   => VALIDATED  {'world_ready_s': 146, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

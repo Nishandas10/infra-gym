@@ -1,0 +1,52 @@
+{
+ "episode": "f6f5abbea13d4416835821199eeaf369",
+ "scenario": "hard-ghost-legacy-email-pods-104",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:23a4caedbf16d4a2a19966d467e44126c3bada52288446683bc6305ecc81026a",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 40 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Some customers say they never received their order confirmation email, while others did. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl delete deployment email-v1-legacy\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps \"email-v1-legacy\" deleted from default namespace"
+  },
+  {
+   "role": "assistant",
+   "content": "Deployment email-v1-legacy (left over from a migration) has pods labelled opentelemetry.io/name=email, so the email Service load-balances to them too. They answer every request with an HTTP error, so roughly half of the confirmation emails fail."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl delete deployment email-v1-legacy",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 7.1
+}

@@ -1,24 +1,24 @@
-22:43:51 === hard-flag-in-source-of-truth-111 (app.flag_source_config)
-22:43:52   0. world healthy?
-22:44:03   1. baseline must PASS
-22:44:05       [PASS   ] journey:checkout - 8/8 ok, avg 154ms
-22:44:05   2. inject
-22:44:32   3. verifier must FAIL (<= 300s)
-22:44:34       [FAIL   ] journey:checkout - 4/8 ok, avg 124ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-22:44:34   4. do-nothing agent: still FAIL after 60s?
-22:45:35       [FAIL   ] journey:checkout - 3/8 ok, avg 76ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
-22:45:35       failing in 5/5 checks during the hold
-22:45:35   5. reference solution
-22:45:35     $ python injectors/source_flag.py paymentFailure off
-22:46:01       paymentFailure -> off: loaded by flagd
-22:46:01   6. verifier must PASS (<= 420s)
-22:46:03       [PASS   ] journey:checkout - 8/8 ok, avg 113ms
-22:46:03   6b. invariants must PASS (shop_health)
-22:46:04       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-22:46:04       [PASS   ] journey:recommendations - 2/2 ok, avg 66ms
-22:46:04       [PASS   ] journey:cart - 2/2 ok, avg 45ms
-22:46:04       [PASS   ] journey:checkout - 2/2 ok, avg 108ms
-22:46:04   6c. the fix must survive a restart of deployment/flagd
-22:46:50       [PASS   ] journey:checkout - 8/8 ok, avg 96ms
-22:46:51   7. restore exactly
-22:47:19   => VALIDATED  {'world_ready_s': 11, 'detect_s': 2, 'recover_s': 2, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 28}
+06:01:30 === hard-flag-in-source-of-truth-111 (app.flag_source_config)
+06:01:31   0. world healthy?
+06:01:39   1. baseline must PASS
+06:01:41       [PASS   ] journey:checkout - 8/8 ok, avg 96ms
+06:01:41   2. inject
+06:02:07   3. verifier must FAIL (<= 300s)
+06:02:09       [FAIL   ] journey:checkout - 5/8 ok, avg 98ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+06:02:09   4. do-nothing agent: still FAIL after 1200s?
+06:22:10       [FAIL   ] journey:checkout - 3/8 ok, avg 83ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+06:22:10       failing in 106/106 checks during the hold
+06:22:10   5. reference solution
+06:22:10     $ python injectors/source_flag.py paymentFailure off
+06:22:36       paymentFailure -> off: loaded by flagd
+06:22:36   6. verifier must PASS (<= 420s)
+06:22:38       [PASS   ] journey:checkout - 8/8 ok, avg 102ms
+06:22:38   6b. invariants must PASS (shop_health)
+06:22:39       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+06:22:39       [PASS   ] journey:recommendations - 2/2 ok, avg 61ms
+06:22:39       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+06:22:39       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+06:22:39   6c. the fix must survive a restart of deployment/flagd
+06:23:25       [PASS   ] journey:checkout - 8/8 ok, avg 107ms
+06:23:26   7. restore exactly
+06:23:56   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 30}

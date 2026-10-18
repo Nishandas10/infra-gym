@@ -7276,14 +7276,14 @@
   "checks": [
    {
     "journey": "home",
-    "max_avg_ms": 1500,
+    "max_avg_ms": 120,
     "max_error_pct": 0,
-    "repeat": 3,
+    "repeat": 5,
     "type": "journey"
    },
    {
     "journey": "browse",
-    "max_avg_ms": 1500,
+    "max_avg_ms": 500,
     "max_error_pct": 0,
     "repeat": 3,
     "type": "journey"
@@ -7299,7 +7299,7 @@
     {
      "op": "set",
      "path": "/spec/template/spec/containers/$c/resources/limits/cpu",
-     "value": "20m"
+     "value": "50m"
     }
    ],
    "recreate_pods": false,

@@ -1,36 +1,36 @@
-23:41:02 === otel-exporter-broken-085 (k8s.configmap_edit)
-23:41:03   0. world healthy?
-23:41:12   1. baseline must PASS
-23:41:13       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-23:41:13       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-23:41:13   2. inject
-23:41:28   3. verifier must FAIL (<= 300s)
-23:42:24       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-23:42:24       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-23:42:24   4. do-nothing agent: still FAIL after 60s?
-23:43:25       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
-23:43:25       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
-23:43:25       failing in 5/5 checks during the hold
-23:43:25   5. reference solution
-23:43:25     $ kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
-23:43:25       configmap/otel-collector-agent configured
-23:43:25     $ kubectl rollout restart daemonset/otel-collector-agent
-23:43:25       daemonset.apps/otel-collector-agent restarted
-23:43:25     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
-23:43:50       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-23:43:50       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
-23:43:50       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
-23:43:50       daemon set "otel-collector-agent" successfully rolled out
-23:43:50   6. verifier must PASS (<= 300s)
-23:43:51       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-23:43:51       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-23:43:51   6b. invariants must PASS (shop_health)
-23:43:52       [PASS   ] journey:browse - 2/2 ok, avg 32ms
-23:43:52       [PASS   ] journey:recommendations - 2/2 ok, avg 68ms
-23:43:52       [PASS   ] journey:cart - 2/2 ok, avg 50ms
-23:43:52       [PASS   ] journey:checkout - 2/2 ok, avg 128ms
-23:43:52   6c. the fix must survive a restart of daemonset/otel-collector-agent
-23:46:17       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
-23:46:17       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
-23:46:17   7. restore exactly
-23:46:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 56, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 100, 'restore_s': 28}
+04:48:33 === otel-exporter-broken-085 (k8s.configmap_edit)
+04:48:34   0. world healthy?
+04:48:42   1. baseline must PASS
+04:48:43       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+04:48:43       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+04:48:43   2. inject
+04:48:59   3. verifier must FAIL (<= 300s)
+04:49:43       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+04:49:43       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+04:49:43   4. do-nothing agent: still FAIL after 900s?
+05:04:44       [FAIL   ] jaeger_traces:checkout - 0 trace(s) from checkout in the last 1m
+05:04:44       [FAIL   ] jaeger_traces:frontend - 0 trace(s) from frontend in the last 1m
+05:04:44       failing in 82/82 checks during the hold
+05:04:44   5. reference solution
+05:04:44     $ kubectl get configmap otel-collector-agent -o yaml | sed 's/jaeger:4999/jaeger:4317/' | kubectl apply -f -
+05:04:45       configmap/otel-collector-agent configured
+05:04:45     $ kubectl rollout restart daemonset/otel-collector-agent
+05:04:45       daemonset.apps/otel-collector-agent restarted
+05:04:45     $ kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+05:04:59       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+05:04:59       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 out of 2 new pods have been updated...
+05:04:59       Waiting for daemon set "otel-collector-agent" rollout to finish: 1 of 2 updated pods are available...
+05:04:59       daemon set "otel-collector-agent" successfully rolled out
+05:04:59   6. verifier must PASS (<= 300s)
+05:07:11       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+05:07:11       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+05:07:11   6b. invariants must PASS (shop_health)
+05:07:12       [PASS   ] journey:browse - 2/2 ok, avg 37ms
+05:07:12       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+05:07:12       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+05:07:12       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
+05:07:12   6c. the fix must survive a restart of daemonset/otel-collector-agent
+05:07:58       [PASS   ] jaeger_traces:checkout - 1 trace(s) from checkout in the last 1m
+05:07:58       [PASS   ] jaeger_traces:frontend - 1 trace(s) from frontend in the last 1m
+05:07:58   7. restore exactly
+05:08:31   => VALIDATED  {'world_ready_s': 9, 'detect_s': 45, 'recover_s': 132, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 33}

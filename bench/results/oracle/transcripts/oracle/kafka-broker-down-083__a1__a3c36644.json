@@ -1,0 +1,206 @@
+{
+ "episode": "a3c366448fed45708313f0a2eaccf0d2",
+ "scenario": "kafka-broker-down-083",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:9b3146b3788a9a8b260a45f3e646302246af6da6aa89ab4acf99b25f8860eba6",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Accounting has recorded no new orders for a while, and placing orders has started to time out. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl scale deployment kafka --replicas=1\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps/kafka scaled"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/kafka --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "Waiting for deployment \"kafka\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"kafka\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-3",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"for i in 1 2 3; do kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 3; done\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-3",
+   "content": "Picked up JAVA_TOOL_OPTIONS: \nOpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\n[otel.javaagent 2026-10-18 02:59:24:704 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1\n[otel.javaagent 2026-10-18 02:59:34:031 +0000] [main] WARN io.opentelemetry.javaagent.instrumentation.jmx.JmxMetricInsightInstaller - The kafka-broker JMX target system has been renamed to experimental-kafka-broker.\n[2026-10-18 02:59:38,630] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:38,659] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:38,802] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:39,005] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:39,409] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:40,324] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:41,338] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:42,355] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:43,366] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:44,382] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:45,291] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:46,201] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:47,113] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:48,125] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:49,137] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:50,151] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (localhost/127.0.0.1:9092) could not be established. Node may not be available. (org.apache.kafka.clients.NetworkClient)\n[2026-10-18 02:59:51,164] WARN [AdminClient clientId=adminclient-1] Connection to node -1 (local\n[output truncated]"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-4",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-4",
+   "content": "deployment.apps/checkout restarted\ndeployment.apps/accounting restarted\ndeployment.apps/fraud-detection restarted"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-5",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/checkout --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-5",
+   "content": "Waiting for deployment \"checkout\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"checkout\" rollout to finish: 1 old replicas are pending termination...\ndeployment \"checkout\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-6",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/accounting --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-6",
+   "content": "deployment \"accounting\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-7",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/fraud-detection --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-7",
+   "content": "deployment \"fraud-detection\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The Kafka Deployment was scaled to zero. The consumers (accounting, fraud-detection) sit disconnected, and checkout's Kafka producer gets stuck, so orders eventually time out too."
+  }
+ ],
+ "cleanup": [
+  "restored deployments.apps/accounting",
+  "restored deployments.apps/checkout",
+  "restored deployments.apps/fraud-detection"
+ ],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl scale deployment kafka --replicas=1",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.3,
+   "cmd": "kubectl rollout status deployment/kafka --timeout=300s",
+   "changes": false
+  },
+  {
+   "step": 3,
+   "t": 1.2,
+   "cmd": "for i in 1 2 3; do kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor 1 && break; sleep 3; done",
+   "changes": false
+  },
+  {
+   "step": 4,
+   "t": 31.3,
+   "cmd": "kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection",
+   "changes": true
+  },
+  {
+   "step": 5,
+   "t": 31.8,
+   "cmd": "kubectl rollout status deployment/checkout --timeout=300s",
+   "changes": false
+  },
+  {
+   "step": 6,
+   "t": 34.1,
+   "cmd": "kubectl rollout status deployment/accounting --timeout=300s",
+   "changes": false
+  },
+  {
+   "step": 7,
+   "t": 34.4,
+   "cmd": "kubectl rollout status deployment/fraud-detection --timeout=300s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 48.1
+}

@@ -135,8 +135,8 @@ def main():
                 break
             rec = harness.validate(s["_path"], hold_s=s["budget"]["wall_s"] if args.long_hold else None)
             verdicts[rec["id"]].append(rec["verdict"])
-            broken_world = rec["verdict"] in BROKEN_WORLD or \
-                any("world not healthy" in x or "revert" in x.lower() for x in rec.get("notes", []))
+            broken_world = not rec.get("recovered") and (rec["verdict"] in BROKEN_WORLD or
+                any("world not healthy" in x or "revert" in x.lower() for x in rec.get("notes", [])))
             if broken_world and not args.keep_going:
                 print(f"\nStopping: the cluster is not healthy after {rec['id']} ({rec['verdict']}). "
                       "Fix it (see results/logs/), then re-run; --fill resumes where this stopped.")

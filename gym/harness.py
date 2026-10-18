@@ -19,6 +19,10 @@ A false alarm (task.kind false_alarm) has nothing to fix; after step 2 it runs i
   6b. invariants         every user journey passes
 then 7. restore, as above.
 
+A world that is not healthy at step 0, or after step 7, is brought back by gym/recovery.py (Helm reset, then a
+restart of every shop pod), recorded under `recovery`. Its verdict stands (a restore that needed it is still
+RESTORE_FAILED), but the next run starts from a healthy world.
+
 Timings come from the instance (spec.validation, resolved from templates/defaults.yaml).
 """
 from __future__ import annotations
@@ -33,7 +37,7 @@ import sys
 import time
 import traceback
 
-from . import checks, faults, kube
+from . import checks, faults, kube, recovery
 from .spec import REPO, checks_of, fault_label, load
 
 RESULTS = REPO / "results" / "validation.jsonl"
@@ -258,8 +262,11 @@ def validate(spec_path, world_timeout=300, hold_s=None):
         rec["timings"]["world_ready_s"] = t
         if not ok:
             poll(checks.WORLD_HEALTHY, checks.PASS, 0)
-            rec["verdict"] = "ENV_UNHEALTHY"
-            return rec
+            ok, rec["recovery"] = recovery.recover(log, settle_s=0)
+            if not ok:
+                rec["verdict"] = "ENV_UNHEALTHY"
+                return rec
+            log("      world recovered: " + "; ".join(rec["recovery"])[:200])
         log("  1. baseline must PASS")
         ok, _, t = poll(spec_checks, checks.PASS, max(v["baseline_timeout_s"], min_age + 90))
         if not ok:
@@ -350,6 +357,12 @@ def validate(spec_path, world_timeout=300, hold_s=None):
                 rec["notes"].append("world not healthy after restore")
                 if rec["verdict"] == "VALIDATED":
                     rec["verdict"] = "RESTORE_FAILED"
+                # so the next run does not start from this broken world (052 once left frontend's gRPC client stuck)
+                ok, notes = recovery.recover(log, settle_s=0)
+                rec["recovery"] = rec.get("recovery", []) + notes
+                rec["recovered"] = ok
+                if not ok:
+                    rec["notes"].append("world still unhealthy after the hard reset")
         rec["finished"] = datetime.datetime.now().isoformat(timespec="seconds")
         RESULTS.parent.mkdir(exist_ok=True)
         with RESULTS.open("a") as fh:

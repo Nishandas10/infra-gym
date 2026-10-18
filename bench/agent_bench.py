@@ -41,7 +41,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
-from gym import checks, faults, harness, kube, toolbox  # noqa: E402
+from gym import checks, faults, harness, kube, recovery, toolbox  # noqa: E402
 from gym.core import status, suites  # noqa: E402
 from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog  # noqa: E402
@@ -205,45 +205,17 @@ def suite_scenarios(suite):
 
 
 # --------------------------------------------------------------------- world
-def world_state(timeout):
-    """(healthy?, the checks that are failing)."""
-    ok, res, _ = harness.poll(checks.WORLD_HEALTHY, checks.PASS, timeout, quiet=True)
-    return ok, [f"{n}: {d}"[:150] for n, s, d in res if s != checks.PASS]
-
-
 def world_ok(timeout=300):
-    return world_state(timeout)[0]
+    return recovery.world_state(timeout)[0]
 
 
 def ensure_world():
-    """Make sure the shop is healthy, escalating if it is not. Returns notes about what was needed.
-
-    1. wait a few minutes for it to settle
-    2. re-apply the Helm chart
-    3. hard reset: restart every pod in the shop namespace. This also reloads the feature flags
-       from their ConfigMap and makes every client reconnect to Kafka/Valkey from scratch.
-    The run only stops if all three fail.
-    """
-    ok, bad = world_state(180)
-    if ok:
-        return []
-    notes = ["helm reset (" + "; ".join(bad) + ")"]
-    log("World not healthy -> Helm reset. Failing: " + "; ".join(bad))
-    r = subprocess.run(["bash", str(REPO / "scripts" / "reset_world.sh")], cwd=REPO,
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if r.returncode != 0:
-        log("   reset_world.sh failed: " + (r.stdout + r.stderr)[-400:])
-    ok, bad = world_state(240)
+    """Make sure the shop is healthy, escalating if it is not (gym/recovery.py). Returns notes about what was
+    needed. The run only stops if even the hard reset fails."""
+    ok, notes = recovery.recover(log)
     if ok:
         return notes
-    notes.append("hard reset (" + "; ".join(bad) + ")")
-    log("Still unhealthy -> hard reset: restarting every pod in the shop namespace. Failing: " + "; ".join(bad))
-    kube.kubectl("delete", "pod", "--all", "--wait=false", namespace=kube.APP_NS)
-    time.sleep(30)
-    ok, bad = world_state(900)
-    if ok:
-        return notes
-    sys.exit("The world is still unhealthy after a hard reset. Failing: " + "; ".join(bad) +
+    sys.exit("The world is still unhealthy after a hard reset. " + notes[-1] +
              "\nFix the cluster by hand, then re-run (finished episodes are kept).")
 
 
@@ -351,10 +323,12 @@ def chat(client, ms, messages, temperature):
             if ms.get("send_temperature", True):
                 kwargs["temperature"] = temperature
             body = dict(ms.get("extra_body") or {})
-            if ms.get("session_id") and "openrouter.ai" in ms.get("base_url", ""):
-                # one session per episode: OpenRouter keeps every step on the same provider,
-                # so the growing conversation stays in that provider's prompt cache
-                body["session_id"] = ms["session_id"]
+            if "openrouter.ai" in ms.get("base_url", ""):
+                body.setdefault("usage", {"include": True})  # usage.cost: what this reply was billed (billed_cost)
+                if ms.get("session_id"):
+                    # one session per episode: OpenRouter keeps every step on the same provider,
+                    # so the growing conversation stays in that provider's prompt cache
+                    body["session_id"] = ms["session_id"]
             if body:
                 kwargs["extra_body"] = body
             return client.chat.completions.create(**kwargs)
@@ -419,6 +393,9 @@ def anthropic_chat(client, ms, messages):
     text = "".join(b.text for b in resp.content if b.type == "text")
     if resp.stop_reason == "max_tokens":
         text += "\n[reply cut off: max_tokens reached]"
+    elif resp.stop_reason == "refusal":  # a safety classifier declined; recorded so the transcript says why it stopped
+        details = getattr(resp, "stop_details", None)
+        text += f"\n[refused by the API: {getattr(details, 'category', None) or 'no category'}]"
     calls = [NS(id=b.id, function=NS(name=b.name, arguments=json.dumps(b.input)), model_extra={})
              for b in resp.content if b.type == "tool_use"]
     u = resp.usage
@@ -539,12 +516,27 @@ def usage_counts(usage):
     return tin, tout, cache_read, field(details, "cache_write_tokens")  # OpenRouter reports explicit cache writes here
 
 
+def billed_cost(usage):
+    """What the provider says one reply cost in dollars (OpenRouter's usage.cost, which follows the host that
+    served it), or 0 when the API does not say."""
+    if not usage or hasattr(usage, "cache_read"):  # the Claude and Gemini adapters: no billed cost
+        return 0.0
+    cost = getattr(usage, "cost", None)
+    if cost is None:
+        cost = (getattr(usage, "model_extra", None) or {}).get("cost")
+    try:
+        return float(cost or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def run_agent(client, ms, prompt, max_steps, wall_s, temperature, mode="fix"):
     ms = {**ms, "session_id": f"infragym-{uuid.uuid4().hex[:24]}"}
     readonly = mode in modes.READONLY
     messages = [{"role": "system", "content": system_prompt(max_steps, mode)}, {"role": "user", "content": prompt}]
     steps = 0
     tokens = [0, 0, 0, 0]  # input, output, cache read, cache write (usage_counts)
+    billed = 0.0           # provider-reported dollars (billed_cost)
     stop, error = "step_budget", None
     nudges = 0
     providers = set()
@@ -573,6 +565,7 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature, mode="fix"):
         elif "api.deepseek.com" in ms.get("base_url", ""):
             providers.add("deepseek")
         tokens = [a + b for a, b in zip(tokens, usage_counts(getattr(resp, "usage", None)))]
+        billed += billed_cost(getattr(resp, "usage", None))
         if not resp.choices:
             stop, error = "api_error", "empty response"
             break
@@ -644,7 +637,8 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature, mode="fix"):
         try:
             resp = chat(client, ms, messages, temperature)
             tokens = [a + b for a, b in zip(tokens, usage_counts(getattr(resp, "usage", None)))]
-            diagnosis = (resp.choices[0].message.content or "") if resp.choices else ""
+            billed += billed_cost(getattr(resp, "usage", None))
+            diagnosis =(resp.choices[0].message.content or "") if resp.choices else ""
             messages.append({"role": "assistant", "content": diagnosis})
         except Exception as e:
             messages.append({"role": "assistant", "content": f"[no report: {str(e)[:200]}]"})
@@ -652,6 +646,7 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature, mode="fix"):
                       if m["role"] == "assistant"), "")
     return {"diagnosis": diagnosis[:3000], "steps": steps, "tokens_in": tokens[0], "tokens_out": tokens[1],
             "tokens_cache_read": tokens[2], "tokens_cache_write": tokens[3],
+            "cost_billed_usd": round(billed, 6) if billed else None,
             "stop": stop, "error": error, "messages": messages, "nudges": nudges,
             "final_message": last_text[:400], "providers": sorted(providers),
             "timeline": timeline, "agent_s": agent_s}
@@ -951,7 +946,8 @@ def agent_fields(agent, ms):
             "stop": agent["stop"], "error": agent["error"], "nudges": agent.get("nudges", 0),
             "final_message": agent.get("final_message", ""), "providers": agent.get("providers", []),
             "tokens_cache_read": agent.get("tokens_cache_read", 0),
-            "tokens_cache_write": agent.get("tokens_cache_write", 0), "effort": ms.get("effort"),
+            "tokens_cache_write": agent.get("tokens_cache_write", 0), "cost_billed_usd": agent.get("cost_billed_usd"),
+            "effort": ms.get("effort"),
             "agent_s": agent.get("agent_s"),
             **({"oracle_errors": agent["oracle_errors"]} if "oracle_errors" in agent else {})}
 
@@ -1024,28 +1020,66 @@ def guard_cases():
     workers = [n["metadata"]["name"] for n in nodes if n["metadata"]["name"] not in cp]
     anything = [{"operator": "Exists"}]
     cp_taint = [{"key": "node-role.kubernetes.io/control-plane", "operator": "Exists", "effect": "NoSchedule"}]
+    privileged = [{"name": "gym-guard-check", "image": "busybox", "securityContext": {"privileged": True}}]
     return [("pinned to the control-plane node", {"spec": {"nodeName": cp[0]}}, "denied"),
             ("tolerates the control-plane taint", {"spec": {"tolerations": cp_taint}}, "denied"),
             ("tolerates every taint", {"spec": {"tolerations": anything}}, "denied"),
             ("pinned to a worker, tolerates every taint", {"spec": {"nodeName": workers[0], "tolerations": anything}},
              "allowed"),
+            ("a privileged container", {"spec": {"containers": privileged}}, "denied"),
+            ("the host network", {"spec": {"hostNetwork": True}}, "denied"),
+            ("a hostPath volume", {"spec": {"volumes": [{"name": "h", "hostPath": {"path": "/"}}]}}, "denied"),
             ("an ordinary pod", {}, "allowed")]
+
+
+PRIVILEGED_DEPLOYMENT = {
+    "apiVersion": "apps/v1", "kind": "Deployment", "metadata": {"name": "gym-guard-check"},
+    "spec": {"selector": {"matchLabels": {"app": "gym-guard-check"}},
+             "template": {"metadata": {"labels": {"app": "gym-guard-check"}},
+                          "spec": {"containers": [{"name": "c", "image": "busybox",
+                                                   "securityContext": {"privileged": True}}]}}}}
+
+# Workloads: (what, command run in the sandbox as the agent, expected). kube-proxy runs privileged on the host network:
+# the agent may still fix its scheduling, but not swap its code.
+WORKLOAD_GUARDS = [
+    ("a Deployment with a privileged container",
+     f"echo '{json.dumps(PRIVILEGED_DEPLOYMENT)}' | kubectl apply --dry-run=server -f -", "denied"),
+    ("kube-proxy: a scheduling change",
+     "kubectl -n kube-system patch ds kube-proxy --dry-run=server -p "
+     "'{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"gym-guard-check\":\"1\"}}}}}'", "allowed"),
+    ("kube-proxy: another image",
+     "kubectl -n kube-system set image ds/kube-proxy kube-proxy=busybox --dry-run=server", "denied"),
+    # the shop's own host-access workload (hostPath /hostfs): restarting it must stay possible
+    # (what `kubectl rollout restart` sends; that command has no --dry-run)
+    ("otel-collector-agent: a rollout restart",
+     "kubectl patch ds otel-collector-agent --dry-run=server -p "
+     "'{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"gym-guard-check\"}}}}}'",
+     "allowed")]
+
+# The sandbox's network (bench/sandbox_firewall.sh): (what, host, port, expected)
+NETWORK_GUARDS = [("cloud metadata server", "169.254.169.254", 80, "blocked"),
+                  ("the internet (1.1.1.1:443)", "1.1.1.1", 443, "blocked")]
+
+
+def guard_verdict(out):
+    return "denied" if "denied request" in out or "denied the request" in out else \
+        "error" if "error" in out.lower() else "allowed"
 
 
 def cmd_preflight(cfg, args):
     scenarios = select_scenarios(cfg)
     log(f"{len(scenarios)} scenarios selected (not bench-eligible, e.g. Chaos Mesh, excluded)")
-    log("1/5 Helper pods in gym-system...")
+    log("1/6 Helper pods in gym-system...")
     toolbox.ensure()
-    log("2/5 Is the shop healthy?")
+    log("2/6 Is the shop healthy?")
     if not world_ok(120):
         harness.poll(checks.WORLD_HEALTHY, checks.PASS, 0)
         sys.exit("Not healthy. Run: bash scripts/reset_world.sh   then preflight again.")
     log("    healthy")
-    log("3/5 Snapshot + dry-run restore (should list nothing to change)...")
+    log("3/6 Snapshot + dry-run restore (should list nothing to change)...")
     actions = world.restore(world.snapshot(), dry_run=True)
     log("    nothing to change - OK" if not actions else "    UNEXPECTED: " + "; ".join(actions))
-    log("4/5 Agent permissions (the 'expect' column must match):")
+    log("4/6 Agent permissions (the 'expect' column must match):")
     refresh_sandbox()
     app, gym_ns = kube.APP_NS, kube.GYM_NS
     tests = [(f"get pods -n {app}", "yes"), (f"patch deployments -n {app}", "yes"),
@@ -1056,22 +1090,39 @@ def cmd_preflight(cfg, args):
              (f"list networkchaos.chaos-mesh.org -n {app}", "no"), ("delete namespaces", "no"),
              (f"delete namespaces/{app} -n {app}", "no"),
              ("delete namespaces/kube-system -n kube-system", "no"),
-             (f"patch namespaces/{app}", "yes")]
+             (f"patch namespaces/{app}", "yes"),
+             # subresources need --subresource: "pods/exec" alone means a pod named exec
+             (f"create pods --subresource=exec -n {app}", "yes"),
+             ("create pods --subresource=exec -n kube-system", "no"),
+             ("create pods --subresource=attach -n kube-system", "no"),
+             ("create pods --subresource=portforward -n kube-system", "no"),
+             ("patch pods --subresource=ephemeralcontainers -n kube-system", "no")]
     bad = 0
     for verb_res, expect in tests:
         got = run_in_sandbox(f"kubectl auth can-i {verb_res}").splitlines()[0].strip()
         flag = "OK " if got == expect else "BAD"
         bad += got != expect
-        log(f"    {flag} can-i {verb_res:45s} got={got:4s} expect={expect}")
-    log("5/5 Control-plane guard (server-side dry runs as the agent; 'expect' must match):")
-    for what, overrides, expect in guard_cases():
-        out = run_in_sandbox("kubectl run gym-guard-check --image=busybox --restart=Never --dry-run=server "
-                             f"-o name --overrides='{json.dumps(overrides)}'")
-        got = "denied" if "denied request" in out else "allowed" if out.startswith("pod/") else "error"
+        log(f"    {flag} can-i {verb_res:60s} got={got:4s} expect={expect}")
+    log("5/6 Admission guards: control plane and host access (server-side dry runs as the agent):")
+    cases = [(what, "kubectl run gym-guard-check --image=busybox --restart=Never --dry-run=server "
+                    f"-o name --overrides='{json.dumps(overrides)}'", expect)
+             for what, overrides, expect in guard_cases()] + WORKLOAD_GUARDS
+    for what, command, expect in cases:
+        out = run_in_sandbox(command)
+        got = guard_verdict(out)
         flag = "OK " if got == expect else "BAD"
         bad += got != expect
         log(f"    {flag} {what:45s} got={got:7s} expect={expect}" + ("" if got != "error" else f" ({out[:200]})"))
-    log("Preflight passed." if not bad and not actions else "Preflight found problems - send them to Claude.")
+    log("6/6 Sandbox network (bench/sandbox_firewall.sh):")
+    for what, host, port, expect in NETWORK_GUARDS:
+        out = run_in_sandbox(f"timeout 4 bash -c 'exec 3<>/dev/tcp/{host}/{port}' && echo open || echo blocked")
+        got = out.strip().splitlines()[-1] if out.strip() else "?"
+        flag = "OK " if got == expect else "BAD"
+        bad += got != expect
+        log(f"    {flag} {what:45s} got={got:7s} expect={expect}")
+    if bad or actions:
+        sys.exit("Preflight found problems - send them to Claude.")
+    log("Preflight passed.")
 
 
 def cmd_smoke(cfg, args):
@@ -1166,8 +1217,18 @@ def cmd_run(cfg, args):
             and not (args.rerun and matches_only(args, r["scenario"]))}
     plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1)
             for sc in scenarios for m in models if (sc["id"], m, a) not in done]
+    shard = ""
+    if getattr(args, "shard", None):   # one worker per cluster, started together: disjoint shares of the same plan
+        if not os.environ.get("KUBECONFIG"):
+            sys.exit("--shard needs its own KUBECONFIG (one cluster per worker)")
+        i, n = (int(x) for x in args.shard.split("/"))
+        plan, shard = plan[i - 1::n], f", shard {args.shard}"
+    prices = {m["id"]: m.get("price") for m in cfg["models"]}
+    max_cost = getattr(args, "max_cost", None)
+    if max_cost is not None and [m for m in models if not prices.get(m)]:
+        sys.exit("--max-cost needs a price in config.yaml for: " + ", ".join(m for m in models if not prices.get(m)))
     log(f"{len(plan)} episodes to run ({len(scenarios)} scenarios x {len(models)} models x "
-        f"{cfg['attempts_per_model']} attempts, minus finished ones); results: {path}")
+        f"{cfg['attempts_per_model']} attempts, minus finished ones{shard}); results: {path}")
     run = {"results_dir": results_dir, "provenance": run_provenance(suite)}
     if run["provenance"]["git_dirty"]:
         log("note: the working tree has uncommitted code changes; rows record git_dirty: true")
@@ -1177,6 +1238,7 @@ def cmd_run(cfg, args):
     refresh_sandbox()
     t0 = time.time()
     api_fail_streak, given_up = {}, set()
+    spent = 0.0   # this process's episodes, at config.yaml prices
     for i, (attempt, sc, model) in enumerate(plan, 1):
         if model in given_up:
             continue
@@ -1196,10 +1258,15 @@ def cmd_run(cfg, args):
         extra = f", forbidden: {row['forbidden']}" if row.get("forbidden") else ""
         if row.get("distractors_touched"):
             extra += f", changed unrelated objects: {', '.join(row['distractors_touched'])}"
+        spent += rows.cost_usd(row, prices.get(model)) or 0
         log(f"   -> {label} ({row.get('stop', row.get('error'))}, {row.get('steps', 0)} commands, "
-            f"{row['minutes']} min{extra})")
+            f"{row['minutes']} min, ${spent:.2f} so far{extra})")
         if row.get("cleanup"):
             log(f"   cleanup: {'; '.join(row['cleanup'])[:300]}")
+        if max_cost is not None and spent >= max_cost:
+            log(f"Spend cap reached: ${spent:.2f} of ${max_cost:.2f}. Stopped; the same command continues where "
+                "this stopped (finished episodes are kept).")
+            break
     log("Finished. Build the table with: python bench/leaderboard.py" + (f" --suite {suite.name}" if suite else ""))
 
 
@@ -1312,8 +1379,11 @@ def main():
     p.add_argument("--hint-level", choices=["page", "ticket", "hinted"],
                    help="run: which prompt the agent gets (default: the suite's, else page = symptoms only; "
                         "recorded per episode)")
-    p.add_argument("--shard", help="oracle: i/N, only this worker's share of the scenarios (disjoint across i); give each "
-                                   "worker its own cluster with KUBECONFIG")
+    p.add_argument("--shard", help="oracle and run: i/N, only this worker's share (disjoint across i; for run, start "
+                                   "the N workers together); give each worker its own cluster with KUBECONFIG")
+    p.add_argument("--max-cost", type=float, metavar="USD",
+                   help="run: stop once this process's episodes cost this much at config.yaml prices (checked after "
+                        "each episode, so the last one may go a little over; with --shard, per worker)")
     p.add_argument("--mode", choices=modes.MODES, default="fix",
                    help="run, oracle: fix (default), diagnose (name the root cause, change nothing) or detect (a "
                         "health check with no symptom given); see bench/modes.py")

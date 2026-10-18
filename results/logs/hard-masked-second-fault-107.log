@@ -1,31 +1,31 @@
-22:47:19 === hard-masked-second-fault-107 (composite)
-22:47:20   0. world healthy?
-22:47:28   1. baseline must PASS
-22:47:29       [PASS   ] journey:checkout - 3/3 ok, avg 112ms
-22:47:29   2. inject
-22:47:45   3. verifier must FAIL (<= 300s)
-22:48:22       [FAIL   ] journey:checkout - 0/3 ok, avg 12012ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-22:48:22   4. do-nothing agent: still FAIL after 60s?
-22:49:23       [FAIL   ] journey:checkout - 0/3 ok, avg 42ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-22:49:23       failing in 5/5 checks during the hold
-22:49:23   5. reference solution
-22:49:23     $ kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
-22:49:23       deployment.apps/checkout env updated
-22:49:23     $ kubectl rollout status deployment/checkout --timeout=300s
-22:49:25       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
-22:49:25       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-22:49:25       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-22:49:25       deployment "checkout" successfully rolled out
-22:49:25     $ kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
-22:49:25       service/shipping patched
-22:49:25   6. verifier must PASS (<= 420s)
-22:51:51       [PASS   ] journey:checkout - 3/3 ok, avg 120ms
-22:51:51   6b. invariants must PASS (shop_health)
-22:51:53       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-22:51:53       [PASS   ] journey:recommendations - 2/2 ok, avg 84ms
-22:51:53       [PASS   ] journey:cart - 2/2 ok, avg 54ms
-22:51:53       [PASS   ] journey:checkout - 2/2 ok, avg 112ms
-22:51:53   6c. the fix must survive a restart of deployment/shipping, deployment/checkout
-22:52:39       [PASS   ] journey:checkout - 3/3 ok, avg 117ms
-22:52:39   7. restore exactly
-22:53:22   => VALIDATED  {'world_ready_s': 9, 'detect_s': 37, 'recover_s': 146, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 42}
+07:41:50 === hard-masked-second-fault-107 (composite)
+07:41:51   0. world healthy?
+07:42:00   1. baseline must PASS
+07:42:01       [PASS   ] journey:checkout - 3/3 ok, avg 116ms
+07:42:01   2. inject
+07:42:17   3. verifier must FAIL (<= 300s)
+07:42:53       [FAIL   ] journey:checkout - 0/3 ok, avg 11871ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+07:42:53   4. do-nothing agent: still FAIL after 1200s?
+08:02:54       [FAIL   ] journey:checkout - 0/3 ok, avg 41ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+08:02:54       failing in 113/113 checks during the hold
+08:02:54   5. reference solution
+08:02:54     $ kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080
+08:02:54       deployment.apps/checkout env updated
+08:02:54     $ kubectl rollout status deployment/checkout --timeout=300s
+08:02:56       Waiting for deployment "checkout" rollout to finish: 0 out of 1 new replicas have been updated...
+08:02:56       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+08:02:56       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+08:02:56       deployment "checkout" successfully rolled out
+08:02:56     $ kubectl patch service shipping --type=json -p '[{"op":"replace","path":"/spec/ports/0/targetPort","value":8080}]'
+08:02:56       service/shipping patched
+08:02:56   6. verifier must PASS (<= 420s)
+08:02:58       [PASS   ] journey:checkout - 3/3 ok, avg 474ms
+08:02:58   6b. invariants must PASS (shop_health)
+08:02:59       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+08:02:59       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+08:02:59       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+08:02:59       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
+08:02:59   6c. the fix must survive a restart of deployment/shipping, deployment/checkout
+08:03:45       [PASS   ] journey:checkout - 3/3 ok, avg 101ms
+08:03:46   7. restore exactly
+08:04:31   => VALIDATED  {'world_ready_s': 9, 'detect_s': 36, 'recover_s': 2, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 45}

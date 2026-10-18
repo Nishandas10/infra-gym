@@ -1,22 +1,22 @@
-22:44:29 === flag-ad-failure-064 (app.flag)
-22:44:30   0. world healthy?
-22:44:39   1. baseline must PASS
-22:44:42       [PASS   ] journey:ads - 30/30 ok, avg 40ms
-22:44:42   2. inject
-22:44:42   3. verifier must FAIL (<= 240s)
-22:44:45       [FAIL   ] journey:ads - 28/30 ok, avg 41ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-22:44:45   4. do-nothing agent: still FAIL after 60s?
-22:45:47       [FAIL   ] journey:ads - 26/30 ok, avg 38ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-22:45:47       failing in 4/5 checks during the hold
-22:45:47   5. reference solution
-22:45:47     $ python injectors/toggle_flag.py adFailure --off
-22:45:48       'adFailure' -> off (flagd is serving it now)
-22:45:48   6. verifier must PASS (<= 300s)
-22:45:50       [PASS   ] journey:ads - 30/30 ok, avg 35ms
-22:45:50   6b. invariants must PASS (shop_health)
-22:45:51       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-22:45:51       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
-22:45:51       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-22:45:51       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
-22:45:51   7. restore exactly
-22:46:01   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 2, 'invariants_s': 1, 'restore_s': 9}
+08:54:47 === flag-ad-failure-064 (app.flag)
+08:54:48   0. world healthy?
+08:54:57   1. baseline must PASS
+08:54:58       [PASS   ] journey:ads - 30/30 ok, avg 31ms
+08:54:58   2. inject
+08:54:59   3. verifier must FAIL (<= 240s)
+08:55:02       [FAIL   ] journey:ads - 26/30 ok, avg 39ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+08:55:02   4. do-nothing agent: still FAIL after 900s?
+09:10:04       [FAIL   ] journey:ads - 26/30 ok, avg 36ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+09:10:04       failing in 73/75 checks during the hold
+09:10:04   5. reference solution
+09:10:04     $ python injectors/toggle_flag.py adFailure --off
+09:10:05       'adFailure' -> off (flagd is serving it now)
+09:10:05   6. verifier must PASS (<= 300s)
+09:10:07       [PASS   ] journey:ads - 30/30 ok, avg 35ms
+09:10:07   6b. invariants must PASS (shop_health)
+09:10:08       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+09:10:08       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
+09:10:08       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+09:10:08       [PASS   ] journey:checkout - 2/2 ok, avg 122ms
+09:10:08   7. restore exactly
+09:10:17   => VALIDATED  {'world_ready_s': 8, 'detect_s': 2, 'recover_s': 2, 'invariants_s': 1, 'restore_s': 9}

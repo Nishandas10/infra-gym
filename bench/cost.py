@@ -48,8 +48,7 @@ for model, rs in sorted(by.items()):
     tout = sum(r.get("tokens_out", 0) for r in rs)
     p = prices.get(model)
     if p:
-        cost = (tin * p["input"] + cw * p.get("cache_write", p["input"]) + cr * p.get("cache_read", p["input"])
-                + tout * p["output"]) / 1e6
+        cost = sum(R.cost_usd(r, p) for r in rs)
         per = cost / len(rs)
         c1, c2 = f"${cost:,.2f}", f"${per:,.2f}"
         c3 = f" ${per * a.project:,.0f} |" if a.project else ""

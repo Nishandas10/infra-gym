@@ -1,34 +1,34 @@
-00:27:29 === wl-init-container-stuck-026 (k8s.workload_patch)
-00:27:30   0. world healthy?
-00:27:38   1. baseline must PASS
-00:27:39       [PASS   ] journey:cart - 3/3 ok, avg 48ms
-00:27:39       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-00:27:39   2. inject
-00:27:39   3. verifier must FAIL (<= 240s)
-00:27:40       [FAIL   ] journey:cart - 0/3 ok, avg 47ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-00:27:40       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-559d596d4d-xxn9p (Pending)
-00:27:40   4. do-nothing agent: still FAIL after 60s?
-00:28:41       [FAIL   ] journey:cart - 0/3 ok, avg 16ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-00:28:41       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-559d596d4d-xxn9p (cart: PodInitializing)
-00:28:41       failing in 5/5 checks during the hold
-00:28:41   5. reference solution
-00:28:41     $ kubectl rollout undo deployment/cart
-00:28:41       deployment.apps/cart rolled back
-00:28:41     $ kubectl rollout status deployment/cart --timeout=300s
-00:29:14       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
-00:29:14       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
-00:29:14       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
-00:29:14       deployment "cart" successfully rolled out
-00:29:14   6. verifier must PASS (<= 300s)
-00:30:08       [PASS   ] journey:cart - 3/3 ok, avg 67ms
-00:30:08       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-00:30:08   6b. invariants must PASS (shop_health)
-00:30:09       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-00:30:09       [PASS   ] journey:recommendations - 2/2 ok, avg 59ms
-00:30:09       [PASS   ] journey:cart - 2/2 ok, avg 54ms
-00:30:09       [PASS   ] journey:checkout - 2/2 ok, avg 133ms
-00:30:09   6c. the fix must survive a restart of deployment/cart
-00:30:55       [PASS   ] journey:cart - 3/3 ok, avg 57ms
-00:30:55       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
-00:30:55   7. restore exactly
-00:31:05   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 54, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+10:54:29 === wl-init-container-stuck-026 (k8s.workload_patch)
+10:54:30   0. world healthy?
+10:54:38   1. baseline must PASS
+10:54:39       [PASS   ] journey:cart - 3/3 ok, avg 38ms
+10:54:39       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+10:54:39   2. inject
+10:54:39   3. verifier must FAIL (<= 240s)
+10:54:40       [FAIL   ] journey:cart - 0/3 ok, avg 18ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+10:54:40       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-559d596d4d-dzx7w (wait-for-valkey-cart: PodInitializing)
+10:54:40   4. do-nothing agent: still FAIL after 900s?
+11:09:41       [FAIL   ] journey:cart - 0/3 ok, avg 18ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+11:09:41       [FAIL   ] pods_ready:opentelemetry.io/name=cart - 0/1 pods ready for opentelemetry.io/name=cart; cart-559d596d4d-dzx7w (cart: PodInitializing)
+11:09:41       failing in 84/84 checks during the hold
+11:09:41   5. reference solution
+11:09:41     $ kubectl rollout undo deployment/cart
+11:09:41       deployment.apps/cart rolled back
+11:09:41     $ kubectl rollout status deployment/cart --timeout=300s
+11:10:15       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+11:10:15       Waiting for deployment "cart" rollout to finish: 0 out of 1 new replicas have been updated...
+11:10:15       Waiting for deployment "cart" rollout to finish: 0 of 1 updated replicas are available...
+11:10:15       deployment "cart" successfully rolled out
+11:10:15   6. verifier must PASS (<= 300s)
+11:10:37       [PASS   ] journey:cart - 3/3 ok, avg 131ms
+11:10:37       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+11:10:37   6b. invariants must PASS (shop_health)
+11:11:33       [PASS   ] journey:browse - 2/2 ok, avg 30ms
+11:11:33       [PASS   ] journey:recommendations - 2/2 ok, avg 55ms
+11:11:33       [PASS   ] journey:cart - 2/2 ok, avg 54ms
+11:11:33       [PASS   ] journey:checkout - 2/2 ok, avg 93ms
+11:11:33   6c. the fix must survive a restart of deployment/cart
+11:12:19       [PASS   ] journey:cart - 3/3 ok, avg 55ms
+11:12:19       [PASS   ] pods_ready:opentelemetry.io/name=cart - 1/1 pods ready for opentelemetry.io/name=cart
+11:12:20   7. restore exactly
+11:12:28   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 56, 'durable_s': 1, 'restore_s': 9}

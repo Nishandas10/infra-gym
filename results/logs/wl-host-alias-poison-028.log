@@ -1,33 +1,34 @@
-00:44:02 === wl-host-alias-poison-028 (k8s.workload_patch)
-00:44:03   0. world healthy?
-00:44:12   1. baseline must PASS
-00:44:13       [PASS   ] journey:browse - 3/3 ok, avg 21ms
-00:44:13       [PASS   ] journey:catalog - 3/3 ok, avg 19ms
-00:44:13   2. inject
-00:44:13   3. verifier must FAIL (<= 240s)
-00:45:12       [FAIL   ] journey:browse - 0/3 ok, avg 8022ms; e.g. GET /api/products/66VCHSJNUP -> no response b'TimeoutError: timed out'
-00:45:12       [FAIL   ] journey:catalog - 0/3 ok, avg 8019ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-00:45:12   4. do-nothing agent: still FAIL after 60s?
-00:46:32       [FAIL   ] journey:browse - 0/3 ok, avg 6525ms; e.g. GET /api/products/2ZYFJ3GM2N -> no response b'TimeoutError: timed out'
-00:46:32       [FAIL   ] journey:catalog - 0/3 ok, avg 18ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-00:46:32       failing in 1/1 checks during the hold
-00:46:32   5. reference solution
-00:46:32     $ kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
-00:46:32       deployment.apps/frontend patched
-00:46:32     $ kubectl rollout status deployment/frontend --timeout=300s
-00:46:33       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-00:46:33       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-00:46:33       deployment "frontend" successfully rolled out
-00:46:33   6. verifier must PASS (<= 300s)
-00:46:50       [PASS   ] journey:browse - 3/3 ok, avg 22ms
-00:46:50       [PASS   ] journey:catalog - 3/3 ok, avg 19ms
-00:46:50   6b. invariants must PASS (shop_health)
-00:46:51       [PASS   ] journey:browse - 2/2 ok, avg 26ms
-00:46:51       [PASS   ] journey:recommendations - 2/2 ok, avg 59ms
-00:46:51       [PASS   ] journey:cart - 2/2 ok, avg 47ms
-00:46:51       [PASS   ] journey:checkout - 2/2 ok, avg 110ms
-00:46:51   6c. the fix must survive a restart of deployment/frontend
-00:47:37       [PASS   ] journey:browse - 3/3 ok, avg 32ms
-00:47:37       [PASS   ] journey:catalog - 3/3 ok, avg 21ms
-00:47:37   7. restore exactly
-00:47:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 59, 'recover_s': 16, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+11:11:23 === wl-host-alias-poison-028 (k8s.workload_patch)
+11:11:24   0. world healthy?
+11:11:33   1. baseline must PASS
+11:11:33       [PASS   ] journey:browse - 3/3 ok, avg 23ms
+11:11:33       [PASS   ] journey:catalog - 3/3 ok, avg 21ms
+11:11:33   2. inject
+11:11:34   3. verifier must FAIL (<= 240s)
+11:12:33       [FAIL   ] journey:browse - 0/3 ok, avg 8024ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
+11:12:33       [FAIL   ] journey:catalog - 0/3 ok, avg 8018ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+11:12:33   4. do-nothing agent: still FAIL after 900s?
+11:27:34       [FAIL   ] journey:browse - 0/3 ok, avg 17ms; e.g. GET /api/products/LS4PSXUNUM -> 500 b'Internal Server Error'
+11:27:34       [FAIL   ] journey:catalog - 0/3 ok, avg 14ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+11:27:34       failing in 79/79 checks during the hold
+11:27:34   5. reference solution
+11:27:34     $ kubectl patch deployment frontend --type=json -p '[{"op":"remove","path":"/spec/template/spec/hostAliases"}]'
+11:27:34       deployment.apps/frontend patched
+11:27:34     $ kubectl rollout status deployment/frontend --timeout=300s
+11:27:35       Waiting for deployment "frontend" rollout to finish: 0 out of 1 new replicas have been updated...
+11:27:35       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+11:27:35       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+11:27:35       deployment "frontend" successfully rolled out
+11:27:35   6. verifier must PASS (<= 300s)
+11:27:51       [PASS   ] journey:browse - 3/3 ok, avg 31ms
+11:27:51       [PASS   ] journey:catalog - 3/3 ok, avg 18ms
+11:27:51   6b. invariants must PASS (shop_health)
+11:27:52       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+11:27:52       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
+11:27:52       [PASS   ] journey:cart - 2/2 ok, avg 65ms
+11:27:52       [PASS   ] journey:checkout - 2/2 ok, avg 128ms
+11:27:52   6c. the fix must survive a restart of deployment/frontend
+11:28:38       [PASS   ] journey:browse - 3/3 ok, avg 30ms
+11:28:38       [PASS   ] journey:catalog - 3/3 ok, avg 22ms
+11:28:38   7. restore exactly
+11:28:47   => VALIDATED  {'world_ready_s': 9, 'detect_s': 60, 'recover_s': 16, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}

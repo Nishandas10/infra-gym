@@ -1,39 +1,39 @@
-01:09:49 === wl-run-as-non-root-021 (k8s.workload_patch)
-01:09:50   0. world healthy?
-01:09:59   1. baseline must PASS
-01:10:00       [PASS   ] journey:browse - 3/3 ok, avg 21ms
-01:10:00       [PASS   ] journey:catalog - 3/3 ok, avg 25ms
-01:10:00       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
-01:10:00   2. inject
-01:10:00   3. verifier must FAIL (<= 240s)
-01:10:09       [FAIL   ] journey:browse - 0/3 ok, avg 2690ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
-01:10:09       [FAIL   ] journey:catalog - 0/3 ok, avg 20ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-01:10:09       [FAIL   ] pods_ready:opentelemetry.io/name=astronomy-db - 0/1 pods ready for opentelemetry.io/name=astronomy-db; astronomy-db-65bb87d845-thj46 (astronomy-db: CreateContainerConfigError)
-01:10:09   4. do-nothing agent: still FAIL after 60s?
-01:11:21       [FAIL   ] journey:browse - 0/3 ok, avg 374ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
-01:11:21       [FAIL   ] journey:catalog - 0/3 ok, avg 3461ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-01:11:21       [FAIL   ] pods_ready:opentelemetry.io/name=astronomy-db - 0/1 pods ready for opentelemetry.io/name=astronomy-db; astronomy-db-65bb87d845-thj46 (astronomy-db: CreateContainerConfigError)
-01:11:21       failing in 4/4 checks during the hold
-01:11:21   5. reference solution
-01:11:21     $ kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
-01:11:21       deployment.apps/astronomy-db patched
-01:11:21     $ kubectl rollout status deployment/astronomy-db --timeout=300s
-01:11:23       Waiting for deployment "astronomy-db" rollout to finish: 0 out of 1 new replicas have been updated...
-01:11:23       Waiting for deployment "astronomy-db" rollout to finish: 0 out of 1 new replicas have been updated...
-01:11:23       Waiting for deployment "astronomy-db" rollout to finish: 0 of 1 updated replicas are available...
-01:11:23       deployment "astronomy-db" successfully rolled out
-01:11:23   6. verifier must PASS (<= 300s)
-01:11:35       [PASS   ] journey:browse - 3/3 ok, avg 21ms
-01:11:35       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
-01:11:35       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
-01:11:35   6b. invariants must PASS (shop_health)
-01:11:36       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-01:11:36       [PASS   ] journey:recommendations - 2/2 ok, avg 56ms
-01:11:36       [PASS   ] journey:cart - 2/2 ok, avg 48ms
-01:11:36       [PASS   ] journey:checkout - 2/2 ok, avg 118ms
-01:11:36   6c. the fix must survive a restart of deployment/astronomy-db
-01:12:22       [PASS   ] journey:browse - 3/3 ok, avg 32ms
-01:12:22       [PASS   ] journey:catalog - 3/3 ok, avg 20ms
-01:12:22       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
-01:12:22   7. restore exactly
-01:12:31   => VALIDATED  {'world_ready_s': 9, 'detect_s': 9, 'recover_s': 11, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+12:06:28 === wl-run-as-non-root-021 (k8s.workload_patch)
+12:06:29   0. world healthy?
+12:06:37   1. baseline must PASS
+12:06:38       [PASS   ] journey:browse - 3/3 ok, avg 19ms
+12:06:38       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
+12:06:38       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
+12:06:38   2. inject
+12:06:38   3. verifier must FAIL (<= 240s)
+12:06:47       [FAIL   ] journey:browse - 0/3 ok, avg 2694ms; e.g. GET /api/products/6E92ZMYYFZ -> no response b'TimeoutError: timed out'
+12:06:47       [FAIL   ] journey:catalog - 0/3 ok, avg 21ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+12:06:47       [FAIL   ] pods_ready:opentelemetry.io/name=astronomy-db - 0/1 pods ready for opentelemetry.io/name=astronomy-db; astronomy-db-65bb87d845-bntvd (astronomy-db: CreateContainerConfigError)
+12:06:47   4. do-nothing agent: still FAIL after 900s?
+12:22:04       [FAIL   ] journey:browse - 0/3 ok, avg 3029ms; e.g. GET /api/products/OLJCESPC7Z -> 500 b'Internal Server Error'
+12:22:04       [FAIL   ] journey:catalog - 0/3 ok, avg 1401ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+12:22:04       [FAIL   ] pods_ready:opentelemetry.io/name=astronomy-db - 0/1 pods ready for opentelemetry.io/name=astronomy-db; astronomy-db-65bb87d845-bntvd (astronomy-db: CreateContainerConfigError)
+12:22:04       failing in 62/62 checks during the hold
+12:22:04   5. reference solution
+12:22:04     $ kubectl patch deployment astronomy-db --type=json -p '[{"op":"remove","path":"/spec/template/spec/securityContext/runAsNonRoot"}]'
+12:22:04       deployment.apps/astronomy-db patched
+12:22:04     $ kubectl rollout status deployment/astronomy-db --timeout=300s
+12:22:05       Waiting for deployment "astronomy-db" rollout to finish: 0 out of 1 new replicas have been updated...
+12:22:05       Waiting for deployment "astronomy-db" rollout to finish: 0 out of 1 new replicas have been updated...
+12:22:05       Waiting for deployment "astronomy-db" rollout to finish: 0 of 1 updated replicas are available...
+12:22:05       deployment "astronomy-db" successfully rolled out
+12:22:05   6. verifier must PASS (<= 300s)
+12:22:18       [PASS   ] journey:browse - 3/3 ok, avg 21ms
+12:22:18       [PASS   ] journey:catalog - 3/3 ok, avg 24ms
+12:22:18       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
+12:22:18   6b. invariants must PASS (shop_health)
+12:22:19       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+12:22:19       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
+12:22:19       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+12:22:19       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
+12:22:19   6c. the fix must survive a restart of deployment/astronomy-db
+12:23:05       [PASS   ] journey:browse - 3/3 ok, avg 32ms
+12:23:05       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+12:23:05       [PASS   ] pods_ready:opentelemetry.io/name=astronomy-db - 1/1 pods ready for opentelemetry.io/name=astronomy-db
+12:23:05   7. restore exactly
+12:23:15   => VALIDATED  {'world_ready_s': 8, 'detect_s': 9, 'recover_s': 13, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

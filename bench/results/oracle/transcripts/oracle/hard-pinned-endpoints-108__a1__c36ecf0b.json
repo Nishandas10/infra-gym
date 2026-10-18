@@ -1,0 +1,77 @@
+{
+ "episode": "c36ecf0b44a748f59dbc657c570345cd",
+ "scenario": "hard-pinned-endpoints-108",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:d2678d187e51a6cab06560455f40b6484b57e3b452eeb9e34844eee1853806fe",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 40 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Checkout fails while calculating shipping costs. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch service quote --type=merge -p '{\\\"spec\\\":{\\\"selector\\\":{\\\"opentelemetry.io/name\\\":\\\"quote\\\"}}}'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "service/quote patched"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl delete endpointslice quote-pinned\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "endpointslice.discovery.k8s.io \"quote-pinned\" deleted from default namespace"
+  },
+  {
+   "role": "assistant",
+   "content": "The quote Service has no selector and a hand-made EndpointSlice (quote-pinned, from incident INC-5521) that points at 10.244.250.17, an IP no pod has any more. shipping's calls to quote time out. Restoring the selector alone is not enough: the pinned slice keeps the dead IP in rotation."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch service quote --type=merge -p '{\"spec\":{\"selector\":{\"opentelemetry.io/name\":\"quote\"}}}'",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.2,
+   "cmd": "kubectl delete endpointslice quote-pinned",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 6.2
+}

@@ -1,0 +1,52 @@
+{
+ "episode": "58ffbfb453ad4061b473b895cb552b4a",
+ "scenario": "svc-externalname-redirect-119",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:6752b03a2069ddf01e12830bdfd10c8c7889cb361ea77af3b15cb1c7ed233ccb",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Since this morning's frontend and checkout deploys, adding items to the cart fails for every shopper and no order goes through. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch service cart --type merge -p '{\\\"spec\\\":{\\\"type\\\":\\\"ClusterIP\\\",\\\"externalName\\\":null}}'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "service/cart patched"
+  },
+  {
+   "role": "assistant",
+   "content": "An unfinished migration converted the cart Service to `type: ExternalName` with `externalName: cart.cart-v2.svc.cluster.local`; the namespace cart-v2 does not exist. The change dropped the Service's cluster IP, and the cluster DNS now answers `cart` with a CNAME to a name that does not resolve. Frontend and checkout kept working on their existing gRPC connections until they were redeployed; every new connection fails, so adding to the cart and checkout fail while the cart pod itself is healthy. The deploys are not the cause."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch service cart --type merge -p '{\"spec\":{\"type\":\"ClusterIP\",\"externalName\":null}}'",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 20.1
+}

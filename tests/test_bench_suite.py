@@ -160,3 +160,36 @@ def test_key_and_pacing_can_be_set_for_one_run():
     out = ab.with_overrides(ms, args)
     assert (out["api_key_env"], out["pace_s"], out["id"]) == ("FREE_KEY", 7.0, ms["id"])
     assert ab.with_overrides(ms, argparse.Namespace()) == ms
+
+
+def test_a_shard_plays_its_share_of_the_plan(bench, monkeypatch):
+    monkeypatch.setenv("KUBECONFIG", "/tmp/kube-test")
+    run("lite", limit=4, shard="1/2")
+    lite = [m.id for m in suites.load("lite").instances[:4]]
+    assert [b[0] for b in bench] == lite[0::2]
+
+
+def test_a_shard_needs_its_own_cluster(bench, monkeypatch):
+    monkeypatch.delenv("KUBECONFIG", raising=False)
+    with pytest.raises(SystemExit):
+        run("lite", limit=2, shard="1/2")
+    assert bench == []
+
+
+def test_the_spend_cap_stops_the_run(bench, monkeypatch, tmp_path):
+    def play(sc, ms, client, cfg, row, state):   # 1M fresh input tokens at $1/1M = $1 per episode
+        bench.append((sc["id"], row["hint_level"]))
+        return {**row, "status": "done", "passed": True, "stop": "model_finished", "steps": 1, "tokens_in": 1_000_000}
+    monkeypatch.setattr(ab, "_play", play)
+    cfg = dict(CFG, models=[{"id": "stub-model", "price": {"input": 1, "output": 1}}])
+    args = argparse.Namespace(suite="lite", only=None, model=None, limit=4, retry_errors=False, rerun=False,
+                              attempts=None, hint_level=None, max_cost=1.5)
+    ab.cmd_run(cfg, args)
+    assert len(bench) == 2                       # $1 after the first, $2 >= $1.50 after the second: stop
+
+
+def test_the_spend_cap_needs_a_price(bench):
+    args = argparse.Namespace(suite="lite", only=None, model=None, limit=1, retry_errors=False, rerun=False,
+                              attempts=None, hint_level=None, max_cost=5.0)
+    with pytest.raises(SystemExit):
+        ab.cmd_run(CFG, args)

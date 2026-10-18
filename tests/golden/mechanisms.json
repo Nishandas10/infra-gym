@@ -1,0 +1,72 @@
+{
+ "app.flag": {
+  "module": "gym/faults/flags.py",
+  "source": "6ae0740e09478642",
+  "version": 1
+ },
+ "app.flag_source_config": {
+  "module": "gym/faults/flags.py",
+  "source": "6ae0740e09478642",
+  "version": 1
+ },
+ "chaos.mesh": {
+  "module": "gym/faults/chaos.py",
+  "source": "2f27dda57f65d99a",
+  "version": 1
+ },
+ "k8s.bad_rollout": {
+  "module": "gym/faults/workload.py",
+  "source": "ee1e495c1060e99a",
+  "version": 1
+ },
+ "k8s.configmap_edit": {
+  "module": "gym/faults/k8s_objects.py",
+  "source": "0c72f0ead64be7df",
+  "version": 1
+ },
+ "k8s.create_objects": {
+  "module": "gym/faults/k8s_objects.py",
+  "source": "0c72f0ead64be7df",
+  "version": 1
+ },
+ "k8s.delete_object": {
+  "module": "gym/faults/k8s_objects.py",
+  "source": "0c72f0ead64be7df",
+  "version": 1
+ },
+ "k8s.memory_limit": {
+  "module": "gym/faults/workload.py",
+  "source": "ee1e495c1060e99a",
+  "version": 1
+ },
+ "k8s.object_patch": {
+  "module": "gym/faults/k8s_objects.py",
+  "source": "0c72f0ead64be7df",
+  "version": 1
+ },
+ "k8s.pin_endpoints": {
+  "module": "gym/faults/k8s_objects.py",
+  "source": "0c72f0ead64be7df",
+  "version": 1
+ },
+ "k8s.separate_pods": {
+  "module": "gym/faults/workload.py",
+  "source": "ee1e495c1060e99a",
+  "version": 1
+ },
+ "k8s.workload_patch": {
+  "module": "gym/faults/workload.py",
+  "source": "ee1e495c1060e99a",
+  "version": 1
+ },
+ "node.kubelet_stop": {
+  "module": "gym/faults/node.py",
+  "source": "d1a606aef98d1b12",
+  "version": 1
+ },
+ "runtime.exec": {
+  "module": "gym/faults/runtime.py",
+  "source": "7c70b780208bbf22",
+  "version": 1
+ }
+}

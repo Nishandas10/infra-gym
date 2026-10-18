@@ -94,7 +94,23 @@ def validation_hash(inst, files):
     # A false alarm is validated differently (gym/harness.py). Only when set, so other hashes stay as they were.
     if inst["task"].get("kind") == "false_alarm":
         payload.update(kind="false_alarm", alarm_checks=v["alarm_checks"])
+    # A mechanism whose behaviour changed (version > 1) voids the evidence of every instance using it.
+    versions = mechanism_versions(inst["fault"])
+    if versions:
+        payload["mechanism_versions"] = versions
     return _sha(payload)
+
+
+def mechanism_versions(fault):
+    """{mechanism: version} of the fault's steps whose mechanism is past version 1."""
+    from gym import faults
+    out = {}
+    for step in fault["steps"]:
+        name = faults.canonical(step["mechanism"])
+        version = faults.REGISTRY.get(name, {}).get("version", 1)
+        if version > 1:
+            out[name] = version
+    return out
 
 
 def content_hash(inst, files):

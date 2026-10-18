@@ -41,9 +41,12 @@ class Context:
     spec: dict
 
 
-def mechanism(name, family, summary):
+def mechanism(name, family, summary, version=1):
+    """version: bump it when a code change alters what the mechanism does for scenarios that already use it.
+    Above 1 it enters their validation_hash (gym/core/generate.py), so their old evidence stops counting.
+    tests/test_mechanism_fingerprints.py fails on any code change until it is bumped or re-recorded."""
     def deco(fn):
-        REGISTRY[name] = {"fn": fn, "family": family, "summary": summary}
+        REGISTRY[name] = {"fn": fn, "family": family, "summary": summary, "version": version}
         return fn
     return deco
 

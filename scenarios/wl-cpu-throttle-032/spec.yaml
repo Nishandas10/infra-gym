@@ -2,13 +2,13 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: wl-cpu-throttle-032
-version: 1
+version: 2
 instance_of:
   template: wl-cpu-throttle-032
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:6aa59f4b45f65edab68a9a46a483b98f5cfddfc3985c8c43de57bb2f936418a0
-validation_hash: sha256:f1ab8d2b0faaab561fd45ee83009452f7cecca9a12b8c8dca2fd075adebd030b
+content_hash: sha256:28c37f24fb764a7df85e31bc49f28d67e87542db99fccc128f037b5dc8696f9a
+validation_hash: sha256:0c2bc3afad910cbaf3fe13eac3d335a38c54acb40952f06911310fabc6ff94a7
 status: validated
 title: CPU limit so low the service is throttled into slowness
 mechanism: workload/cpu-limit-throttling
@@ -43,19 +43,19 @@ fault:
     ops:
     - op: set
       path: /spec/template/spec/containers/$c/resources/limits/cpu
-      value: 20m
+      value: 50m
 verifier:
   checks:
   - type: journey
     journey: home
-    repeat: 3
+    repeat: 5
     max_error_pct: 0
-    max_avg_ms: 1500
+    max_avg_ms: 120
   - type: journey
     journey: browse
     repeat: 3
     max_error_pct: 0
-    max_avg_ms: 1500
+    max_avg_ms: 500
   invariants:
   - shop_health
   durability:
@@ -70,12 +70,13 @@ ground_truth:
   root_causes:
   - component: deployment/frontend
     namespace: default
-    what: a CPU limit of 20m throttles the frontend for most of every scheduling period
-  explanation: The frontend got a CPU limit of 20m (2% of a core). The CFS scheduler throttles it for most of every
-    100ms period, so each page takes seconds even though nothing errors.
+    what: a CPU limit of 50m throttles the frontend for most of every scheduling period
+  explanation: The frontend got a CPU limit of 50m (5% of a core). The CFS scheduler throttles it for most of every
+    100ms period, so every page is several times slower than usual (the home page 200-500 ms instead of 20-30 ms)
+    even though nothing errors.
   evidence:
   - Latency is high on every page, errors are low, and there are no restarts.
-  - '`kubectl get deploy frontend -o yaml`: `limits.cpu: 20m`.'
+  - '`kubectl get deploy frontend -o yaml`: `limits.cpu: 50m`.'
   - Container CPU usage is pinned at the limit (Grafana, or kubelet stats); throttling metrics climb.
 reference:
   commands:
@@ -88,3 +89,12 @@ validation:
   recover_timeout_s: 300
   poll_s: 10
   restart_settle_s: 45
+notes:
+- 'v2 (2026-10-18): v1 (20m) SELF_HEALED in the forced long hold (2nd cluster, 2026-10-18 11:11): frontend was down
+  (503) for ~14 min while it started under the limit, then slow but under the 1500 ms checks (home 1250 ms), so
+  a do-nothing agent passed at the end of the 900 s budget; the page prompt ("nothing is failing") also contradicted
+  the outage. Spikes s032-50m / s032-100m (20 min each, 3rd cluster): at 50m frontend starts in ~4 min, then serves
+  without errors or restarts with home 218-525 ms and browse 91-170 ms (healthy 19-32 / 18-50 ms); at 100m home
+  drops to 84 ms, too close to healthy. v2: 50m, home checked at 120 ms over 5 requests (every 50m sample was above
+  218 ms; grading accepts any passing poll within recover_timeout_s, so the fault needs margin on every sample),
+  browse at 500 ms with no errors (the warm-up outage and the slow spikes).'

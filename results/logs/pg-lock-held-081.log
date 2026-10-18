@@ -1,31 +1,31 @@
-23:45:11 === pg-lock-held-081 (composite)
-23:45:12   0. world healthy?
-23:45:21   1. baseline must PASS
-23:45:22       [PASS   ] journey:browse - 3/3 ok, avg 21ms
-23:45:22       [PASS   ] journey:catalog - 3/3 ok, avg 32ms
-23:45:22   2. inject
-23:45:24   3. verifier must FAIL (<= 240s)
-23:46:01       [FAIL   ] journey:browse - 0/3 ok, avg 6017ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
-23:46:01       [FAIL   ] journey:catalog - 0/3 ok, avg 6021ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-23:46:01   4. do-nothing agent: still FAIL after 60s?
-23:47:54       [FAIL   ] journey:browse - 0/3 ok, avg 3158ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
-23:47:54       [FAIL   ] journey:catalog - 0/3 ok, avg 3020ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-23:47:54       failing in 2/2 checks during the hold
-23:47:54   5. reference solution
-23:47:54     $ kubectl delete deployment catalog-maintenance --wait=true
-23:47:54       deployment.apps "catalog-maintenance" deleted from default namespace
-23:47:54     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()"
-23:47:54       pg_terminate_backend 
-23:47:54       ----------------------
-23:47:54        t
-23:47:54       (1 row)
-23:47:54   6. verifier must PASS (<= 360s)
-23:47:55       [PASS   ] journey:browse - 3/3 ok, avg 24ms
-23:47:55       [PASS   ] journey:catalog - 3/3 ok, avg 20ms
-23:47:55   6b. invariants must PASS (shop_health)
-23:47:56       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-23:47:56       [PASS   ] journey:recommendations - 2/2 ok, avg 45ms
-23:47:56       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-23:47:56       [PASS   ] journey:checkout - 2/2 ok, avg 91ms
-23:47:56   7. restore exactly
-23:50:41   => VALIDATED  {'world_ready_s': 9, 'detect_s': 37, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 165}
+04:47:02 === pg-lock-held-081 (composite)
+04:47:03   0. world healthy?
+04:47:13   1. baseline must PASS
+04:47:13       [PASS   ] journey:browse - 3/3 ok, avg 21ms
+04:47:13       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
+04:47:13   2. inject
+04:47:16   3. verifier must FAIL (<= 240s)
+04:47:53       [FAIL   ] journey:browse - 0/3 ok, avg 6019ms; e.g. GET /api/products/LS4PSXUNUM -> no response b'TimeoutError: timed out'
+04:47:53       [FAIL   ] journey:catalog - 0/3 ok, avg 6018ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
+04:47:53   4. do-nothing agent: still FAIL after 900s?
+05:03:11       [FAIL   ] journey:browse - 0/3 ok, avg 3025ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
+05:03:11       [FAIL   ] journey:catalog - 0/3 ok, avg 3020ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+05:03:11       failing in 30/30 checks during the hold
+05:03:11   5. reference solution
+05:03:11     $ kubectl delete deployment catalog-maintenance --wait=true
+05:03:12       deployment.apps "catalog-maintenance" deleted from default namespace
+05:03:12     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%LOCK TABLE catalog.products%' AND pid <> pg_backend_pid()"
+05:03:12       pg_terminate_backend 
+05:03:12       ----------------------
+05:03:12        t
+05:03:12       (1 row)
+05:03:12   6. verifier must PASS (<= 360s)
+05:03:13       [PASS   ] journey:browse - 3/3 ok, avg 33ms
+05:03:13       [PASS   ] journey:catalog - 3/3 ok, avg 20ms
+05:03:13   6b. invariants must PASS (shop_health)
+05:03:14       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+05:03:14       [PASS   ] journey:recommendations - 2/2 ok, avg 61ms
+05:03:14       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+05:03:14       [PASS   ] journey:checkout - 2/2 ok, avg 135ms
+05:03:14   7. restore exactly
+05:05:55   => VALIDATED  {'world_ready_s': 10, 'detect_s': 37, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 160}

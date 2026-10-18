@@ -1,35 +1,36 @@
-22:57:43 === hard-egress-policy-blocks-db-102 (composite)
-22:57:44   0. world healthy?
-22:57:57   1. baseline must PASS
-22:57:57       [PASS   ] journey:browse - 3/3 ok, avg 18ms
-22:57:57       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
-22:57:57   2. inject
-22:58:01   3. verifier must FAIL (<= 300s)
-22:58:50       [FAIL   ] journey:browse - 0/3 ok, avg 8028ms; e.g. GET /api/products/0PUK6V6EV0 -> no response b'TimeoutError: timed out'
-22:58:50       [FAIL   ] journey:catalog - 0/3 ok, avg 8017ms; e.g. GET /api/products -> no response b'TimeoutError: timed out'
-22:58:50   4. do-nothing agent: still FAIL after 60s?
-23:00:15       [FAIL   ] journey:browse - 0/3 ok, avg 8025ms; e.g. GET /api/products/1YMWWN1N4O -> no response b'TimeoutError: timed out'
-23:00:15       [FAIL   ] journey:catalog - 2/3 ok, avg 87ms; e.g. GET /api/products -> 500 b'Internal Server Error'
-23:00:15       failing in 1/1 checks during the hold
-23:00:15   5. reference solution
-23:00:15     $ kubectl patch networkpolicy product-catalog-egress-hardening --type=json -p '[{"op":"add","path":"/spec/egress/1/ports/-","value":{"protocol":"TCP","port":5432}}]'
-23:00:15       networkpolicy.networking.k8s.io/product-catalog-egress-hardening patched
-23:00:15     $ kubectl rollout restart deployment/product-catalog
-23:00:15       deployment.apps/product-catalog restarted
-23:00:15     $ kubectl rollout status deployment/product-catalog --timeout=300s
-23:00:18       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-23:00:18       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
-23:00:18       deployment "product-catalog" successfully rolled out
-23:00:18   6. verifier must PASS (<= 420s)
-23:02:45       [PASS   ] journey:browse - 3/3 ok, avg 20ms
-23:02:45       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
-23:02:45   6b. invariants must PASS (shop_health)
-23:02:46       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-23:02:46       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
-23:02:46       [PASS   ] journey:cart - 2/2 ok, avg 49ms
-23:02:46       [PASS   ] journey:checkout - 2/2 ok, avg 153ms
-23:02:46   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
-23:03:32       [PASS   ] journey:browse - 3/3 ok, avg 30ms
-23:03:32       [PASS   ] journey:catalog - 3/3 ok, avg 18ms
-23:03:32   7. restore exactly
-23:06:15   => VALIDATED  {'world_ready_s': 13, 'detect_s': 49, 'recover_s': 147, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 163}
+07:43:54 === hard-egress-policy-blocks-db-102 (composite)
+07:43:55   0. world healthy?
+07:44:04   1. baseline must PASS
+07:44:05       [PASS   ] journey:browse - 3/3 ok, avg 23ms
+07:44:05       [PASS   ] journey:catalog - 3/3 ok, avg 17ms
+07:44:05   2. inject
+07:44:09   3. verifier must FAIL (<= 300s)
+07:44:10       [FAIL   ] journey:browse - 0/3 ok, avg 32ms; e.g. GET /api/products/9SIQT8TOJO -> 500 b'Internal Server Error'
+07:44:10       [FAIL   ] journey:catalog - 0/3 ok, avg 16ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+07:44:10   4. do-nothing agent: still FAIL after 1200s?
+08:04:10       [FAIL   ] journey:browse - 0/3 ok, avg 17ms; e.g. GET /api/products/L9ECAV7KIM -> 500 b'Internal Server Error'
+08:04:10       [FAIL   ] journey:catalog - 0/3 ok, avg 19ms; e.g. GET /api/products -> 500 b'Internal Server Error'
+08:04:10       failing in 112/112 checks during the hold
+08:04:10   5. reference solution
+08:04:10     $ kubectl patch networkpolicy product-catalog-egress-hardening --type=json -p '[{"op":"add","path":"/spec/egress/1/ports/-","value":{"protocol":"TCP","port":5432}}]'
+08:04:10       networkpolicy.networking.k8s.io/product-catalog-egress-hardening patched
+08:04:10     $ kubectl rollout restart deployment/product-catalog
+08:04:11       deployment.apps/product-catalog restarted
+08:04:11     $ kubectl rollout status deployment/product-catalog --timeout=300s
+08:04:13       Waiting for deployment "product-catalog" rollout to finish: 0 out of 1 new replicas have been updated...
+08:04:13       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+08:04:13       Waiting for deployment "product-catalog" rollout to finish: 1 old replicas are pending termination...
+08:04:13       deployment "product-catalog" successfully rolled out
+08:04:13   6. verifier must PASS (<= 420s)
+08:04:35       [PASS   ] journey:browse - 3/3 ok, avg 30ms
+08:04:35       [PASS   ] journey:catalog - 3/3 ok, avg 20ms
+08:04:35   6b. invariants must PASS (shop_health)
+08:05:31       [PASS   ] journey:browse - 2/2 ok, avg 32ms
+08:05:31       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+08:05:31       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+08:05:31       [PASS   ] journey:checkout - 2/2 ok, avg 92ms
+08:05:31   6c. the fix must survive a restart of opentelemetry.io/name=product-catalog
+08:07:55       [PASS   ] journey:browse - 3/3 ok, avg 20ms
+08:07:55       [PASS   ] journey:catalog - 3/3 ok, avg 16ms
+08:07:55   7. restore exactly
+08:10:39   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 55, 'durable_s': 99, 'restore_s': 163}

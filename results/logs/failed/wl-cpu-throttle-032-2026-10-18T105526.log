@@ -1,0 +1,15 @@
+10:55:26 === wl-cpu-throttle-032 (k8s.workload_patch)
+10:55:27   0. world healthy?
+10:55:36   1. baseline must PASS
+10:55:36       [PASS   ] journey:home - 3/3 ok, avg 16ms
+10:55:36       [PASS   ] journey:browse - 3/3 ok, avg 22ms
+10:55:36   2. inject
+10:55:37   3. verifier must FAIL (<= 240s)
+10:55:48       [FAIL   ] journey:home - 0/3 ok, avg 8ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+10:55:48       [FAIL   ] journey:browse - 0/3 ok, avg 20ms; e.g. GET /api/products/LS4PSXUNUM -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+10:55:48   4. do-nothing agent: still FAIL after 900s?
+11:10:54       [PASS   ] journey:home - 3/3 ok, avg 1250ms
+11:10:54       [PASS   ] journey:browse - 3/3 ok, avg 566ms
+11:10:54       failing in 34/40 checks during the hold
+11:10:54   7. restore exactly
+11:11:23   => SELF_HEALED  {'world_ready_s': 8, 'detect_s': 11, 'restore_s': 29}

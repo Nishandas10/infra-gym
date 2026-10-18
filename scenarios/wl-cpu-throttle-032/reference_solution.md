@@ -2,12 +2,12 @@
 
 **CPU limit so low the service is throttled into slowness**
 
-**Root cause:** The frontend got a CPU limit of 20m (2% of a core). The CFS scheduler throttles it for most of every 100ms period, so each page takes seconds even though nothing errors.
+**Root cause:** The frontend got a CPU limit of 50m (5% of a core). The CFS scheduler throttles it for most of every 100ms period, so every page is several times slower than usual (the home page 200-500 ms instead of 20-30 ms) even though nothing errors.
 
 ## How to find it
 
 1. Latency is high on every page, errors are low, and there are no restarts.
-2. `kubectl get deploy frontend -o yaml`: `limits.cpu: 20m`.
+2. `kubectl get deploy frontend -o yaml`: `limits.cpu: 50m`.
 3. Container CPU usage is pinned at the limit (Grafana, or kubelet stats); throttling metrics climb.
 
 ## Fix

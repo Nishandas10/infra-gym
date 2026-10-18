@@ -32,8 +32,12 @@ class Clock:
 
 class World:
     """healthy -> faulted (inject) -> fixed (reference fix) -> restarted (durability)."""
-    def __init__(self, invariants_after_fix=checks.PASS, checks_after_restart=checks.PASS, switch_context=False):
-        self.phase = "healthy"
+    def __init__(self, invariants_after_fix=checks.PASS, checks_after_restart=checks.PASS, switch_context=False,
+                 start_broken=False, restore_leaves_broken=False, recovery_fails=False):
+        self.phase = "broken" if start_broken else "healthy"
+        self.restore_leaves_broken = restore_leaves_broken   # the exact revert leaves the shop unhealthy
+        self.recovery_fails = recovery_fails
+        self.recoveries = 0
         self.switch_context = switch_context   # the kube context changes once the fix is applied
         self.reverted = False
         self.invariants_after_fix = invariants_after_fix
@@ -68,8 +72,16 @@ def world(monkeypatch, tmp_path):
         monkeypatch.setattr(checks, "run_checks", w.run_checks)
         monkeypatch.setattr(harness.faults, "inject", lambda spec, sdir: setattr(w, "phase", "faulted"))
         monkeypatch.setattr(harness.faults, "revert", lambda spec: setattr(w, "reverted", True) or
-                            setattr(w, "phase", "restored") or [])
+                            setattr(w, "phase", "broken" if w.restore_leaves_broken else "restored") or [])
         monkeypatch.setattr(harness, "run_solution", lambda commands: setattr(w, "phase", "fixed"))
+
+        def recover(log, settle_s=180):
+            w.recoveries += 1
+            if w.recovery_fails:
+                return False, ["helm reset (x)", "hard reset (x)", "still unhealthy after the hard reset (x)"]
+            w.phase = "healthy"
+            return True, ["helm reset (x)", "hard reset (x)"]
+        monkeypatch.setattr(harness.recovery, "recover", recover)
 
         def restart(target, namespace):
             w.restarted.append((target, namespace))
@@ -123,6 +135,36 @@ def test_a_context_switch_voids_the_run_and_does_not_revert_the_wrong_cluster(wo
     assert rec["context"] == "kind-test"
     assert not w.reverted
     assert any("not reverted" in n for n in rec["notes"])
+
+
+def test_a_broken_world_is_recovered_before_the_run(world):
+    w = world(start_broken=True)
+    rec = harness.validate(SPEC)
+    assert rec["verdict"] == "VALIDATED"
+    assert w.recoveries == 1 and rec["recovery"] == ["helm reset (x)", "hard reset (x)"]
+
+
+def test_an_unrecoverable_world_is_env_unhealthy(world):
+    w = world(start_broken=True, recovery_fails=True)
+    rec = harness.validate(SPEC)
+    assert rec["verdict"] == "ENV_UNHEALTHY"
+    assert not w.reverted                      # nothing was injected
+
+
+def test_a_restore_that_leaves_the_world_broken_fails_but_is_recovered(world):
+    """net-packet-loss-052: the exact revert left frontend's gRPC client stuck; the next scenario must not pay."""
+    w = world(restore_leaves_broken=True)
+    rec = harness.validate(SPEC)
+    assert rec["verdict"] == "RESTORE_FAILED"
+    assert "world not healthy after restore" in rec["notes"]
+    assert (w.recoveries, rec["recovered"], w.phase) == (1, True, "healthy")
+
+
+def test_a_failed_recovery_after_restore_is_recorded(world):
+    world(restore_leaves_broken=True, recovery_fails=True)
+    rec = harness.validate(SPEC)
+    assert rec["verdict"] == "RESTORE_FAILED" and rec["recovered"] is False
+    assert "world still unhealthy after the hard reset" in rec["notes"]
 
 
 def test_a_stale_progress_deadline_is_retried(monkeypatch):

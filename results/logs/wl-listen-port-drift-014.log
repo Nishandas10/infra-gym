@@ -1,29 +1,29 @@
-00:28:51 === wl-listen-port-drift-014 (k8s.workload_patch)
-00:28:52   0. world healthy?
-00:29:02   1. baseline must PASS
-00:29:03       [PASS   ] journey:checkout - 3/3 ok, avg 126ms
-00:29:03   2. inject
-00:29:03   3. verifier must FAIL (<= 240s)
-00:29:15       [FAIL   ] journey:checkout - 0/3 ok, avg 98ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-00:29:15   4. do-nothing agent: still FAIL after 60s?
-00:30:16       [FAIL   ] journey:checkout - 0/3 ok, avg 71ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-00:30:16       failing in 5/5 checks during the hold
-00:30:16   5. reference solution
-00:30:16     $ kubectl set env deployment/payment PAYMENT_PORT=8080
-00:30:16       deployment.apps/payment env updated
-00:30:16     $ kubectl rollout status deployment/payment --timeout=300s
-00:30:17       Waiting for deployment "payment" rollout to finish: 0 out of 1 new replicas have been updated...
-00:30:17       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-00:30:17       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-00:30:17       deployment "payment" successfully rolled out
-00:30:17   6. verifier must PASS (<= 300s)
-00:30:29       [PASS   ] journey:checkout - 3/3 ok, avg 132ms
-00:30:29   6b. invariants must PASS (shop_health)
-00:30:30       [PASS   ] journey:browse - 2/2 ok, avg 22ms
-00:30:30       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
-00:30:30       [PASS   ] journey:cart - 2/2 ok, avg 49ms
-00:30:30       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
-00:30:30   6c. the fix must survive a restart of deployment/payment
-00:31:16       [PASS   ] journey:checkout - 3/3 ok, avg 135ms
-00:31:16   7. restore exactly
-00:31:26   => VALIDATED  {'world_ready_s': 10, 'detect_s': 12, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+05:42:50 === wl-listen-port-drift-014 (k8s.workload_patch)
+05:42:51   0. world healthy?
+05:43:00   1. baseline must PASS
+05:43:00       [PASS   ] journey:checkout - 3/3 ok, avg 107ms
+05:43:00   2. inject
+05:43:01   3. verifier must FAIL (<= 240s)
+05:43:12       [FAIL   ] journey:checkout - 0/3 ok, avg 55ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+05:43:12   4. do-nothing agent: still FAIL after 900s?
+05:58:13       [FAIL   ] journey:checkout - 0/3 ok, avg 58ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+05:58:13       failing in 84/84 checks during the hold
+05:58:13   5. reference solution
+05:58:13     $ kubectl set env deployment/payment PAYMENT_PORT=8080
+05:58:13       deployment.apps/payment env updated
+05:58:13     $ kubectl rollout status deployment/payment --timeout=300s
+05:58:14       Waiting for deployment "payment" rollout to finish: 0 out of 1 new replicas have been updated...
+05:58:14       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+05:58:14       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+05:58:14       deployment "payment" successfully rolled out
+05:58:14   6. verifier must PASS (<= 300s)
+06:00:34       [PASS   ] journey:checkout - 3/3 ok, avg 119ms
+06:00:34   6b. invariants must PASS (shop_health)
+06:00:35       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+06:00:35       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+06:00:35       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+06:00:35       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
+06:00:35   6c. the fix must survive a restart of deployment/payment
+06:01:21       [PASS   ] journey:checkout - 3/3 ok, avg 111ms
+06:01:21   7. restore exactly
+06:01:30   => VALIDATED  {'world_ready_s': 9, 'detect_s': 12, 'recover_s': 140, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
