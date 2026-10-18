@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from gym import faults  # noqa: E402
+from gym import faults, lock  # noqa: E402
 from gym.spec import fault_label, load  # noqa: E402
 
 
@@ -23,6 +23,7 @@ def main():
     p.add_argument("--revert", action="store_true", help="undo a previous injection")
     p.add_argument("--force", action="store_true", help="inject even if an undo log already exists")
     args = p.parse_args()
+    lock.hold_cluster("inject.py --revert" if args.revert else "inject.py")   # not while a job uses this cluster
     spec, sdir = load(args.spec_path)
     if args.revert:
         errors = faults.revert(spec)

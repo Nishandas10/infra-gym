@@ -169,6 +169,15 @@ def test_a_shard_plays_its_share_of_the_plan(bench, monkeypatch):
     assert [b[0] for b in bench] == lite[0::2]
 
 
+def test_shards_stay_disjoint_when_a_worker_starts_late(bench, monkeypatch):
+    """Worker 2 finishes before worker 1 starts: worker 1 must still play only its own share, not re-split the rest."""
+    monkeypatch.setenv("KUBECONFIG", "/tmp/kube-test")
+    lite = [m.id for m in suites.load("lite").instances[:6]]
+    run("lite", limit=6, shard="2/3")
+    run("lite", limit=6, shard="1/3")
+    assert [b[0] for b in bench] == lite[1::3] + lite[0::3]
+
+
 def test_a_shard_needs_its_own_cluster(bench, monkeypatch):
     monkeypatch.delenv("KUBECONFIG", raising=False)
     with pytest.raises(SystemExit):

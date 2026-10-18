@@ -41,7 +41,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
-from gym import checks, faults, harness, kube, recovery, toolbox  # noqa: E402
+from gym import checks, faults, harness, kube, lock, recovery, toolbox  # noqa: E402
 from gym.core import status, suites  # noqa: E402
 from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog  # noqa: E402
@@ -1215,14 +1215,16 @@ def cmd_run(cfg, args):
             and rows.mode(r) == cfg.get("mode", "fix")
             and not (args.retry_errors and r.get("status") in ("error", "invalid"))
             and not (args.rerun and matches_only(args, r["scenario"]))}
-    plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1)
-            for sc in scenarios for m in models if (sc["id"], m, a) not in done]
+    plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1) for sc in scenarios for m in models]
     shard = ""
-    if getattr(args, "shard", None):   # one worker per cluster, started together: disjoint shares of the same plan
+    if getattr(args, "shard", None):   # one worker per cluster: disjoint shares of the same plan
         if not os.environ.get("KUBECONFIG"):
             sys.exit("--shard needs its own KUBECONFIG (one cluster per worker)")
         i, n = (int(x) for x in args.shard.split("/"))
+        # The share is taken from the whole plan, before finished episodes are dropped: workers that start at
+        # different times (one after another worker's episodes landed) still get disjoint shares.
         plan, shard = plan[i - 1::n], f", shard {args.shard}"
+    plan = [(a, sc, m) for a, sc, m in plan if (sc["id"], m, a) not in done]
     prices = {m["id"]: m.get("price") for m in cfg["models"]}
     max_cost = getattr(args, "max_cost", None)
     if max_cost is not None and [m for m in models if not prices.get(m)]:
@@ -1390,6 +1392,8 @@ def main():
     args = p.parse_args()
     if args.shard and (args.command not in ("run", "oracle") or not os.environ.get("KUBECONFIG")):
         p.error("--shard is for run and oracle, with one cluster per worker (KUBECONFIG=~/.kube/gym/<cluster>)")
+    if args.command in ("run", "oracle", "preflight"):
+        lock.hold_cluster(f"agent_bench {args.command}")   # one job per cluster
     cfg = load_config()
     if args.hint_level:
         cfg["hint_level"] = args.hint_level

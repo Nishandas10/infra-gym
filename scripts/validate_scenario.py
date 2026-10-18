@@ -35,7 +35,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from gym import harness, toolbox  # noqa: E402
+from gym import harness, lock, toolbox  # noqa: E402
 from gym.core import status, suites  # noqa: E402
 from gym.spec import REPO, all_specs, load  # noqa: E402
 
@@ -115,6 +115,7 @@ def main():
     if args.shard and not os.environ.get("KUBECONFIG"):
         p.error("--shard needs its own KUBECONFIG (one cluster per worker): `kind create cluster` and others switch the "
                 "default context, which would send this worker's commands to another world")
+    lock.hold_cluster("validate_scenario")   # one job per cluster
     signal.signal(signal.SIGTERM, request_stop)
     toolbox.ensure()
     verdicts = {s["id"]: [] for s in specs}

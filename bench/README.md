@@ -102,7 +102,12 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 `--shard i/N` (one worker per cluster, each with its own `KUBECONFIG`, all started together) splits the episodes over
 clusters; `--max-cost USD` stops a worker once its episodes cost that much. An episode's cost is what the provider
 billed when it says so (OpenRouter's `usage.cost`, which follows the host that served each reply; recorded as
-`cost_billed_usd`), else its tokens at the `config.yaml` prices.
+`cost_billed_usd`), else its tokens at the `config.yaml` prices. Shares are taken from the whole plan before finished
+episodes are dropped, so workers that start at different times never overlap.
+
+One job per cluster: `run`, `oracle`, `preflight`, `scripts/validate_scenario.py` and `injectors/inject.py` hold the
+cluster's lock (`gym/lock.py`, machine-wide, keyed by the kube context) while they run; a second one on the same
+cluster refuses to start and names the job that holds it.
 
 Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
 still works as an alias of `--suite` for one release; `.txt` set files are no longer accepted.
