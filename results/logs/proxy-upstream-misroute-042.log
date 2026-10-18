@@ -1,34 +1,34 @@
-08:00:31 === proxy-upstream-misroute-042 (k8s.workload_patch)
-08:00:32   0. world healthy?
-08:00:41   1. baseline must PASS
-08:00:41       [PASS   ] journey:home - 3/3 ok, avg 17ms
-08:00:41       [PASS   ] journey:browse - 3/3 ok, avg 22ms
-08:00:41   2. inject
-08:00:41   3. verifier must FAIL (<= 240s)
-08:01:23       [FAIL   ] journey:home - 0/3 ok, avg 5035ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
-08:01:23       [FAIL   ] journey:browse - 0/3 ok, avg 5021ms; e.g. GET /api/products/6E92ZMYYFZ -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
-08:01:23   4. do-nothing agent: still FAIL after 900s?
-08:16:52       [FAIL   ] journey:home - 0/3 ok, avg 3339ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
-08:16:52       [FAIL   ] journey:browse - 0/3 ok, avg 5012ms; e.g. GET /api/products/6E92ZMYYFZ -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
-08:16:52       failing in 26/26 checks during the hold
-08:16:52   5. reference solution
-08:16:52     $ kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080
-08:16:52       deployment.apps/frontend-proxy env updated
-08:16:52     $ kubectl rollout status deployment/frontend-proxy --timeout=300s
-08:16:53       Waiting for deployment "frontend-proxy" rollout to finish: 0 out of 1 new replicas have been updated...
-08:16:53       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
-08:16:53       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
-08:16:53       deployment "frontend-proxy" successfully rolled out
-08:16:53   6. verifier must PASS (<= 300s)
-08:17:09       [PASS   ] journey:home - 3/3 ok, avg 17ms
-08:17:09       [PASS   ] journey:browse - 3/3 ok, avg 25ms
-08:17:09   6b. invariants must PASS (shop_health)
-08:17:10       [PASS   ] journey:browse - 2/2 ok, avg 30ms
-08:17:10       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-08:17:10       [PASS   ] journey:cart - 2/2 ok, avg 47ms
-08:17:10       [PASS   ] journey:checkout - 2/2 ok, avg 116ms
-08:17:10   6c. the fix must survive a restart of deployment/frontend-proxy
-08:17:56       [PASS   ] journey:home - 3/3 ok, avg 21ms
-08:17:56       [PASS   ] journey:browse - 3/3 ok, avg 34ms
-08:17:56   7. restore exactly
-08:18:05   => VALIDATED  {'world_ready_s': 9, 'detect_s': 42, 'recover_s': 16, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+10:52:50 === proxy-upstream-misroute-042 (k8s.workload_patch)
+10:52:51   0. world healthy?
+10:53:00   1. baseline must PASS
+10:53:00       [PASS   ] journey:home - 3/3 ok, avg 20ms
+10:53:00       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+10:53:00   2. inject
+10:53:00   3. verifier must FAIL (<= 240s)
+10:53:42       [FAIL   ] journey:home - 0/3 ok, avg 5010ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+10:53:42       [FAIL   ] journey:browse - 0/3 ok, avg 5023ms; e.g. GET /api/products/66VCHSJNUP -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+10:53:42   4. do-nothing agent: still FAIL after 60s?
+10:55:22       [FAIL   ] journey:home - 0/3 ok, avg 4459ms; e.g. GET / -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+10:55:22       [FAIL   ] journey:browse - 0/3 ok, avg 3341ms; e.g. GET /api/products/HQTGWGPNH4 -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'
+10:55:22       failing in 2/2 checks during the hold
+10:55:22   5. reference solution
+10:55:22     $ kubectl set env deployment/frontend-proxy FRONTEND_PORT=8080
+10:55:22       deployment.apps/frontend-proxy env updated
+10:55:22     $ kubectl rollout status deployment/frontend-proxy --timeout=300s
+10:55:23       Waiting for deployment "frontend-proxy" rollout to finish: 0 out of 1 new replicas have been updated...
+10:55:23       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
+10:55:23       Waiting for deployment "frontend-proxy" rollout to finish: 1 old replicas are pending termination...
+10:55:23       deployment "frontend-proxy" successfully rolled out
+10:55:23   6. verifier must PASS (<= 300s)
+10:55:23       [PASS   ] journey:home - 3/3 ok, avg 15ms
+10:55:23       [PASS   ] journey:browse - 3/3 ok, avg 18ms
+10:55:23   6b. invariants must PASS (shop_health)
+10:55:24       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+10:55:24       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
+10:55:24       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+10:55:24       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+10:55:24   6c. the fix must survive a restart of deployment/frontend-proxy
+10:56:10       [PASS   ] journey:home - 3/3 ok, avg 18ms
+10:56:10       [PASS   ] journey:browse - 3/3 ok, avg 27ms
+10:56:10   7. restore exactly
+10:56:19   => VALIDATED  {'world_ready_s': 9, 'detect_s': 41, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

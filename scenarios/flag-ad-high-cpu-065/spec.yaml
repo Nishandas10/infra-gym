@@ -71,6 +71,9 @@ ground_truth:
 reference:
   commands:
   - python injectors/toggle_flag.py adHighCpu --off
+  agent_commands:
+  - kubectl rollout restart deployment/flagd
+  - kubectl rollout status deployment/flagd --timeout=120s
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 300

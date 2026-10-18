@@ -95,6 +95,16 @@ reference:
   - kubectl rollout status deployment/checkout --timeout=300s
   - kubectl rollout status deployment/accounting --timeout=300s
   - kubectl rollout status deployment/fraud-detection --timeout=300s
+  agent_commands:
+  - kubectl set resources deployment/kafka -c kafka --limits=memory=1Gi
+  - kubectl rollout status deployment/kafka --timeout=300s
+  - for i in 1 2 3; do kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= /opt/kafka/bin/kafka-topics.sh
+    --bootstrap-server localhost:9092 --create --if-not-exists --topic orders --partitions 1 --replication-factor
+    1 && break; sleep 3; done
+  - kubectl rollout restart deployment/checkout deployment/accounting deployment/fraud-detection
+  - kubectl rollout status deployment/checkout --timeout=300s
+  - kubectl rollout status deployment/accounting --timeout=300s
+  - kubectl rollout status deployment/fraud-detection --timeout=300s
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 300

@@ -48,5 +48,8 @@ ground_truth:
 reference:
   commands:
   - python injectors/toggle_flag.py adFailure --off
+  agent_commands:
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'
 notes:
 - 'adFailure fails ~1 in 10 requests: 30 probes catch it ~96% of the time.'

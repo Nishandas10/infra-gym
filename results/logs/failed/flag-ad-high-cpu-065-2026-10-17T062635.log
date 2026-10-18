@@ -1,0 +1,6 @@
+06:26:35 === flag-ad-high-cpu-065 (app.flag)
+06:26:36   0. world healthy?
+06:26:46   1. baseline must PASS
+06:28:48       [FAIL   ] journey:ads - 0/3 ok, avg 28ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+06:28:48       [FAIL   ] cpu_usage:opentelemetry.io/name=ad - cpu cores: ad-755d78c744-dtb9g/ad=0.72 (max 0.5)
+06:28:48   => BASELINE_FAIL  {'world_ready_s': 10}

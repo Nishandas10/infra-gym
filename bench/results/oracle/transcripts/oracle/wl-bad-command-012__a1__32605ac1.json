@@ -1,0 +1,77 @@
+{
+ "episode": "32605ac1e6a74d829c62904fbb0cb0da",
+ "scenario": "wl-bad-command-012",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:6baec4ae519d8c11c849df99cd8f0fd2faed6efad09c5f378e7e343d015cd7d6",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem, find the root cause, and fix it in the live cluster.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix,\nwithout calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Every order fails with a shipping error. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch deployment quote --type=json -p '[{\\\"op\\\":\\\"remove\\\",\\\"path\\\":\\\"/spec/template/spec/containers/0/command\\\"}]'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps/quote patched"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/quote --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "Waiting for deployment \"quote\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"quote\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"quote\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"quote\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"quote\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The quote Deployment overrides the container command with `/usr/local/bin/quote-server`, which does not exist in the image. The container can never start, so shipping cannot get a price quote and checkout fails two hops away from the real problem."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch deployment quote --type=json -p '[{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/command\"}]'",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.2,
+   "cmd": "kubectl rollout status deployment/quote --timeout=300s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 7.2
+}

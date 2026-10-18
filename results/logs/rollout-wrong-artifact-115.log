@@ -1,34 +1,34 @@
-03:52:52 === rollout-wrong-artifact-115 (k8s.bad_rollout)
-03:52:53   0. world healthy?
-03:53:02   1. baseline must PASS
-03:53:03       [PASS   ] journey:checkout - 3/3 ok, avg 112ms
-03:53:03       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-03:53:03   2. inject
-03:53:04   3. verifier must FAIL (<= 240s)
-03:53:16       [FAIL   ] journey:checkout - 0/3 ok, avg 65ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-03:53:16       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-79qvs (payment: last exit Error)
-03:53:16   4. do-nothing agent: still FAIL after 900s?
-04:08:16       [FAIL   ] journey:checkout - 0/3 ok, avg 55ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-04:08:16       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-79qvs (payment: CrashLoopBackOff)
-04:08:16       failing in 79/79 checks during the hold
-04:08:16   5. reference solution
-04:08:16     $ kubectl rollout undo deployment/payment
-04:08:17       deployment.apps/payment rolled back
-04:08:17     $ kubectl rollout status deployment/payment --timeout=300s
-04:08:18       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-04:08:18       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-04:08:18       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
-04:08:18       deployment "payment" successfully rolled out
-04:08:18   6. verifier must PASS (<= 300s)
-04:10:18       [PASS   ] journey:checkout - 3/3 ok, avg 147ms
-04:10:18       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-04:10:18   6b. invariants must PASS (shop_health)
-04:10:19       [PASS   ] journey:browse - 2/2 ok, avg 31ms
-04:10:19       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-04:10:19       [PASS   ] journey:cart - 2/2 ok, avg 44ms
-04:10:19       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
-04:10:19   6c. the fix must survive a restart of deployment/payment
-04:11:05       [PASS   ] journey:checkout - 3/3 ok, avg 116ms
-04:11:05       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
-04:11:05   7. restore exactly
-04:11:16   => VALIDATED  {'world_ready_s': 10, 'detect_s': 12, 'recover_s': 120, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+10:24:26 === rollout-wrong-artifact-115 (k8s.bad_rollout)
+10:24:27   0. world healthy?
+10:24:36   1. baseline must PASS
+10:24:37       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
+10:24:37       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+10:24:37   2. inject
+10:24:38   3. verifier must FAIL (<= 240s)
+10:24:50       [FAIL   ] journey:checkout - 0/3 ok, avg 74ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:24:50       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-wvltp (payment: last exit Error)
+10:24:50   4. do-nothing agent: still FAIL after 60s?
+10:25:51       [FAIL   ] journey:checkout - 0/3 ok, avg 47ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:25:51       [FAIL   ] pods_ready:opentelemetry.io/name=payment - 0/1 pods ready for opentelemetry.io/name=payment; payment-6866764d84-wvltp (payment: last exit Error)
+10:25:51       failing in 5/5 checks during the hold
+10:25:51   5. reference solution
+10:25:51     $ kubectl rollout undo deployment/payment
+10:25:51       deployment.apps/payment rolled back
+10:25:51     $ kubectl rollout status deployment/payment --timeout=300s
+10:25:52       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+10:25:52       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+10:25:52       Waiting for deployment "payment" rollout to finish: 1 old replicas are pending termination...
+10:25:52       deployment "payment" successfully rolled out
+10:25:52   6. verifier must PASS (<= 300s)
+10:26:03       [PASS   ] journey:checkout - 3/3 ok, avg 109ms
+10:26:03       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+10:26:03   6b. invariants must PASS (shop_health)
+10:26:04       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+10:26:04       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+10:26:04       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+10:26:04       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
+10:26:04   6c. the fix must survive a restart of deployment/payment
+10:26:51       [PASS   ] journey:checkout - 3/3 ok, avg 259ms
+10:26:51       [PASS   ] pods_ready:opentelemetry.io/name=payment - 1/1 pods ready for opentelemetry.io/name=payment
+10:26:51   7. restore exactly
+10:27:02   => VALIDATED  {'world_ready_s': 9, 'detect_s': 12, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}

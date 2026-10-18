@@ -1,34 +1,34 @@
-16:10:58 === wl-missing-configmap-volume-019 (k8s.workload_patch)
-16:10:59   0. world healthy?
-16:11:11   1. baseline must PASS
-16:11:16       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
-16:11:16       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
-16:11:16   2. inject
-16:11:16   3. verifier must FAIL (<= 240s)
-16:11:20       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/0 pods ready for opentelemetry.io/name=fraud-detection; no pods exist
-16:11:20       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
-16:11:20   4. do-nothing agent: still FAIL after 900s?
-16:26:31       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/1 pods ready for opentelemetry.io/name=fraud-detection; fraud-detection-6bdf86599b-pggg6 (wait-for-kafka: PodInitializing)
-16:26:31       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 55)
-16:26:31       failing in 64/64 checks during the hold
-16:26:31   5. reference solution
-16:26:31     $ kubectl rollout undo deployment/fraud-detection
-16:26:31       deployment.apps/fraud-detection rolled back
-16:26:31     $ kubectl rollout status deployment/fraud-detection --timeout=300s
-16:26:35       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
-16:26:35       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
-16:26:35       Waiting for deployment "fraud-detection" rollout to finish: 0 of 1 updated replicas are available...
-16:26:35       deployment "fraud-detection" successfully rolled out
-16:26:35   6. verifier must PASS (<= 300s)
-16:26:54       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
-16:26:54       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
-16:26:54   6b. invariants must PASS (shop_health)
-16:26:56       [PASS   ] journey:browse - 2/2 ok, avg 34ms
-16:26:56       [PASS   ] journey:recommendations - 2/2 ok, avg 58ms
-16:26:56       [PASS   ] journey:cart - 2/2 ok, avg 48ms
-16:26:56       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
-16:26:56   6c. the fix must survive a restart of deployment/fraud-detection
-16:27:45       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
-16:27:45       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 5 (max 50)
-16:27:45   7. restore exactly
-16:27:56   => VALIDATED  {'world_ready_s': 12, 'detect_s': 4, 'recover_s': 20, 'invariants_s': 1, 'durable_s': 5, 'restore_s': 10}
+10:59:21 === wl-missing-configmap-volume-019 (k8s.workload_patch)
+10:59:22   0. world healthy?
+10:59:31   1. baseline must PASS
+10:59:36       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+10:59:36       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 1 (max 50)
+10:59:36   2. inject
+10:59:37   3. verifier must FAIL (<= 240s)
+10:59:42       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/0 pods ready for opentelemetry.io/name=fraud-detection; no pods exist
+10:59:42       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+10:59:42   4. do-nothing agent: still FAIL after 60s?
+11:00:46       [FAIL   ] pods_ready:opentelemetry.io/name=fraud-detection - 0/1 pods ready for opentelemetry.io/name=fraud-detection; fraud-detection-7f44c7b5fc-ngcjc (wait-for-kafka: PodInitializing)
+11:00:46       [FAIL   ] kafka_lag:fraud-detection - consumer group fraud-detection has no active members (lag 1)
+11:00:46       failing in 4/4 checks during the hold
+11:00:46   5. reference solution
+11:00:46     $ kubectl rollout undo deployment/fraud-detection
+11:00:46       deployment.apps/fraud-detection rolled back
+11:00:46     $ kubectl rollout status deployment/fraud-detection --timeout=300s
+11:00:50       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
+11:00:50       Waiting for deployment "fraud-detection" rollout to finish: 0 out of 1 new replicas have been updated...
+11:00:50       Waiting for deployment "fraud-detection" rollout to finish: 0 of 1 updated replicas are available...
+11:00:50       deployment "fraud-detection" successfully rolled out
+11:00:50   6. verifier must PASS (<= 300s)
+11:01:08       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+11:01:08       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 0 (max 50)
+11:01:08   6b. invariants must PASS (shop_health)
+11:01:09       [PASS   ] journey:browse - 2/2 ok, avg 50ms
+11:01:09       [PASS   ] journey:recommendations - 2/2 ok, avg 62ms
+11:01:09       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+11:01:09       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
+11:01:09   6c. the fix must survive a restart of deployment/fraud-detection
+11:01:58       [PASS   ] pods_ready:opentelemetry.io/name=fraud-detection - 1/1 pods ready for opentelemetry.io/name=fraud-detection
+11:01:58       [PASS   ] kafka_lag:fraud-detection - consumer group fraud-detection lag 7 (max 50)
+11:01:59   7. restore exactly
+11:02:08   => VALIDATED  {'world_ready_s': 9, 'detect_s': 5, 'recover_s': 18, 'invariants_s': 1, 'durable_s': 4, 'restore_s': 9}

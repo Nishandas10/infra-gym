@@ -1,0 +1,10 @@
+06:25:22 === cpu-stress-004 (chaos.mesh)
+06:25:47   0. world healthy?
+06:25:58   1. baseline must PASS
+06:25:59       [PASS   ] journey:home - 3/3 ok, avg 32ms
+06:25:59       [PASS   ] cpu_usage:opentelemetry.io/name=frontend - cpu cores: frontend-588758ff8d-zdnh4/frontend=0.02 (max 0.8)
+06:25:59   2. inject
+06:26:00   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "StressChaos" in version "chaos-mesh.org/v1alpha1"
+06:26:00   7. restore exactly
+06:26:00       revert errors: ['delete stresschaos.chaos-mesh.org cpu-stress-004: kubectl delete stresschaos.chaos-mesh.org cpu-stress-004 --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "stresschaos" in group "chaos-mesh.org"']
+06:26:10   => ERROR  {'world_ready_s': 11, 'restore_s': 10}

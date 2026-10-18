@@ -1,17 +1,22 @@
-13:23:05 === jvm-exception-062 (chaos_mesh)
-13:23:05   0. world healthy?
-13:23:12   1. baseline must PASS
-13:23:13       [PASS   ] journey:ads - 3/3 ok, avg 22ms
-13:23:13   2. inject
-13:23:18   3. verifier must FAIL (<= 240s)
-13:23:19       [FAIL   ] journey:ads - 0/3 ok, avg 44ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-13:23:19   4. do-nothing agent: still FAIL after 30s?
-13:23:49       [FAIL   ] journey:ads - 0/3 ok, avg 40ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-13:23:49       failing in 2/2 checks during the hold
-13:23:49   5. reference solution
-13:23:49     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
-13:23:50       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
-13:23:50   6. verifier must PASS (<= 300s)
-13:23:50       [PASS   ] journey:ads - 3/3 ok, avg 25ms
-13:23:50   7. restore exactly
-13:23:57   => VALIDATED  {'world_ready_s': 7, 'detect_s': 1, 'recover_s': 0, 'restore_s': 7}
+09:30:26 === jvm-exception-062 (chaos.mesh)
+09:30:27   0. world healthy?
+09:30:35   1. baseline must PASS
+09:30:36       [PASS   ] journey:ads - 3/3 ok, avg 31ms
+09:30:36   2. inject
+09:30:42   3. verifier must FAIL (<= 240s)
+09:30:42       [FAIL   ] journey:ads - 0/3 ok, avg 39ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+09:30:42   4. do-nothing agent: still FAIL after 60s?
+09:31:43       [FAIL   ] journey:ads - 0/3 ok, avg 30ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+09:31:43       failing in 5/5 checks during the hold
+09:31:43   5. reference solution
+09:31:43     $ kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception
+09:31:43       jvmchaos.chaos-mesh.org "ad-getads-exception" deleted from default namespace
+09:31:43   6. verifier must PASS (<= 300s)
+09:31:44       [PASS   ] journey:ads - 3/3 ok, avg 31ms
+09:31:44   6b. invariants must PASS (shop_health)
+09:31:45       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+09:31:45       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
+09:31:45       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+09:31:45       [PASS   ] journey:checkout - 2/2 ok, avg 90ms
+09:31:45   7. restore exactly
+09:31:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

@@ -1,17 +1,22 @@
-13:21:26 === http-abort-058 (chaos_mesh)
-13:21:26   0. world healthy?
-13:21:32   1. baseline must PASS
-13:21:32       [PASS   ] journey:email - 3/3 ok, avg 19ms
-13:21:32   2. inject
-13:21:37   3. verifier must FAIL (<= 240s)
-13:21:38       [FAIL   ] journey:email - 0/3 ok, avg 6ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
-13:21:38   4. do-nothing agent: still FAIL after 30s?
-13:22:08       [FAIL   ] journey:email - 0/3 ok, avg 13ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
-13:22:08       failing in 2/2 checks during the hold
-13:22:08   5. reference solution
-13:22:08     $ kubectl delete httpchaos.chaos-mesh.org email-http-abort
-13:22:08       httpchaos.chaos-mesh.org "email-http-abort" deleted from default namespace
-13:22:08   6. verifier must PASS (<= 300s)
-13:22:09       [PASS   ] journey:email - 3/3 ok, avg 11ms
-13:22:09   7. restore exactly
-13:22:15   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}
+09:28:55 === http-abort-058 (chaos.mesh)
+09:28:56   0. world healthy?
+09:29:05   1. baseline must PASS
+09:29:06       [PASS   ] journey:email - 3/3 ok, avg 29ms
+09:29:06   2. inject
+09:29:11   3. verifier must FAIL (<= 240s)
+09:29:12       [FAIL   ] journey:email - 0/3 ok, avg 8ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+09:29:12   4. do-nothing agent: still FAIL after 60s?
+09:30:13       [FAIL   ] journey:email - 0/3 ok, avg 10ms; e.g. POST email/send_order_confirmation -> no response b'RemoteDisconnected: Remote end closed connection without response'
+09:30:13       failing in 5/5 checks during the hold
+09:30:13   5. reference solution
+09:30:13     $ kubectl delete httpchaos.chaos-mesh.org email-http-abort
+09:30:13       httpchaos.chaos-mesh.org "email-http-abort" deleted from default namespace
+09:30:13   6. verifier must PASS (<= 300s)
+09:30:14       [PASS   ] journey:email - 3/3 ok, avg 35ms
+09:30:14   6b. invariants must PASS (shop_health)
+09:30:15       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+09:30:15       [PASS   ] journey:recommendations - 2/2 ok, avg 70ms
+09:30:15       [PASS   ] journey:cart - 2/2 ok, avg 86ms
+09:30:15       [PASS   ] journey:checkout - 2/2 ok, avg 150ms
+09:30:15   7. restore exactly
+09:30:26   => VALIDATED  {'world_ready_s': 10, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 10}

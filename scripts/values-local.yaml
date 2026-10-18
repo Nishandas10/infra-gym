@@ -56,6 +56,19 @@ components:
     resources:
       limits:
         memory: 450Mi
+  # ad (a JVM) was OOMKilled every 10-20 minutes at the chart's 300Mi (113 restarts on one cluster in two days), and
+  # a crash-looping ad pod fails the world check (pods_ready) of whatever scenario runs at that moment.
+  ad:
+    resources:
+      limits:
+        memory: 450Mi
+  # The Kafka broker (400M heap) was OOMKilled at 700Mi after ~20 minutes of kafka-backlog-010's flood (2026-10-17
+  # 03:46, 642MB anon RSS). A broker restart leaves checkout's producer wedged, so checkout failed with 504s for the
+  # rest of that episode and after it; only restarting every pod recovered the shop.
+  kafka:
+    resources:
+      limits:
+        memory: 1Gi
 
 # Jaeger keeps traces in memory. At the chart's cap of 25,000 traces it grew to
 # ~330 MB during long validation runs, and the shrinking headroom let a single

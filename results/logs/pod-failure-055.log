@@ -1,17 +1,22 @@
-14:21:44 === pod-failure-055 (chaos_mesh)
-14:21:44   0. world healthy?
-14:21:50   1. baseline must PASS
-14:21:51       [PASS   ] journey:checkout - 3/3 ok, avg 51ms
-14:21:51   2. inject
-14:21:53   3. verifier must FAIL (<= 240s)
-14:21:54       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:21:54   4. do-nothing agent: still FAIL after 30s?
-14:22:24       [FAIL   ] journey:checkout - 0/3 ok, avg 30ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-14:22:24       failing in 2/2 checks during the hold
-14:22:24   5. reference solution
-14:22:24     $ kubectl delete podchaos.chaos-mesh.org shipping-pod-failure
-14:22:24       podchaos.chaos-mesh.org "shipping-pod-failure" deleted from default namespace
-14:22:24   6. verifier must PASS (<= 300s)
-14:22:25       [PASS   ] journey:checkout - 3/3 ok, avg 49ms
-14:22:25   7. restore exactly
-14:22:31   => VALIDATED  {'world_ready_s': 6, 'detect_s': 0, 'recover_s': 0, 'restore_s': 6}
+10:49:03 === pod-failure-055 (chaos.mesh)
+10:49:04   0. world healthy?
+10:49:13   1. baseline must PASS
+10:49:14       [PASS   ] journey:checkout - 3/3 ok, avg 85ms
+10:49:14   2. inject
+10:49:19   3. verifier must FAIL (<= 240s)
+10:49:20       [FAIL   ] journey:checkout - 0/3 ok, avg 45ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:49:20   4. do-nothing agent: still FAIL after 60s?
+10:50:20       [FAIL   ] journey:checkout - 0/3 ok, avg 54ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:50:20       failing in 5/5 checks during the hold
+10:50:20   5. reference solution
+10:50:20     $ kubectl delete podchaos.chaos-mesh.org shipping-pod-failure
+10:50:21       podchaos.chaos-mesh.org "shipping-pod-failure" deleted from default namespace
+10:50:21   6. verifier must PASS (<= 300s)
+10:50:21       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
+10:50:21   6b. invariants must PASS (shop_health)
+10:50:22       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+10:50:22       [PASS   ] journey:recommendations - 2/2 ok, avg 51ms
+10:50:22       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+10:50:22       [PASS   ] journey:checkout - 2/2 ok, avg 96ms
+10:50:23   7. restore exactly
+10:50:32   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

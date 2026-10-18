@@ -189,6 +189,9 @@ class ResolvedVerifier(Strict):
 
 class Reference(Strict):
     commands: list[str] = Field(min_length=1, description="The reference fix, run by the validation harness")
+    agent_commands: list[str] = Field([], description="The same fix as the agent can run it in its sandbox (kubectl, "
+                                      "bash, sed), when `commands` uses the repo's scripts; run by the oracle episodes "
+                                      "(bench/agent_bench.py oracle). In no hash: it changes neither the fault nor the grading")
     fix: str | None = Field(None, description="The fix in words, with any accepted alternatives (answer key)")
     traps: list[str] = []                # why the scenario is hard (Hard tier)
 

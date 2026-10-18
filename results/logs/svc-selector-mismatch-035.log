@@ -1,29 +1,29 @@
-12:39:23 === svc-selector-mismatch-035 (k8s.object_patch)
-12:39:23   0. world healthy?
-12:39:32   1. baseline must PASS
-12:39:33       [PASS   ] journey:browse - 3/3 ok, avg 24ms
-12:39:33       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
-12:39:33   2. inject
-12:39:48   3. verifier must FAIL (<= 240s)
-12:39:49       [FAIL   ] journey:browse - 0/3 ok, avg 48ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
-12:39:49       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
-12:39:49   4. do-nothing agent: still FAIL after 900s?
-12:54:50       [FAIL   ] journey:browse - 0/3 ok, avg 19ms; e.g. GET /api/products/0PUK6V6EV0 -> 500 b'Internal Server Error'
-12:54:50       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
-12:54:50       failing in 84/84 checks during the hold
-12:54:50   5. reference solution
-12:54:50     $ kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
-12:54:50       service/product-catalog patched
-12:54:50   6. verifier must PASS (<= 300s)
-12:56:47       [PASS   ] journey:browse - 3/3 ok, avg 37ms
-12:56:47       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
-12:56:47   6b. invariants must PASS (shop_health)
-12:56:48       [PASS   ] journey:browse - 2/2 ok, avg 19ms
-12:56:48       [PASS   ] journey:recommendations - 2/2 ok, avg 42ms
-12:56:48       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-12:56:48       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
-12:56:48   6c. the fix must survive a restart of deployment/product-catalog
-12:59:13       [PASS   ] journey:browse - 3/3 ok, avg 36ms
-12:59:13       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
-12:59:13   7. restore exactly
-13:01:59   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 117, 'invariants_s': 1, 'durable_s': 100, 'restore_s': 165}
+11:01:13 === svc-selector-mismatch-035 (k8s.object_patch)
+11:01:14   0. world healthy?
+11:01:24   1. baseline must PASS
+11:01:25       [PASS   ] journey:browse - 3/3 ok, avg 36ms
+11:01:25       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+11:01:25   2. inject
+11:01:41   3. verifier must FAIL (<= 240s)
+11:01:42       [FAIL   ] journey:browse - 0/3 ok, avg 28ms; e.g. GET /api/products/6E92ZMYYFZ -> 500 b'Internal Server Error'
+11:01:42       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+11:01:42   4. do-nothing agent: still FAIL after 60s?
+11:02:42       [FAIL   ] journey:browse - 0/3 ok, avg 19ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
+11:02:42       [FAIL   ] endpoints:product-catalog - service product-catalog has 0 ready endpoint(s)
+11:02:42       failing in 5/5 checks during the hold
+11:02:42   5. reference solution
+11:02:42     $ kubectl patch service product-catalog --type=json -p '[{"op":"replace","path":"/spec/selector","value":{"opentelemetry.io/name":"product-catalog"}}]'
+11:02:42       service/product-catalog patched
+11:02:42   6. verifier must PASS (<= 300s)
+11:03:04       [PASS   ] journey:browse - 3/3 ok, avg 24ms
+11:03:04       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+11:03:04   6b. invariants must PASS (shop_health)
+11:03:05       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+11:03:05       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+11:03:05       [PASS   ] journey:cart - 2/2 ok, avg 38ms
+11:03:05       [PASS   ] journey:checkout - 2/2 ok, avg 79ms
+11:03:05   6c. the fix must survive a restart of deployment/product-catalog
+11:05:32       [PASS   ] journey:browse - 3/3 ok, avg 23ms
+11:05:32       [PASS   ] endpoints:product-catalog - service product-catalog has 1 ready endpoint(s)
+11:05:32   7. restore exactly
+11:08:15   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 102, 'restore_s': 162}

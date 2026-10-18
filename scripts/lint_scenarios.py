@@ -42,6 +42,18 @@ def prompt_leaks(spec):
     return sorted(t for t in terms if re.search(rf"(?<![a-z0-9]){re.escape(t.lower())}(?![a-z0-9])", page))
 
 
+REPO_TOOLS = re.compile(r"(^|[\s;&|(])(python3?|helm)\s|(^|\s)(injectors|scripts|bench|verifiers)/")
+
+
+GYM_NAMESPACES = re.compile(r"(-n|--namespace)[ =](gym-system|chaos-mesh)\b")
+
+
+def uses_repo_tools(command):
+    """True if a command needs this repo, a tool the agent's sandbox lacks (python, helm), or a namespace the agent
+    cannot see (gym-system, chaos-mesh)."""
+    return bool(REPO_TOOLS.search(command) or GYM_NAMESPACES.search(command))
+
+
 def lint():
     """Return (number of scenarios, number of distinct mechanisms, problems, warnings)."""
     problems, warnings = [], []
@@ -64,6 +76,10 @@ def lint():
         if leaks:
             problems.append(f"{sid}: the page prompt gives the cause away ({', '.join(leaks)}); move that detail "
                             "to prompts.ticket, or add the term to task.leak_allow if it is a user-visible symptom")
+        if s.get("bench_eligible", True) and not s["reference"].get("agent_commands") \
+                and any(uses_repo_tools(c) for c in s["reference"]["commands"]):
+            problems.append(f"{sid}: reference.commands use the repo's scripts or the gym's namespaces, which the agent "
+                            "cannot; add reference.agent_commands (kubectl, bash, sed)")
         only = s["verifier"]["checks"]
         if len(only) == 1 and s.get("bench_eligible", True):
             warnings.append(f"{sid}: a single check ({checks.describe(only[0])}); add a second, more specific one "

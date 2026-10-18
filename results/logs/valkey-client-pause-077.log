@@ -1,22 +1,22 @@
-11:06:57 === valkey-client-pause-077 (runtime.exec)
-11:06:58   0. world healthy?
-11:07:07   1. baseline must PASS
-11:07:07       [PASS   ] journey:cart - 3/3 ok, avg 43ms
-11:07:07   2. inject
-11:07:08   3. verifier must FAIL (<= 240s)
-11:07:26       [FAIL   ] journey:cart - 0/3 ok, avg 5815ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-11:07:26   4. do-nothing agent: still FAIL after 900s?
-11:22:41       [FAIL   ] journey:cart - 0/3 ok, avg 4156ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-11:22:41       failing in 33/33 checks during the hold
-11:22:41   5. reference solution
-11:22:41     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
-11:22:41       OK
-11:22:41   6. verifier must PASS (<= 300s)
-11:22:41       [PASS   ] journey:cart - 3/3 ok, avg 46ms
-11:22:41   6b. invariants must PASS (shop_health)
-11:22:42       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-11:22:42       [PASS   ] journey:recommendations - 2/2 ok, avg 53ms
-11:22:42       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-11:22:42       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
-11:22:42   7. restore exactly
-11:22:52   => VALIDATED  {'world_ready_s': 9, 'detect_s': 18, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+11:08:15 === valkey-client-pause-077 (runtime.exec)
+11:08:16   0. world healthy?
+11:08:24   1. baseline must PASS
+11:08:25       [PASS   ] journey:cart - 3/3 ok, avg 42ms
+11:08:25   2. inject
+11:08:25   3. verifier must FAIL (<= 240s)
+11:08:44       [FAIL   ] journey:cart - 0/3 ok, avg 5963ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+11:08:44   4. do-nothing agent: still FAIL after 60s?
+11:10:00       [FAIL   ] journey:cart - 0/3 ok, avg 5169ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+11:10:00       failing in 2/2 checks during the hold
+11:10:00   5. reference solution
+11:10:00     $ kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE
+11:10:00       OK
+11:10:00   6. verifier must PASS (<= 300s)
+11:10:00       [PASS   ] journey:cart - 3/3 ok, avg 49ms
+11:10:00   6b. invariants must PASS (shop_health)
+11:10:01       [PASS   ] journey:browse - 2/2 ok, avg 31ms
+11:10:01       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+11:10:01       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+11:10:01       [PASS   ] journey:checkout - 2/2 ok, avg 75ms
+11:10:02   7. restore exactly
+11:10:11   => VALIDATED  {'world_ready_s': 8, 'detect_s': 18, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}

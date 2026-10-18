@@ -51,6 +51,9 @@ reference:
   - python injectors/toggle_flag.py adManualGc --off
   - kubectl rollout restart deployment/ad
   - kubectl rollout status deployment/ad --timeout=300s
+  agent_commands:
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'
 validation:
   detect_timeout_s: 300
 notes:

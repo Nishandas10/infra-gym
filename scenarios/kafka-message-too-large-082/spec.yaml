@@ -101,6 +101,9 @@ reference:
   commands:
   - kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092
     --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
+  agent_commands:
+  - kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= /opt/kafka/bin/kafka-configs.sh
+    --bootstrap-server localhost:9092 --alter --entity-type topics --entity-name orders --delete-config max.message.bytes
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 240

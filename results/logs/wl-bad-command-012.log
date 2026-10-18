@@ -1,34 +1,34 @@
-13:01:59 === wl-bad-command-012 (k8s.workload_patch)
-13:02:00   0. world healthy?
-13:02:09   1. baseline must PASS
-13:02:10       [PASS   ] journey:checkout - 3/3 ok, avg 107ms
-13:02:10       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
-13:02:10   2. inject
-13:02:10   3. verifier must FAIL (<= 240s)
-13:02:16       [FAIL   ] journey:checkout - 0/3 ok, avg 1720ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-13:02:16       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-jmtrs (quote: RunContainerError)
-13:02:16   4. do-nothing agent: still FAIL after 900s?
-13:17:17       [FAIL   ] journey:checkout - 0/3 ok, avg 49ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-13:17:17       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-jmtrs (quote: CrashLoopBackOff)
-13:17:17       failing in 83/83 checks during the hold
-13:17:17   5. reference solution
-13:17:17     $ kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
-13:17:17       deployment.apps/quote patched
-13:17:17     $ kubectl rollout status deployment/quote --timeout=300s
-13:17:18       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
-13:17:18       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
-13:17:18       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
-13:17:18       deployment "quote" successfully rolled out
-13:17:18   6. verifier must PASS (<= 300s)
-13:17:30       [PASS   ] journey:checkout - 3/3 ok, avg 137ms
-13:17:30       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
-13:17:30   6b. invariants must PASS (shop_health)
-13:17:30       [PASS   ] journey:browse - 2/2 ok, avg 19ms
-13:17:30       [PASS   ] journey:recommendations - 2/2 ok, avg 40ms
-13:17:30       [PASS   ] journey:cart - 2/2 ok, avg 46ms
-13:17:30       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
-13:17:30   6c. the fix must survive a restart of deployment/quote
-13:18:17       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
-13:18:17       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
-13:18:17   7. restore exactly
-13:18:27   => VALIDATED  {'world_ready_s': 9, 'detect_s': 6, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 10}
+11:14:36 === wl-bad-command-012 (k8s.workload_patch)
+11:14:37   0. world healthy?
+11:14:45   1. baseline must PASS
+11:14:46       [PASS   ] journey:checkout - 3/3 ok, avg 94ms
+11:14:46       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+11:14:46   2. inject
+11:14:46   3. verifier must FAIL (<= 240s)
+11:14:52       [FAIL   ] journey:checkout - 0/3 ok, avg 1724ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+11:14:52       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-6k7vn (quote: RunContainerError)
+11:14:52   4. do-nothing agent: still FAIL after 60s?
+11:15:53       [FAIL   ] journey:checkout - 0/3 ok, avg 45ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+11:15:53       [FAIL   ] pods_ready:opentelemetry.io/name=quote - 0/1 pods ready for opentelemetry.io/name=quote; quote-6cc4d7ddf8-6k7vn (quote: RunContainerError)
+11:15:53       failing in 5/5 checks during the hold
+11:15:53   5. reference solution
+11:15:53     $ kubectl patch deployment quote --type=json -p '[{"op":"remove","path":"/spec/template/spec/containers/0/command"}]'
+11:15:53       deployment.apps/quote patched
+11:15:53     $ kubectl rollout status deployment/quote --timeout=300s
+11:15:54       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+11:15:54       Waiting for deployment "quote" rollout to finish: 0 out of 1 new replicas have been updated...
+11:15:54       Waiting for deployment "quote" rollout to finish: 0 of 1 updated replicas are available...
+11:15:54       deployment "quote" successfully rolled out
+11:15:54   6. verifier must PASS (<= 300s)
+11:15:55       [PASS   ] journey:checkout - 3/3 ok, avg 114ms
+11:15:55       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+11:15:55   6b. invariants must PASS (shop_health)
+11:15:56       [PASS   ] journey:browse - 2/2 ok, avg 19ms
+11:15:56       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
+11:15:56       [PASS   ] journey:cart - 2/2 ok, avg 34ms
+11:15:56       [PASS   ] journey:checkout - 2/2 ok, avg 81ms
+11:15:56   6c. the fix must survive a restart of deployment/quote
+11:16:42       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
+11:16:42       [PASS   ] pods_ready:opentelemetry.io/name=quote - 1/1 pods ready for opentelemetry.io/name=quote
+11:16:42   7. restore exactly
+11:16:51   => VALIDATED  {'world_ready_s': 8, 'detect_s': 6, 'recover_s': 1, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

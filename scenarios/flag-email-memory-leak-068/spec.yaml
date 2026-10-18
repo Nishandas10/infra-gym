@@ -76,6 +76,9 @@ reference:
   - python injectors/toggle_flag.py emailMemoryLeak --off
   - kubectl rollout restart deployment/email
   - kubectl rollout status deployment/email --timeout=300s
+  agent_commands:
+  - kubectl rollout restart deployment/flagd
+  - kubectl rollout status deployment/flagd --timeout=120s
 validation:
   baseline_timeout_s: 400
   detect_timeout_s: 900

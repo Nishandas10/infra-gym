@@ -1,0 +1,52 @@
+{
+ "episode": "486e8d14323f4a66b3b7e2411d5f682d",
+ "scenario": "hard-allowlist-forgets-checkout-106",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:36179c24464778e222ef4625e5326791558fa6d054e8a87562432260ef4f94ec",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 40 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem, find the root cause, and fix it in the live cluster.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix,\nwithout calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Checkout started failing right after this morning's deploys. Browsing the shop still works. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{\\\"op\\\":\\\"add\\\",\\\"path\\\":\\\"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-\\\",\\\"value\\\":\\\"checkout\\\"}]'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "networkpolicy.networking.k8s.io/product-catalog-allow-clients patched"
+  },
+  {
+   "role": "assistant",
+   "content": "NetworkPolicy product-catalog-allow-clients admits only frontend and recommendation, so checkout's product lookups time out. Browsing works because the frontend is allowed. The payment rollout with a scary change-cause happened at the same time but is harmless."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch networkpolicy product-catalog-allow-clients --type=json -p '[{\"op\":\"add\",\"path\":\"/spec/ingress/0/from/0/podSelector/matchExpressions/0/values/-\",\"value\":\"checkout\"}]'",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 48.2
+}

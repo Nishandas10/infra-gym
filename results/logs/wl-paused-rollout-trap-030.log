@@ -1,31 +1,30 @@
-14:10:36 === wl-paused-rollout-trap-030 (composite)
-14:10:37   0. world healthy?
-14:10:46   1. baseline must PASS
-14:10:47       [PASS   ] journey:cart - 3/3 ok, avg 49ms
-14:10:47   2. inject
-14:11:13   3. verifier must FAIL (<= 240s)
-14:11:13       [FAIL   ] journey:cart - 0/3 ok, avg 29ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:11:13   4. do-nothing agent: still FAIL after 900s?
-14:26:14       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-14:26:14       failing in 85/85 checks during the hold
-14:26:14   5. reference solution
-14:26:14     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
-14:26:14       deployment.apps/cart env updated
-14:26:14     $ kubectl rollout resume deployment/cart
-14:26:14       deployment.apps/cart resumed
-14:26:14     $ kubectl rollout status deployment/cart --timeout=300s
-14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-14:26:16       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
-14:26:16       deployment "cart" successfully rolled out
-14:26:16   6. verifier must PASS (<= 300s)
-14:26:49       [PASS   ] journey:cart - 3/3 ok, avg 64ms
-14:26:49   6b. invariants must PASS (shop_health)
-14:26:50       [PASS   ] journey:browse - 2/2 ok, avg 29ms
-14:26:50       [PASS   ] journey:recommendations - 2/2 ok, avg 46ms
-14:26:50       [PASS   ] journey:cart - 2/2 ok, avg 56ms
-14:26:50       [PASS   ] journey:checkout - 2/2 ok, avg 132ms
-14:26:50   6c. the fix must survive a restart of deployment/cart
-14:27:36       [PASS   ] journey:cart - 3/3 ok, avg 52ms
-14:27:36   7. restore exactly
-14:28:04   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 33, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 28}
+12:00:41 === wl-paused-rollout-trap-030 (composite)
+12:00:42   0. world healthy?
+12:00:54   1. baseline must PASS
+12:00:55       [PASS   ] journey:cart - 3/3 ok, avg 57ms
+12:00:55   2. inject
+12:01:21   3. verifier must FAIL (<= 240s)
+12:01:21       [FAIL   ] journey:cart - 0/3 ok, avg 28ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+12:01:21   4. do-nothing agent: still FAIL after 60s?
+12:02:22       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+12:02:22       failing in 5/5 checks during the hold
+12:02:22   5. reference solution
+12:02:22     $ kubectl set env deployment/cart VALKEY_ADDR=valkey-cart:6379
+12:02:22       deployment.apps/cart env updated
+12:02:22     $ kubectl rollout resume deployment/cart
+12:02:22       deployment.apps/cart resumed
+12:02:22     $ kubectl rollout status deployment/cart --timeout=300s
+12:02:24       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+12:02:24       Waiting for deployment "cart" rollout to finish: 1 old replicas are pending termination...
+12:02:24       deployment "cart" successfully rolled out
+12:02:24   6. verifier must PASS (<= 300s)
+12:02:46       [PASS   ] journey:cart - 3/3 ok, avg 70ms
+12:02:46   6b. invariants must PASS (shop_health)
+12:02:47       [PASS   ] journey:browse - 2/2 ok, avg 30ms
+12:02:47       [PASS   ] journey:recommendations - 2/2 ok, avg 73ms
+12:02:47       [PASS   ] journey:cart - 2/2 ok, avg 55ms
+12:02:47       [PASS   ] journey:checkout - 2/2 ok, avg 121ms
+12:02:47   6c. the fix must survive a restart of deployment/cart
+12:05:12       [PASS   ] journey:cart - 3/3 ok, avg 61ms
+12:05:12   7. restore exactly
+12:05:43   => VALIDATED  {'world_ready_s': 13, 'detect_s': 1, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 99, 'restore_s': 30}

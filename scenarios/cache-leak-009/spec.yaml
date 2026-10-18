@@ -85,6 +85,9 @@ reference:
   - python injectors/toggle_flag.py recommendationCacheFailure --off
   - kubectl rollout restart deployment/recommendation
   - kubectl rollout status deployment/recommendation --timeout=180s
+  agent_commands:
+  - kubectl rollout restart deployment/flagd
+  - kubectl rollout status deployment/flagd --timeout=120s
 validation:
   baseline_timeout_s: 700
   detect_timeout_s: 1200

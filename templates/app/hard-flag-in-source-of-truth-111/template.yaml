@@ -54,6 +54,10 @@ ground_truth:
 reference:
   commands:
   - python injectors/source_flag.py paymentFailure off
+  agent_commands:
+  - 'kubectl get configmap flagd-config -o yaml | sed ''/"paymentFailure": {/,/"defaultVariant"/ s/"defaultVariant": "[^"]*"/"defaultVariant": "off"/'' | kubectl apply -f -'
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'
   fix: Set paymentFailure to off in the flagd-config ConfigMap (the source of truth) and restart flagd, or fix both
     the ConfigMap and the live file. Fixing only the live file does not survive a flagd restart.
   traps:

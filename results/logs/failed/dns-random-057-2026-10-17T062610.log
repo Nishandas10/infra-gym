@@ -1,0 +1,9 @@
+06:26:10 === dns-random-057 (chaos.mesh)
+06:26:11   0. world healthy?
+06:26:21   1. baseline must PASS
+06:26:22       [PASS   ] journey:recommendations - 3/3 ok, avg 88ms
+06:26:22   2. inject
+06:26:23   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "DNSChaos" in version "chaos-mesh.org/v1alpha1"
+06:26:23   7. restore exactly
+06:26:23       revert errors: ['delete dnschaos.chaos-mesh.org catalog-dns-random: kubectl delete dnschaos.chaos-mesh.org catalog-dns-random --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "dnschaos" in group "chaos-mesh.org"']
+06:26:35   => ERROR  {'world_ready_s': 10, 'restore_s': 12}

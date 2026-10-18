@@ -1,0 +1,52 @@
+{
+ "episode": "0af83d2053934e05aa5b17d18a995863",
+ "scenario": "svc-selector-mismatch-035",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:860019c5105ea9daad34bf238b12c6b9578aaaaa8d576ea6f024e3253d5854fe",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem, find the root cause, and fix it in the live cluster.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix,\nwithout calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Product pages, recommendations and checkout all fail. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl patch service product-catalog --type=json -p '[{\\\"op\\\":\\\"replace\\\",\\\"path\\\":\\\"/spec/selector\\\",\\\"value\\\":{\\\"opentelemetry.io/name\\\":\\\"product-catalog\\\"}}]'\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "service/product-catalog patched"
+  },
+  {
+   "role": "assistant",
+   "content": "The `product-catalog` Service selector was changed to `opentelemetry.io/name=product-catalog-v2`, which no pod carries, so the Service has no endpoints."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl patch service product-catalog --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/selector\",\"value\":{\"opentelemetry.io/name\":\"product-catalog\"}}]'",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 6.2
+}

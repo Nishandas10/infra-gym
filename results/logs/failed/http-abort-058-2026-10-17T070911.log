@@ -1,0 +1,9 @@
+07:09:11 === http-abort-058 (chaos.mesh)
+07:09:11   0. world healthy?
+07:09:20   1. baseline must PASS
+07:09:21       [PASS   ] journey:email - 3/3 ok, avg 30ms
+07:09:21   2. inject
+07:09:21   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "HTTPChaos" in version "chaos-mesh.org/v1alpha1"
+07:09:21   7. restore exactly
+07:09:21       revert errors: ['delete httpchaos.chaos-mesh.org email-http-abort: kubectl delete httpchaos.chaos-mesh.org email-http-abort --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "httpchaos" in group "chaos-mesh.org"']
+07:09:33   => ERROR  {'world_ready_s': 9, 'restore_s': 12}

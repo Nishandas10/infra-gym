@@ -1,33 +1,34 @@
-12:46:15 === wl-client-dns-typo-015 (k8s.workload_patch)
-12:46:16   0. world healthy?
-12:46:25   1. baseline must PASS
-12:46:25       [PASS   ] journey:cart - 3/3 ok, avg 40ms
-12:46:25       [PASS   ] journey:checkout - 3/3 ok, avg 89ms
-12:46:25   2. inject
-12:46:26   3. verifier must FAIL (<= 240s)
-12:46:37       [FAIL   ] journey:cart - 0/3 ok, avg 20ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-12:46:37       [FAIL   ] journey:checkout - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-12:46:37   4. do-nothing agent: still FAIL after 900s?
-13:01:38       [FAIL   ] journey:cart - 0/3 ok, avg 16ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-13:01:38       [FAIL   ] journey:checkout - 0/3 ok, avg 16ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-13:01:38       failing in 84/84 checks during the hold
-13:01:38   5. reference solution
-13:01:38     $ kubectl set env deployment/frontend CART_ADDR=cart:8080
-13:01:38       deployment.apps/frontend env updated
-13:01:38     $ kubectl rollout status deployment/frontend --timeout=300s
-13:01:39       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-13:01:39       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-13:01:39       deployment "frontend" successfully rolled out
-13:01:39   6. verifier must PASS (<= 300s)
-13:01:57       [PASS   ] journey:cart - 3/3 ok, avg 77ms
-13:01:57       [PASS   ] journey:checkout - 3/3 ok, avg 106ms
-13:01:57   6b. invariants must PASS (shop_health)
-13:01:58       [PASS   ] journey:browse - 2/2 ok, avg 29ms
-13:01:58       [PASS   ] journey:recommendations - 2/2 ok, avg 68ms
-13:01:58       [PASS   ] journey:cart - 2/2 ok, avg 66ms
-13:01:58       [PASS   ] journey:checkout - 2/2 ok, avg 126ms
-13:01:58   6c. the fix must survive a restart of deployment/frontend
-13:02:44       [PASS   ] journey:cart - 3/3 ok, avg 60ms
-13:02:44       [PASS   ] journey:checkout - 3/3 ok, avg 78ms
-13:02:44   7. restore exactly
-13:02:54   => VALIDATED  {'world_ready_s': 9, 'detect_s': 12, 'recover_s': 17, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+10:38:45 === wl-client-dns-typo-015 (k8s.workload_patch)
+10:38:46   0. world healthy?
+10:38:58   1. baseline must PASS
+10:38:59       [PASS   ] journey:cart - 3/3 ok, avg 61ms
+10:38:59       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
+10:38:59   2. inject
+10:38:59   3. verifier must FAIL (<= 240s)
+10:39:11       [FAIL   ] journey:cart - 0/3 ok, avg 37ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+10:39:11       [FAIL   ] journey:checkout - 0/3 ok, avg 26ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+10:39:11   4. do-nothing agent: still FAIL after 60s?
+10:40:12       [FAIL   ] journey:cart - 0/3 ok, avg 17ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+10:40:12       [FAIL   ] journey:checkout - 0/3 ok, avg 14ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+10:40:12       failing in 5/5 checks during the hold
+10:40:12   5. reference solution
+10:40:12     $ kubectl set env deployment/frontend CART_ADDR=cart:8080
+10:40:12       deployment.apps/frontend env updated
+10:40:12     $ kubectl rollout status deployment/frontend --timeout=300s
+10:40:13       Waiting for deployment "frontend" rollout to finish: 0 out of 1 new replicas have been updated...
+10:40:13       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+10:40:13       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+10:40:13       deployment "frontend" successfully rolled out
+10:40:13   6. verifier must PASS (<= 300s)
+10:40:27       [PASS   ] journey:cart - 3/3 ok, avg 52ms
+10:40:27       [PASS   ] journey:checkout - 3/3 ok, avg 99ms
+10:40:27   6b. invariants must PASS (shop_health)
+10:40:28       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+10:40:28       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+10:40:28       [PASS   ] journey:cart - 2/2 ok, avg 42ms
+10:40:28       [PASS   ] journey:checkout - 2/2 ok, avg 91ms
+10:40:28   6c. the fix must survive a restart of deployment/frontend
+10:41:14       [PASS   ] journey:cart - 3/3 ok, avg 69ms
+10:41:14       [PASS   ] journey:checkout - 3/3 ok, avg 111ms
+10:41:14   7. restore exactly
+10:41:24   => VALIDATED  {'world_ready_s': 12, 'detect_s': 12, 'recover_s': 14, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

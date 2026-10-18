@@ -1,39 +1,39 @@
-08:05:06 === wl-image-pull-011 (k8s.workload_patch)
-08:05:07   0. world healthy?
-08:05:15   1. baseline must PASS
-08:05:16       [PASS   ] journey:currency - 3/3 ok, avg 28ms
-08:05:16       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
-08:05:16       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-08:05:16   2. inject
-08:05:16   3. verifier must FAIL (<= 240s)
-08:05:37       [FAIL   ] journey:currency - 0/3 ok, avg 22ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
-08:05:37       [FAIL   ] journey:checkout - 0/3 ok, avg 6703ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-08:05:37       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-rlft6 (currency: ImagePullBackOff)
-08:05:37   4. do-nothing agent: still FAIL after 900s?
-08:20:38       [FAIL   ] journey:currency - 0/3 ok, avg 19ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
-08:20:38       [FAIL   ] journey:checkout - 0/3 ok, avg 44ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-08:20:38       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-rlft6 (currency: ImagePullBackOff)
-08:20:38       failing in 83/83 checks during the hold
-08:20:38   5. reference solution
-08:20:38     $ kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
-08:20:38       deployment.apps/currency image updated
-08:20:38     $ kubectl rollout status deployment/currency --timeout=300s
-08:20:40       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
-08:20:40       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
-08:20:40       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
-08:20:40       deployment "currency" successfully rolled out
-08:20:40   6. verifier must PASS (<= 300s)
-08:22:07       [PASS   ] journey:currency - 3/3 ok, avg 22ms
-08:22:07       [PASS   ] journey:checkout - 3/3 ok, avg 94ms
-08:22:07       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-08:22:07   6b. invariants must PASS (shop_health)
-08:22:08       [PASS   ] journey:browse - 2/2 ok, avg 18ms
-08:22:08       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
-08:22:08       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-08:22:08       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
-08:22:08   6c. the fix must survive a restart of deployment/currency
-08:22:54       [PASS   ] journey:currency - 3/3 ok, avg 22ms
-08:22:54       [PASS   ] journey:checkout - 3/3 ok, avg 95ms
-08:22:54       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
-08:22:55   7. restore exactly
-08:23:03   => VALIDATED  {'world_ready_s': 8, 'detect_s': 21, 'recover_s': 87, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+11:33:04 === wl-image-pull-011 (k8s.workload_patch)
+11:33:05   0. world healthy?
+11:33:13   1. baseline must PASS
+11:33:14       [PASS   ] journey:currency - 3/3 ok, avg 26ms
+11:33:14       [PASS   ] journey:checkout - 3/3 ok, avg 87ms
+11:33:14       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+11:33:14   2. inject
+11:33:14   3. verifier must FAIL (<= 240s)
+11:33:35       [FAIL   ] journey:currency - 0/3 ok, avg 18ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+11:33:35       [FAIL   ] journey:checkout - 0/3 ok, avg 6700ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+11:33:35       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-97vgr (currency: ImagePullBackOff)
+11:33:35   4. do-nothing agent: still FAIL after 60s?
+11:34:36       [FAIL   ] journey:currency - 0/3 ok, avg 23ms; e.g. GET /api/products?currencyCode=EUR -> 500 b'Internal Server Error'
+11:34:36       [FAIL   ] journey:checkout - 0/3 ok, avg 61ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+11:34:36       [FAIL   ] pods_ready:opentelemetry.io/name=currency - 0/1 pods ready for opentelemetry.io/name=currency; currency-76d66c5844-97vgr (currency: ImagePullBackOff)
+11:34:36       failing in 5/5 checks during the hold
+11:34:36   5. reference solution
+11:34:36     $ kubectl set image deployment/currency currency=ghcr.io/open-telemetry/demo:3.1.0-currency
+11:34:36       deployment.apps/currency image updated
+11:34:36     $ kubectl rollout status deployment/currency --timeout=300s
+11:34:39       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+11:34:39       Waiting for deployment "currency" rollout to finish: 0 out of 1 new replicas have been updated...
+11:34:39       Waiting for deployment "currency" rollout to finish: 0 of 1 updated replicas are available...
+11:34:39       deployment "currency" successfully rolled out
+11:34:39   6. verifier must PASS (<= 300s)
+11:34:51       [PASS   ] journey:currency - 3/3 ok, avg 25ms
+11:34:51       [PASS   ] journey:checkout - 3/3 ok, avg 90ms
+11:34:51       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+11:34:51   6b. invariants must PASS (shop_health)
+11:34:52       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+11:34:52       [PASS   ] journey:recommendations - 2/2 ok, avg 66ms
+11:34:52       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+11:34:52       [PASS   ] journey:checkout - 2/2 ok, avg 77ms
+11:34:52   6c. the fix must survive a restart of deployment/currency
+11:35:38       [PASS   ] journey:currency - 3/3 ok, avg 26ms
+11:35:38       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+11:35:38       [PASS   ] pods_ready:opentelemetry.io/name=currency - 1/1 pods ready for opentelemetry.io/name=currency
+11:35:38   7. restore exactly
+11:35:47   => VALIDATED  {'world_ready_s': 8, 'detect_s': 21, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

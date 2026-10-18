@@ -1,0 +1,10 @@
+07:46:16 === pod-kill-003 (chaos.mesh)
+07:46:17   0. world healthy?
+07:46:25   1. baseline must PASS
+07:46:26       [PASS   ] journey:checkout - 3/3 ok, avg 93ms
+07:46:26       [PASS   ] pods_stable:opentelemetry.io/name=checkout - 1 pod(s) stable for >= 90s (opentelemetry.io/name=checkout)
+07:46:26   2. inject
+07:46:26   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "Schedule" in version "chaos-mesh.org/v1alpha1"
+07:46:26   7. restore exactly
+07:46:27       revert errors: ['delete schedule.chaos-mesh.org pod-kill-003: kubectl delete schedule.chaos-mesh.org pod-kill-003 --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "schedule" in group "chaos-mesh.org"']
+07:46:35   => ERROR  {'world_ready_s': 8, 'restore_s': 8}

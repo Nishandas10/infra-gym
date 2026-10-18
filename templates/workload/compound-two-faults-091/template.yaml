@@ -64,3 +64,8 @@ reference:
   - kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080
   - kubectl rollout status deployment/recommendation --timeout=300s
   - python injectors/toggle_flag.py adFailure --off
+  agent_commands:
+  - 'kubectl set env deployment/recommendation PRODUCT_CATALOG_ADDR=product-catalog:8080'
+  - 'kubectl rollout status deployment/recommendation --timeout=300s'
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'

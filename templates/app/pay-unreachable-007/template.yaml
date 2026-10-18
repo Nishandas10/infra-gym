@@ -48,6 +48,9 @@ ground_truth:
 reference:
   commands:
   - python injectors/toggle_flag.py paymentUnreachable --off
+  agent_commands:
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'
 validation:
   detect_timeout_s: 120
   recover_timeout_s: 120

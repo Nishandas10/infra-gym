@@ -75,6 +75,8 @@ ground_truth:
 reference:
   commands:
   - bash scripts/reset_world.sh
+  agent_commands:
+  - kubectl expose deployment email --name=email --port=8080 --target-port=8080
 validation:
   baseline_timeout_s: 120
   detect_timeout_s: 240

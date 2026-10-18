@@ -47,3 +47,6 @@ ground_truth:
 reference:
   commands:
   - python injectors/toggle_flag.py cartFailure --off
+  agent_commands:
+  - 'kubectl rollout restart deployment/flagd'
+  - 'kubectl rollout status deployment/flagd --timeout=120s'

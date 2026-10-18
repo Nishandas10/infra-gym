@@ -1,34 +1,34 @@
-12:02:08 === kube-proxy-stopped-051 (composite)
-12:02:09   0. world healthy?
-12:02:18   1. baseline must PASS
-12:02:19       [PASS   ] journey:checkout - 3/3 ok, avg 82ms
-12:02:19       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
-12:02:19   2. inject
-12:02:42   3. verifier must FAIL (<= 300s)
-12:02:43       [FAIL   ] journey:checkout - 0/3 ok, avg 76ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-12:02:43       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
-12:02:43   4. do-nothing agent: still FAIL after 900s?
-12:17:44       [FAIL   ] journey:checkout - 0/3 ok, avg 63ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-12:17:44       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
-12:17:44       failing in 83/83 checks during the hold
-12:17:44   5. reference solution
-12:17:44     $ kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
-12:17:44       daemonset.apps/kube-proxy patched
-12:17:44     $ kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
-12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 0 of 3 updated pods are available...
-12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 1 of 3 updated pods are available...
-12:17:45       Waiting for daemon set "kube-proxy" rollout to finish: 2 of 3 updated pods are available...
-12:17:45       daemon set "kube-proxy" successfully rolled out
-12:17:45   6. verifier must PASS (<= 300s)
-12:20:49       [PASS   ] journey:checkout - 3/3 ok, avg 111ms
-12:20:49       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
-12:20:49   6b. invariants must PASS (shop_health)
-12:20:50       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-12:20:50       [PASS   ] journey:recommendations - 2/2 ok, avg 38ms
-12:20:50       [PASS   ] journey:cart - 2/2 ok, avg 38ms
-12:20:50       [PASS   ] journey:checkout - 2/2 ok, avg 76ms
-12:20:50   6c. the fix must survive a restart of daemonset/kube-proxy, opentelemetry.io/name=payment
-12:21:37       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
-12:21:37       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
-12:21:37   7. restore exactly
-12:21:46   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 184, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+10:13:50 === kube-proxy-stopped-051 (composite)
+10:13:50   0. world healthy?
+10:13:59   1. baseline must PASS
+10:14:00       [PASS   ] journey:checkout - 3/3 ok, avg 90ms
+10:14:00       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+10:14:00   2. inject
+10:14:23   3. verifier must FAIL (<= 300s)
+10:14:25       [FAIL   ] journey:checkout - 0/3 ok, avg 118ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:14:25       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
+10:14:25   4. do-nothing agent: still FAIL after 60s?
+10:15:26       [FAIL   ] journey:checkout - 0/3 ok, avg 53ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:15:26       [FAIL   ] pods_ready:k8s-app=kube-proxy - 0/0 pods ready for k8s-app=kube-proxy; no pods exist
+10:15:26       failing in 5/5 checks during the hold
+10:15:26   5. reference solution
+10:15:26     $ kubectl -n kube-system patch daemonset kube-proxy --type=json -p '[{"op":"remove","path":"/spec/template/spec/nodeSelector/proxy-tier"}]'
+10:15:26       daemonset.apps/kube-proxy patched
+10:15:26     $ kubectl -n kube-system rollout status daemonset/kube-proxy --timeout=180s
+10:15:27       Waiting for daemon set "kube-proxy" rollout to finish: 0 of 3 updated pods are available...
+10:15:27       Waiting for daemon set "kube-proxy" rollout to finish: 1 of 3 updated pods are available...
+10:15:27       Waiting for daemon set "kube-proxy" rollout to finish: 2 of 3 updated pods are available...
+10:15:27       daemon set "kube-proxy" successfully rolled out
+10:15:27   6. verifier must PASS (<= 300s)
+10:16:01       [PASS   ] journey:checkout - 3/3 ok, avg 120ms
+10:16:01       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+10:16:01   6b. invariants must PASS (shop_health)
+10:16:02       [PASS   ] journey:browse - 2/2 ok, avg 25ms
+10:16:02       [PASS   ] journey:recommendations - 2/2 ok, avg 43ms
+10:16:02       [PASS   ] journey:cart - 2/2 ok, avg 40ms
+10:16:02       [PASS   ] journey:checkout - 2/2 ok, avg 88ms
+10:16:02   6c. the fix must survive a restart of daemonset/kube-proxy, opentelemetry.io/name=payment
+10:16:48       [PASS   ] journey:checkout - 3/3 ok, avg 117ms
+10:16:48       [PASS   ] pods_ready:k8s-app=kube-proxy - 3/3 pods ready for k8s-app=kube-proxy
+10:16:48   7. restore exactly
+10:16:58   => VALIDATED  {'world_ready_s': 9, 'detect_s': 2, 'recover_s': 34, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

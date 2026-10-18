@@ -1,21 +1,26 @@
-14:22:31 === pod-kill-003 (chaos_mesh)
-14:22:31   0. world healthy?
-14:22:37   1. baseline must PASS
-14:22:37       [PASS   ] journey:checkout - 3/3 ok, avg 55ms
-14:22:37       [PASS   ] pods_stable:opentelemetry.io/name=checkout - 1 pod(s) stable for >= 90s (opentelemetry.io/name=checkout)
-14:22:37   2. inject
-14:22:40   3. verifier must FAIL (<= 150s)
-14:23:33       [PASS   ] journey:checkout - 3/3 ok, avg 48ms
-14:23:33       [FAIL   ] pods_stable:opentelemetry.io/name=checkout - checkout-dcfb977c-59djw is only 10s old
-14:23:33   4. do-nothing agent: still FAIL after 120s?
-14:25:33       [PASS   ] journey:checkout - 3/3 ok, avg 48ms
-14:25:33       [FAIL   ] pods_stable:opentelemetry.io/name=checkout - checkout-dcfb977c-ptvl6 is only 40s old
-14:25:33       failing in 11/11 checks during the hold
-14:25:33   5. reference solution
-14:25:33     $ kubectl delete schedule.chaos-mesh.org pod-kill-003
-14:25:34       schedule.chaos-mesh.org "pod-kill-003" deleted from default namespace
-14:25:34   6. verifier must PASS (<= 240s)
-14:26:27       [PASS   ] journey:checkout - 3/3 ok, avg 68ms
-14:26:27       [PASS   ] pods_stable:opentelemetry.io/name=checkout - 1 pod(s) stable for >= 90s (opentelemetry.io/name=checkout)
-14:26:27   7. restore exactly
-14:26:33   => VALIDATED  {'world_ready_s': 6, 'detect_s': 53, 'recover_s': 53, 'restore_s': 6}
+10:14:37 === pod-kill-003 (chaos.mesh)
+10:14:38   0. world healthy?
+10:14:47   1. baseline must PASS
+10:14:48       [PASS   ] journey:checkout - 3/3 ok, avg 91ms
+10:14:48       [PASS   ] pods_stable:opentelemetry.io/name=checkout - 1 pod(s) stable for >= 90s (opentelemetry.io/name=checkout)
+10:14:48   2. inject
+10:14:50   3. verifier must FAIL (<= 150s)
+10:15:36       [FAIL   ] journey:checkout - 0/3 ok, avg 56ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:15:36       [FAIL   ] pods_stable:opentelemetry.io/name=checkout - checkout-6f8cbf88df-tnzzn is only 3s old
+10:15:36   4. do-nothing agent: still FAIL after 120s?
+10:17:36       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
+10:17:36       [FAIL   ] pods_stable:opentelemetry.io/name=checkout - checkout-6f8cbf88df-64dhn is only 33s old
+10:17:36       failing in 10/10 checks during the hold
+10:17:36   5. reference solution
+10:17:36     $ kubectl delete schedule.chaos-mesh.org pod-kill-003
+10:17:36       schedule.chaos-mesh.org "pod-kill-003" deleted from default namespace
+10:17:36   6. verifier must PASS (<= 240s)
+10:18:37       [PASS   ] journey:checkout - 3/3 ok, avg 105ms
+10:18:37       [PASS   ] pods_stable:opentelemetry.io/name=checkout - 1 pod(s) stable for >= 90s (opentelemetry.io/name=checkout)
+10:18:37   6b. invariants must PASS (shop_health)
+10:18:38       [PASS   ] journey:browse - 2/2 ok, avg 26ms
+10:18:38       [PASS   ] journey:recommendations - 2/2 ok, avg 60ms
+10:18:38       [PASS   ] journey:cart - 2/2 ok, avg 49ms
+10:18:38       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
+10:18:38   7. restore exactly
+10:18:48   => VALIDATED  {'world_ready_s': 10, 'detect_s': 45, 'recover_s': 60, 'invariants_s': 1, 'restore_s': 10}

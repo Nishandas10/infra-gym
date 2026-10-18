@@ -1,32 +1,32 @@
-08:49:49 === hard-silent-ledger-write-denied-105 (composite)
-08:49:50   0. world healthy?
-08:49:58   1. baseline must PASS
-08:50:00       [PASS   ] journey:checkout - 2/2 ok, avg 78ms
-08:50:00       [PASS   ] orders_recorded - accounting recorded the new order (5898 -> 5900 rows)
-08:50:00   2. inject
-08:50:00   3. verifier must FAIL (<= 300s)
-08:51:36       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
-08:51:36       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 5900 rows)
-08:51:36   4. do-nothing agent: still FAIL after 1200s?
-09:14:18       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
-09:14:18       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 5900 rows)
-09:14:18       failing in 12/12 checks during the hold
-09:14:18   5. reference solution
-09:14:18     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT INSERT ON accounting."order" TO astronomy_user'
-09:14:18       GRANT
-09:14:18     $ kubectl rollout restart deployment/accounting
-09:14:18       deployment.apps/accounting restarted
-09:14:18     $ kubectl rollout status deployment/accounting --timeout=300s
-09:14:20       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
-09:14:20       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
-09:14:20       deployment "accounting" successfully rolled out
-09:14:20   6. verifier must PASS (<= 420s)
-09:14:28       [PASS   ] journey:checkout - 2/2 ok, avg 131ms
-09:14:28       [PASS   ] orders_recorded - accounting recorded the new order (5900 -> 5903 rows)
-09:14:28   6b. invariants must PASS (shop_health)
-09:14:29       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-09:14:29       [PASS   ] journey:recommendations - 2/2 ok, avg 41ms
-09:14:29       [PASS   ] journey:cart - 2/2 ok, avg 40ms
-09:14:29       [PASS   ] journey:checkout - 2/2 ok, avg 98ms
-09:14:29   7. restore exactly
-09:14:38   => VALIDATED  {'world_ready_s': 8, 'detect_s': 96, 'recover_s': 7, 'invariants_s': 1, 'restore_s': 9}
+09:22:40 === hard-silent-ledger-write-denied-105 (composite)
+09:22:41   0. world healthy?
+09:23:12   1. baseline must PASS
+09:23:17       [PASS   ] journey:checkout - 2/2 ok, avg 347ms
+09:23:17       [PASS   ] orders_recorded - accounting recorded the new order (540 -> 541 rows)
+09:23:17   2. inject
+09:23:19   3. verifier must FAIL (<= 300s)
+09:25:02       [PASS   ] journey:checkout - 2/2 ok, avg 1108ms
+09:25:02       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 542 rows)
+09:25:02   4. do-nothing agent: still FAIL after 60s?
+09:28:31       [PASS   ] journey:checkout - 2/2 ok, avg 270ms
+09:28:31       [FAIL   ] orders_recorded - order placed but accounting did not record it within 90s (still 542 rows)
+09:28:31       failing in 1/1 checks during the hold
+09:28:31   5. reference solution
+09:28:31     $ kubectl exec deploy/astronomy-db -- psql -U postgres -d astronomy_db -c 'GRANT INSERT ON accounting."order" TO astronomy_user'
+09:28:32       GRANT
+09:28:32     $ kubectl rollout restart deployment/accounting
+09:28:32       deployment.apps/accounting restarted
+09:28:32     $ kubectl rollout status deployment/accounting --timeout=300s
+09:28:34       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+09:28:34       Waiting for deployment "accounting" rollout to finish: 1 old replicas are pending termination...
+09:28:34       deployment "accounting" successfully rolled out
+09:28:34   6. verifier must PASS (<= 420s)
+09:28:43       [PASS   ] journey:checkout - 2/2 ok, avg 235ms
+09:28:43       [PASS   ] orders_recorded - accounting recorded the new order (542 -> 547 rows)
+09:28:43   6b. invariants must PASS (shop_health)
+09:28:44       [PASS   ] journey:browse - 2/2 ok, avg 20ms
+09:28:44       [PASS   ] journey:recommendations - 2/2 ok, avg 70ms
+09:28:44       [PASS   ] journey:cart - 2/2 ok, avg 50ms
+09:28:44       [PASS   ] journey:checkout - 2/2 ok, avg 138ms
+09:28:44   7. restore exactly
+09:28:55   => VALIDATED  {'world_ready_s': 31, 'detect_s': 102, 'recover_s': 9, 'invariants_s': 1, 'restore_s': 10}

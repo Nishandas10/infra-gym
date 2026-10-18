@@ -1,0 +1,9 @@
+07:20:02 === net-delay-002 (chaos.mesh)
+07:20:03   0. world healthy?
+07:20:11   1. baseline must PASS
+07:20:12       [PASS   ] journey:recommendations - 3/3 ok, avg 53ms
+07:20:12   2. inject
+07:20:12   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "NetworkChaos" in version "chaos-mesh.org/v1alpha1"
+07:20:12   7. restore exactly
+07:20:12       revert errors: ['delete networkchaos.chaos-mesh.org net-delay-002: kubectl delete networkchaos.chaos-mesh.org net-delay-002 --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "networkchaos" in group "chaos-mesh.org"']
+07:20:21   => ERROR  {'world_ready_s': 8, 'restore_s': 8}

@@ -1079,7 +1079,7 @@
         ],
         "resources": {
          "limits": {
-          "memory": "300Mi"
+          "memory": "450Mi"
          }
         },
         "terminationMessagePath": "/dev/termination-log",
@@ -3588,7 +3588,7 @@
         ],
         "resources": {
          "limits": {
-          "memory": "700Mi"
+          "memory": "1Gi"
          }
         },
         "securityContext": {

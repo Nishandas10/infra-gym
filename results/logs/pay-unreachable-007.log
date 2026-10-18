@@ -1,22 +1,22 @@
-10:54:51 === pay-unreachable-007 (app.flag)
-10:54:52   0. world healthy?
-10:55:00   1. baseline must PASS
-10:55:01       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
-10:55:01   2. inject
-10:55:02   3. verifier must FAIL (<= 120s)
-10:55:02       [FAIL   ] journey:checkout - 0/3 ok, avg 98ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-10:55:02   4. do-nothing agent: still FAIL after 900s?
-11:10:03       [FAIL   ] journey:checkout - 0/3 ok, avg 78ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-11:10:03       failing in 83/83 checks during the hold
-11:10:03   5. reference solution
-11:10:03     $ python injectors/toggle_flag.py paymentUnreachable --off
-11:10:04       'paymentUnreachable' -> off (flagd is serving it now)
-11:10:04   6. verifier must PASS (<= 120s)
-11:10:05       [PASS   ] journey:checkout - 3/3 ok, avg 96ms
-11:10:05   6b. invariants must PASS (shop_health)
-11:10:06       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-11:10:06       [PASS   ] journey:recommendations - 2/2 ok, avg 51ms
-11:10:06       [PASS   ] journey:cart - 2/2 ok, avg 46ms
-11:10:06       [PASS   ] journey:checkout - 2/2 ok, avg 93ms
-11:10:06   7. restore exactly
-11:10:16   => VALIDATED  {'world_ready_s': 8, 'detect_s': 1, 'recover_s': 1, 'invariants_s': 1, 'restore_s': 9}
+10:09:05 === pay-unreachable-007 (app.flag)
+10:09:06   0. world healthy?
+10:09:17   1. baseline must PASS
+10:09:18       [PASS   ] journey:checkout - 3/3 ok, avg 109ms
+10:09:18   2. inject
+10:09:19   3. verifier must FAIL (<= 120s)
+10:09:19       [FAIL   ] journey:checkout - 0/3 ok, avg 105ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:09:19   4. do-nothing agent: still FAIL after 60s?
+10:10:21       [FAIL   ] journey:checkout - 0/3 ok, avg 169ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+10:10:21       failing in 5/5 checks during the hold
+10:10:21   5. reference solution
+10:10:21     $ python injectors/toggle_flag.py paymentUnreachable --off
+10:10:24       'paymentUnreachable' -> off (flagd is serving it now)
+10:10:24   6. verifier must PASS (<= 120s)
+10:10:25       [PASS   ] journey:checkout - 3/3 ok, avg 234ms
+10:10:25   6b. invariants must PASS (shop_health)
+10:10:27       [PASS   ] journey:browse - 2/2 ok, avg 40ms
+10:10:27       [PASS   ] journey:recommendations - 2/2 ok, avg 92ms
+10:10:27       [PASS   ] journey:cart - 2/2 ok, avg 82ms
+10:10:27       [PASS   ] journey:checkout - 2/2 ok, avg 200ms
+10:10:28   7. restore exactly
+10:10:43   => VALIDATED  {'world_ready_s': 11, 'detect_s': 1, 'recover_s': 2, 'invariants_s': 2, 'restore_s': 15}

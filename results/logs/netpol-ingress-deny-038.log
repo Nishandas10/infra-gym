@@ -1,24 +1,24 @@
-12:12:18 === netpol-ingress-deny-038 (k8s.create_objects)
-12:12:18   0. world healthy?
-12:12:27   1. baseline must PASS
-12:12:28       [PASS   ] journey:checkout - 3/3 ok, avg 101ms
-12:12:28   2. inject
-12:12:31   3. verifier must FAIL (<= 240s)
-12:12:52       [FAIL   ] journey:checkout - 0/3 ok, avg 6707ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-12:12:52   4. do-nothing agent: still FAIL after 900s?
-12:27:53       [FAIL   ] journey:checkout - 0/3 ok, avg 61ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-12:27:53       failing in 84/84 checks during the hold
-12:27:53   5. reference solution
-12:27:53     $ kubectl delete networkpolicy payment-ingress-lockdown
-12:27:53       networkpolicy.networking.k8s.io "payment-ingress-lockdown" deleted from default namespace
-12:27:53   6. verifier must PASS (<= 300s)
-12:28:15       [PASS   ] journey:checkout - 3/3 ok, avg 87ms
-12:28:15   6b. invariants must PASS (shop_health)
-12:28:16       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-12:28:16       [PASS   ] journey:recommendations - 2/2 ok, avg 43ms
-12:28:16       [PASS   ] journey:cart - 2/2 ok, avg 36ms
-12:28:16       [PASS   ] journey:checkout - 2/2 ok, avg 83ms
-12:28:16   6c. the fix must survive a restart of opentelemetry.io/name=payment
-12:29:01       [PASS   ] journey:checkout - 3/3 ok, avg 98ms
-12:29:02   7. restore exactly
-12:29:10   => VALIDATED  {'world_ready_s': 9, 'detect_s': 21, 'recover_s': 22, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+09:53:35 === netpol-ingress-deny-038 (k8s.create_objects)
+09:53:36   0. world healthy?
+09:53:45   1. baseline must PASS
+09:53:46       [PASS   ] journey:checkout - 3/3 ok, avg 144ms
+09:53:46   2. inject
+09:53:49   3. verifier must FAIL (<= 240s)
+09:54:10       [FAIL   ] journey:checkout - 0/3 ok, avg 6543ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+09:54:10   4. do-nothing agent: still FAIL after 60s?
+09:55:10       [FAIL   ] journey:checkout - 0/3 ok, avg 56ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+09:55:10       failing in 5/5 checks during the hold
+09:55:10   5. reference solution
+09:55:10     $ kubectl delete networkpolicy payment-ingress-lockdown
+09:55:10       networkpolicy.networking.k8s.io "payment-ingress-lockdown" deleted from default namespace
+09:55:10   6. verifier must PASS (<= 300s)
+09:55:22       [PASS   ] journey:checkout - 3/3 ok, avg 122ms
+09:55:22   6b. invariants must PASS (shop_health)
+09:55:23       [PASS   ] journey:browse - 2/2 ok, avg 22ms
+09:55:23       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+09:55:23       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+09:55:23       [PASS   ] journey:checkout - 2/2 ok, avg 97ms
+09:55:23   6c. the fix must survive a restart of opentelemetry.io/name=payment
+09:56:10       [PASS   ] journey:checkout - 3/3 ok, avg 568ms
+09:56:11   7. restore exactly
+09:56:20   => VALIDATED  {'world_ready_s': 9, 'detect_s': 20, 'recover_s': 12, 'invariants_s': 1, 'durable_s': 2, 'restore_s': 10}

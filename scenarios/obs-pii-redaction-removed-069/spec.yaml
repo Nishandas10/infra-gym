@@ -97,6 +97,11 @@ reference:
     && kubectl apply -f /tmp/relay.yaml
   - kubectl rollout restart daemonset/otel-collector-agent
   - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
+  agent_commands:
+  - kubectl get configmap otel-collector-agent -o yaml | sed '/^ *- gen_ai_normalizer$/{p;s/gen_ai_normalizer/transform\/redact_sensitive_data/p;s/transform\/redact_sensitive_data/redaction/}'
+    | kubectl apply -f -
+  - kubectl rollout restart daemonset/otel-collector-agent
+  - kubectl rollout status daemonset/otel-collector-agent --timeout=180s
   fix: Put transform/redact_sensitive_data and redaction back into the collector's traces pipeline and restart the
     collector. In reality, also purge the leaked data and investigate why apps emit raw PII (here, the emitRawPii
     flag).

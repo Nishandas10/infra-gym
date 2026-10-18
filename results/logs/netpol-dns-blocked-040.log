@@ -1,35 +1,35 @@
-07:25:04 === netpol-dns-blocked-040 (k8s.create_objects)
-07:25:05   0. world healthy?
-07:25:13   1. baseline must PASS
-07:25:14       [PASS   ] journey:browse - 3/3 ok, avg 18ms
-07:25:14       [PASS   ] journey:cart - 3/3 ok, avg 39ms
-07:25:14   2. inject
-07:25:17   3. verifier must FAIL (<= 240s)
-07:25:55       [FAIL   ] journey:browse - 0/3 ok, avg 4351ms; e.g. GET /api/products/66VCHSJNUP -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
-07:25:55       [FAIL   ] journey:cart - 0/3 ok, avg 8023ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
-07:25:55   4. do-nothing agent: still FAIL after 900s?
-07:40:56       [FAIL   ] journey:browse - 0/3 ok, avg 15ms; e.g. GET /api/products/2ZYFJ3GM2N -> 500 b'Internal Server Error'
-07:40:56       [FAIL   ] journey:cart - 0/3 ok, avg 13ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
-07:40:56       failing in 83/83 checks during the hold
-07:40:56   5. reference solution
-07:40:56     $ kubectl delete networkpolicy frontend-egress-app-ports
-07:40:56       networkpolicy.networking.k8s.io "frontend-egress-app-ports" deleted from default namespace
-07:40:56     $ kubectl rollout restart deployment/frontend
-07:40:56       deployment.apps/frontend restarted
-07:40:56     $ kubectl rollout status deployment/frontend --timeout=300s
-07:40:57       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-07:40:57       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
-07:40:57       deployment "frontend" successfully rolled out
-07:40:57   6. verifier must PASS (<= 300s)
-07:41:13       [PASS   ] journey:browse - 3/3 ok, avg 25ms
-07:41:13       [PASS   ] journey:cart - 3/3 ok, avg 39ms
-07:41:13   6b. invariants must PASS (shop_health)
-07:41:14       [PASS   ] journey:browse - 2/2 ok, avg 24ms
-07:41:14       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
-07:41:14       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-07:41:14       [PASS   ] journey:checkout - 2/2 ok, avg 94ms
-07:41:14   6c. the fix must survive a restart of opentelemetry.io/name=frontend
-07:42:00       [PASS   ] journey:browse - 3/3 ok, avg 42ms
-07:42:00       [PASS   ] journey:cart - 3/3 ok, avg 49ms
-07:42:01   7. restore exactly
-07:42:10   => VALIDATED  {'world_ready_s': 8, 'detect_s': 38, 'recover_s': 17, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}
+09:50:27 === netpol-dns-blocked-040 (k8s.create_objects)
+09:50:28   0. world healthy?
+09:50:37   1. baseline must PASS
+09:50:38       [PASS   ] journey:browse - 3/3 ok, avg 36ms
+09:50:38       [PASS   ] journey:cart - 3/3 ok, avg 51ms
+09:50:38   2. inject
+09:50:41   3. verifier must FAIL (<= 240s)
+09:51:19       [FAIL   ] journey:browse - 0/3 ok, avg 4348ms; e.g. GET /api/products/OLJCESPC7Z -> 503 b'upstream connect error or disconnect/reset before headers. reset reason: remote connection failure'
+09:51:19       [FAIL   ] journey:cart - 0/3 ok, avg 8033ms; e.g. POST /api/cart -> no response b'TimeoutError: timed out'
+09:51:19   4. do-nothing agent: still FAIL after 60s?
+09:52:20       [FAIL   ] journey:browse - 0/3 ok, avg 19ms; e.g. GET /api/products/66VCHSJNUP -> 500 b'Internal Server Error'
+09:52:20       [FAIL   ] journey:cart - 0/3 ok, avg 15ms; e.g. POST /api/cart -> 500 b'Internal Server Error'
+09:52:20       failing in 4/4 checks during the hold
+09:52:20   5. reference solution
+09:52:20     $ kubectl delete networkpolicy frontend-egress-app-ports
+09:52:20       networkpolicy.networking.k8s.io "frontend-egress-app-ports" deleted from default namespace
+09:52:20     $ kubectl rollout restart deployment/frontend
+09:52:20       deployment.apps/frontend restarted
+09:52:20     $ kubectl rollout status deployment/frontend --timeout=300s
+09:52:21       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+09:52:21       Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+09:52:21       deployment "frontend" successfully rolled out
+09:52:21   6. verifier must PASS (<= 300s)
+09:52:39       [PASS   ] journey:browse - 3/3 ok, avg 33ms
+09:52:39       [PASS   ] journey:cart - 3/3 ok, avg 54ms
+09:52:39   6b. invariants must PASS (shop_health)
+09:52:40       [PASS   ] journey:browse - 2/2 ok, avg 34ms
+09:52:40       [PASS   ] journey:recommendations - 2/2 ok, avg 44ms
+09:52:40       [PASS   ] journey:cart - 2/2 ok, avg 51ms
+09:52:40       [PASS   ] journey:checkout - 2/2 ok, avg 84ms
+09:52:40   6c. the fix must survive a restart of opentelemetry.io/name=frontend
+09:53:26       [PASS   ] journey:browse - 3/3 ok, avg 34ms
+09:53:26       [PASS   ] journey:cart - 3/3 ok, avg 45ms
+09:53:26   7. restore exactly
+09:53:35   => VALIDATED  {'world_ready_s': 9, 'detect_s': 38, 'recover_s': 18, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 9}

@@ -1,0 +1,9 @@
+07:09:33 === jvm-exception-062 (chaos.mesh)
+07:09:34   0. world healthy?
+07:09:43   1. baseline must PASS
+07:09:44       [PASS   ] journey:ads - 3/3 ok, avg 36ms
+07:09:44   2. inject
+07:09:44   ERROR gym.kube.KubeError: kubectl apply -f -: unable to recognize no matches for kind "JVMChaos" in version "chaos-mesh.org/v1alpha1"
+07:09:44   7. restore exactly
+07:09:44       revert errors: ['delete jvmchaos.chaos-mesh.org ad-getads-exception: kubectl delete jvmchaos.chaos-mesh.org ad-getads-exception --ignore-not-found --wait=false: error: the server doesn\'t have a resource type "jvmchaos" in group "chaos-mesh.org"']
+07:09:55   => ERROR  {'world_ready_s': 10, 'restore_s': 11}

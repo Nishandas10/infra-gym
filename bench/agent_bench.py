@@ -5,6 +5,7 @@
   python bench/agent_bench.py smoke       check the API key, model IDs and tool calling
   python bench/agent_bench.py run --suite bench-v1-dev   run every model on a frozen suite (suites/*.yaml)
   python bench/agent_bench.py run         run every model on every bench-eligible, validated scenario
+  python bench/agent_bench.py oracle      play every bench-eligible scenario with its reference fix as the agent
   python scripts/make_suite.py            freeze a new suite (replaces the old `pick` command)
   python bench/cost.py                    what each model cost, from the recorded tokens
   python bench/leaderboard.py --suite bench-v1-dev   build the leaderboard from the results
@@ -204,11 +205,13 @@ def refresh_sandbox():
         sys.exit("sandbox_up.sh failed:\n" + r.stdout[-1500:] + r.stderr[-1500:])
 
 
-def run_in_sandbox(command):
+def sandbox_exec(command):
+    """(exit code, output) of one command in the agent's sandbox: 30 s at most, output capped."""
+    rc = None
     try:
         p = subprocess.run(["docker", "exec", SANDBOX, "timeout", "30", "bash", "-c", command],
                            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=45)
-        out = p.stdout + p.stderr
+        rc, out = p.returncode, p.stdout + p.stderr
         if p.returncode == 124:
             out += "\n[command timed out after 30s]"
     except subprocess.TimeoutExpired:
@@ -216,7 +219,11 @@ def run_in_sandbox(command):
     except Exception as e:  # never let one odd command crash the episode
         out = f"[could not run command: {type(e).__name__}: {e}]"
     out = out.strip() or "[no output]"
-    return out[:4000] + ("\n[output truncated]" if len(out) > 4000 else "")
+    return rc, out[:4000] + ("\n[output truncated]" if len(out) > 4000 else "")
+
+
+def run_in_sandbox(command):
+    return sandbox_exec(command)[1]
 
 
 # --------------------------------------------------------------------- agent
@@ -599,6 +606,34 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature):
             "timeline": timeline, "agent_s": agent_s}
 
 
+ORACLE = "oracle"
+
+
+def run_oracle(spec, prompt, max_steps):
+    """The oracle agent: runs the scenario's reference fix (reference.agent_commands, else reference.commands) in the
+    agent's sandbox, with the agent's permissions, and is graded exactly like a model. A correct fix must come out as
+    a clean pass; if it does not, the scenario or the grading is broken for every model."""
+    t0 = time.time()
+    messages = [{"role": "system", "content": system_prompt(max_steps)}, {"role": "user", "content": prompt}]
+    timeline, errors = [], []
+    commands = spec["reference"].get("agent_commands") or spec["reference"]["commands"]
+    for i, command in enumerate(commands, 1):
+        timeline.append({"step": i, "t": round(time.time() - t0, 1), "cmd": command[:300], "changes": is_mutating(command)})
+        rc, out = sandbox_exec(command)
+        # a `rollout status` that outlives the 30 s command limit is not a failure: grading waits for recovery
+        if rc not in (0, 124):
+            errors.append(f"{command[:120]} -> exit {rc}: {out[-200:]}")
+        messages += [{"role": "assistant", "content": "", "tool_calls": [{"id": f"oracle-{i}", "type": "function",
+                      "function": {"name": "run_shell", "arguments": json.dumps({"command": command})}}]},
+                     {"role": "tool", "tool_call_id": f"oracle-{i}", "content": out}]
+    diagnosis = spec["ground_truth"]["explanation"]
+    messages.append({"role": "assistant", "content": diagnosis})
+    return {"diagnosis": diagnosis, "steps": len(commands), "tokens_in": 0, "tokens_out": 0, "tokens_cache_read": 0,
+            "tokens_cache_write": 0, "stop": "model_finished", "error": None, "messages": messages, "nudges": 0,
+            "final_message": diagnosis[:400], "providers": [ORACLE], "timeline": timeline,
+            "agent_s": round(time.time() - t0, 1), "oracle_errors": errors}
+
+
 def commands_of(messages):
     out = []
     for m in messages:
@@ -740,10 +775,12 @@ def _play(sc, ms, client, cfg, row, state):
     guards_before = live_guards()
     refresh_sandbox()
     budget = spec.get("budget") or {}
-    agent = run_agent(client, ms, prompt_of(spec, row["hint_level"]),
-                      budget.get("max_steps", cfg.get("default_max_steps", 30)),
-                      budget.get("wall_s", cfg.get("default_wall_s", 900)),
-                      cfg.get("temperature", 0.2))
+    max_steps = budget.get("max_steps", cfg.get("default_max_steps", 30))
+    if ms.get("oracle"):
+        agent = run_oracle(spec, prompt_of(spec, row["hint_level"]), max_steps)
+    else:
+        agent = run_agent(client, ms, prompt_of(spec, row["hint_level"]), max_steps,
+                          budget.get("wall_s", cfg.get("default_wall_s", 900)), cfg.get("temperature", 0.2))
     state["agent"] = agent
     t_agent_done = time.time()
     try:
@@ -804,7 +841,8 @@ def _play(sc, ms, client, cfg, row, state):
             "tokens_cache_read": agent.get("tokens_cache_read", 0),
             "tokens_cache_write": agent.get("tokens_cache_write", 0), "effort": ms.get("effort"),
             "agent_s": agent.get("agent_s"), "ttd_s": ttd_s, "ttm_s": ttm_s,
-            "changes_made": sum(1 for e in agent.get("timeline", []) if e.get("changes"))}
+            "changes_made": sum(1 for e in agent.get("timeline", []) if e.get("changes")),
+            **({"oracle_errors": agent["oracle_errors"]} if "oracle_errors" in agent else {})}
 
 
 def _cleanup(spec, snap, state):
@@ -1038,9 +1076,84 @@ def cmd_run(cfg, args):
     log("Finished. Build the table with: python bench/leaderboard.py" + (f" --suite {suite.name}" if suite else ""))
 
 
+def oracle_problems(row):
+    """Why an oracle episode is not a clean pass (empty: the scenario works end to end for an agent)."""
+    if row.get("status") != "done":
+        return [f"{row.get('status')}: {row.get('error')}"]
+    out = [f"sandbox command failed: {e}" for e in row.get("oracle_errors") or []]
+    out += [f"not {k}" for k in ("fixed", "held") if not row.get(k)]
+    if row.get("invariants_ok") is False:
+        out.append("another user journey fails after the fix (invariants)")
+    if row.get("durable") is False:
+        out.append("the fix does not survive a restart (durability)")
+    for key, what in (("forbidden", "forbidden action"), ("made_worse", "made worse"), ("collateral", "collateral change"),
+                      ("distractors_touched", "touched a decoy")):
+        if row.get(key):
+            out.append(f"{what}: {', '.join(map(str, row[key]))[:200]}")
+    out += [f"cleanup: {c}" for c in row.get("cleanup") or [] if "error" in c.lower()]
+    return out
+
+
+def cmd_oracle(cfg, args):
+    """Every bench-eligible scenario, played end to end through the benchmark by the oracle agent (no model, no API
+    cost). Results go to bench/results/oracle/, never into a leaderboard; a report lists every scenario whose
+    episode is not a clean pass, and every episode that found the world broken by the one before."""
+    scenarios = []
+    for spec_path in all_specs():
+        spec, sdir = load(spec_path)
+        if spec.get("bench_eligible", True) and matches_only(args, spec["id"]):
+            scenarios.append(entry(spec, sdir))
+    if args.limit:
+        scenarios = scenarios[:args.limit]
+    results_dir = rows.RESULTS / ORACLE
+    results_dir.mkdir(parents=True, exist_ok=True)
+    path = results_dir / "results.jsonl"
+    current = {s["id"]: s["spec"]["content_hash"] for s in scenarios}
+    done = {r["scenario"] for r in rows.latest(rows.read_jsonl(path)) if r.get("content_hash") == current.get(r["scenario"])
+            and not (args.rerun and matches_only(args, r["scenario"]))}
+    plan = [s for s in scenarios if s["id"] not in done]
+    log(f"{len(plan)} oracle episodes to run ({len(scenarios)} bench-eligible scenarios, minus finished ones); "
+        f"results: {path}")
+    run = {"results_dir": results_dir, "provenance": run_provenance(None)}
+    toolbox.ensure()
+    cfg = {**cfg, "hint_level": "page"}
+    ms = {"id": ORACLE, "oracle": True}
+    for i, sc in enumerate(plan, 1):
+        log(f"[{i}/{len(plan)}] {sc['id']} | oracle")
+        row = episode(sc, ms, 1, None, cfg, run)
+        append(path, row)
+        problems = oracle_problems(row)
+        log(f"   -> {'OK' if not problems else 'PROBLEM'} ({row['minutes']} min)" +
+            "".join(f"\n      - {p}" for p in problems))
+    oracle_report(scenarios, path, results_dir / "report.md")
+
+
+def oracle_report(scenarios, path, out):
+    latest = {r["scenario"]: r for r in rows.latest(rows.read_jsonl(path))}
+    order = [s["id"] for s in scenarios]
+    lines, bad = [], 0
+    for prev, sid in zip([None] + order, order):
+        r = latest.get(sid)
+        if r is None:
+            lines.append(f"| `{sid}` | not run | |")
+            continue
+        problems = oracle_problems(r)
+        if r.get("world_recovery") and prev:
+            problems.append(f"the world was broken before this episode ({'; '.join(r['world_recovery'])[:150]}); "
+                            f"suspect the cleanup of `{prev}`")
+        bad += bool(problems)
+        lines.append(f"| `{sid}` | {'problem' if problems else 'ok'} | {'<br>'.join(problems)} |")
+    text = (f"# Oracle episodes\n\nEvery bench-eligible scenario played end to end by `python bench/agent_bench.py "
+            f"oracle`: the reference fix run in the agent's sandbox with the agent's permissions, then graded and "
+            f"cleaned up like a model's episode. {len(order) - bad} of {len(order)} are a clean pass.\n\n"
+            "| Scenario | Result | Problems |\n|---|---|---|\n" + "\n".join(lines) + "\n")
+    out.write_text(text)
+    log(f"{len(order) - bad}/{len(order)} scenarios pass clean end to end; report: {out}")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["preflight", "smoke", "run"])
+    p.add_argument("command", choices=["preflight", "smoke", "run", "oracle"])
     p.add_argument("--suite", help="run: a frozen suite, by name (bench-v1-dev) or path (suites/bench-v1-dev.yaml)")
     p.add_argument("--set", dest="suite", help="old name of --suite (kept for one release)")
     p.add_argument("--only", help="only scenarios whose id contains this text (comma-separated: any of them)")
@@ -1062,7 +1175,7 @@ def main():
     cfg = load_config()
     if args.hint_level:
         cfg["hint_level"] = args.hint_level
-    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run}[args.command](cfg, args)
+    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run, "oracle": cmd_oracle}[args.command](cfg, args)
 
 
 if __name__ == "__main__":

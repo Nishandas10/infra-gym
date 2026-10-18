@@ -86,6 +86,9 @@ reference:
     seen=set(); env=[]; [env.append(e) or seen.add(e["name"]) for e in c["env"] if e["name"] not in seen]; c["env"]=env;
     print(json.dumps(d))' | kubectl replace -f -
   - kubectl rollout status deployment/recommendation --timeout=300s
+  agent_commands:
+  - 'N=$(( $(kubectl get deployment recommendation -o jsonpath=''{range .spec.template.spec.containers[0].env[*]}x{end}'' | wc -c) - 1 )) && kubectl patch deployment recommendation --type=json -p "[{\"op\":\"test\",\"path\":\"/spec/template/spec/containers/0/env/$N/name\",\"value\":\"PRODUCT_CATALOG_ADDR\"},{\"op\":\"remove\",\"path\":\"/spec/template/spec/containers/0/env/$N\"}]"'
+  - 'kubectl rollout status deployment/recommendation --timeout=300s'
   fix: Remove the duplicate PRODUCT_CATALOG_ADDR entry from recommendation's env (or set the variable with `kubectl
     set env`), then let the rollout finish.
   traps:

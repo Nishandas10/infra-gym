@@ -1,22 +1,22 @@
-10:31:35 === flag-flood-homepage-073 (app.flag)
-10:31:36   0. world healthy?
-10:31:45   1. baseline must PASS
-10:32:15       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
-10:32:15   2. inject
-10:32:16   3. verifier must FAIL (<= 180s)
-10:32:47       [FAIL   ] traffic:^/$ - 13.4 req/s for '^/$' over 30s (max 2.0)
-10:32:47   4. do-nothing agent: still FAIL after 900s?
-10:48:20       [FAIL   ] traffic:^/$ - 6.7 req/s for '^/$' over 30s (max 2.0)
-10:48:20       failing in 22/22 checks during the hold
-10:48:20   5. reference solution
-10:48:20     $ python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
-10:48:21       'loadGeneratorFloodHomepage' -> off (flagd is serving it now)
-10:48:21   6. verifier must PASS (<= 300s)
-10:48:52       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
-10:48:52   6b. invariants must PASS (shop_health)
-10:48:53       [PASS   ] journey:browse - 2/2 ok, avg 36ms
-10:48:53       [PASS   ] journey:recommendations - 2/2 ok, avg 54ms
-10:48:53       [PASS   ] journey:cart - 2/2 ok, avg 48ms
-10:48:53       [PASS   ] journey:checkout - 2/2 ok, avg 86ms
-10:48:53   7. restore exactly
-10:49:02   => VALIDATED  {'world_ready_s': 9, 'detect_s': 31, 'recover_s': 31, 'invariants_s': 1, 'restore_s': 9}
+08:51:33 === flag-flood-homepage-073 (app.flag)
+08:51:35   0. world healthy?
+08:51:44   1. baseline must PASS
+08:52:15       [PASS   ] traffic:^/$ - 0/2 failed (0%), avg 15ms, 0.1 req/s over 30s for '^/$'
+08:52:15   2. inject
+08:52:16   3. verifier must FAIL (<= 180s)
+08:52:47       [FAIL   ] traffic:^/$ - 6.7 req/s for '^/$' over 30s (max 2.0)
+08:52:47   4. do-nothing agent: still FAIL after 60s?
+08:54:40       [FAIL   ] traffic:^/$ - 6.7 req/s for '^/$' over 30s (max 2.0)
+08:54:40       failing in 2/2 checks during the hold
+08:54:40   5. reference solution
+08:54:40     $ python injectors/toggle_flag.py loadGeneratorFloodHomepage --off
+08:54:41       'loadGeneratorFloodHomepage' -> off (flagd is serving it now)
+08:54:41   6. verifier must PASS (<= 300s)
+08:55:12       [PASS   ] traffic:^/$ - 0 req/s for '^/$' over 30s
+08:55:12   6b. invariants must PASS (shop_health)
+08:55:13       [PASS   ] journey:browse - 2/2 ok, avg 28ms
+08:55:13       [PASS   ] journey:recommendations - 2/2 ok, avg 48ms
+08:55:13       [PASS   ] journey:cart - 2/2 ok, avg 48ms
+08:55:13       [PASS   ] journey:checkout - 2/2 ok, avg 100ms
+08:55:13   7. restore exactly
+08:55:22   => VALIDATED  {'world_ready_s': 9, 'detect_s': 31, 'recover_s': 31, 'invariants_s': 1, 'restore_s': 9}

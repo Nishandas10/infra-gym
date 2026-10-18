@@ -1,0 +1,52 @@
+{
+ "episode": "465508c7074a45449388a70477524583",
+ "scenario": "valkey-client-pause-077",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:4fa89754e998a1e90fba54fe51bc23f3e73da91bc83abc86164a8752bf347013",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem, find the root cause, and fix it in the live cluster.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix,\nwithout calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Adding to cart spins forever and then times out; viewing the cart still works. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "OK"
+  },
+  {
+   "role": "assistant",
+   "content": "A `CLIENT PAUSE ... WRITE` was issued on valkey-cart (typically left over from a failover or maintenance script), so every write command blocks while reads continue."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl exec deploy/valkey-cart -- valkey-cli CLIENT UNPAUSE",
+   "changes": false
+  }
+ ],
+ "ttd_s": null,
+ "ttm_s": 5.6
+}
