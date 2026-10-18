@@ -115,7 +115,8 @@ def test_damage_counts_against_the_agent_only_if_it_changed_something():
 # ------------------------------------------------------------------ what the agent is told
 # sha256 of every text the agent can be shown, per rows.PROMPT_VERSION. A change to any of them changes every
 # model's results: bump rows.PROMPT_VERSION, note it in bench/README.md, then pin the new hash here.
-PROMPT_HASHES = {2: "afa36749f70617e4c15814b1523b5f7b900c02814a615924eb18f9175bbb24ec"}
+PROMPT_HASHES = {2: "afa36749f70617e4c15814b1523b5f7b900c02814a615924eb18f9175bbb24ec",
+                 3: "d7bd61bcb7113401de17eb3ebaa47ee41e2177b402fffc894d18a13c8034d391"}
 
 
 def test_prompt_texts_are_pinned_to_the_prompt_version():

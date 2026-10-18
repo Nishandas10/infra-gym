@@ -19,6 +19,7 @@ symptom:   # what the people affected notice first
   silent-data: user journeys succeed, but data or side effects are lost (orders not recorded, emails not sent)
   telemetry-only: customers are unaffected; traces, metrics or dashboards are wrong or missing
   resource: wasted CPU or traffic with little customer impact
+  none: nothing is broken; an alarm fired anyway (task.kind false_alarm)
 
 fix_type:   # what the correct fix does (a scenario may need several)
   config-edit: change a field of an object (env, port, probe, resources, selector, policy rule, label)
@@ -30,6 +31,7 @@ fix_type:   # what the correct fix does (a scenario may need several)
   node-op: uncordon, untaint or relabel nodes
   restart: restart a workload so it picks up the fix or drops bad state
   rollback: roll a Deployment back to its previous revision
+  none: nothing to fix; the right response changes nothing (task.kind false_alarm)
 
 drivers:   # what makes a scenario harder than finding one broken setting
   async-path: the damage is in an asynchronous pipeline, away from the request path

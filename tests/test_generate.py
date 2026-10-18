@@ -108,7 +108,7 @@ def test_extra_file_changes_hash():
     (lambda t: t.update(mechanism="no-slash"), "mechanism"),
     (lambda t: t.update(surprise=1), "Extra inputs"),
     (lambda t: t["verifier"].update(checks=[]), "at least 1"),
-    (lambda t: t["reference"].update(commands=[]), "at least 1"),
+    (lambda t: t["reference"].update(commands=[]), "only a false_alarm"),
     (lambda t: t["tags"].update(layer="kernel"), "taxonomy"),
     (lambda t: t["tags"].update(fix_type=["pray"]), "taxonomy"),
     (lambda t: t["tags"].update(drivers=["vibes"]), "taxonomy"),

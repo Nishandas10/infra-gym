@@ -24,6 +24,9 @@ from gym import checks  # noqa: E402
 from gym.core import generate  # noqa: E402
 from gym.core.schema import taxonomy  # noqa: E402
 
+sys.path.insert(0, str(REPO / "bench"))
+from safety import changing_commands  # noqa: E402
+
 
 def journeys():
     tree = ast.parse((REPO / "gym" / "probe_script.py").read_text())
@@ -80,6 +83,9 @@ def lint():
                 and any(uses_repo_tools(c) for c in s["reference"]["commands"]):
             problems.append(f"{sid}: reference.commands use the repo's scripts or the gym's namespaces, which the agent "
                             "cannot; add reference.agent_commands (kubectl, bash, sed)")
+        if s["task"].get("kind") == "false_alarm" and changing_commands(s["reference"].get("agent_commands", [])):
+            problems.append(f"{sid}: a false alarm's reference.agent_commands may only look (the oracle plays them as the "
+                            "agent, and any change fails a false alarm)")
         only = s["verifier"]["checks"]
         if len(only) == 1 and s.get("bench_eligible", True):
             warnings.append(f"{sid}: a single check ({checks.describe(only[0])}); add a second, more specific one "

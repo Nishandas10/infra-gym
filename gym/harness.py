@@ -12,6 +12,13 @@ For each scenario:
      6c. durability       ... and the checks still pass after restarting verifier.durability
   7. restore             undo the injection exactly, then WORLD_HEALTHY again
 
+A false alarm (task.kind false_alarm) has nothing to fix; after step 2 it runs instead:
+  3. alarm raised        verifier.alarm_checks FAIL (within detect_timeout_s): the alarm is really there
+  3b. healthy            the scenario's checks PASS (within recover_timeout_s; a stale alarm may need to clear)
+  4. hold                ... and keep passing for hold_s: the alarm breaks nothing
+  6b. invariants         every user journey passes
+then 7. restore, as above.
+
 Timings come from the instance (spec.validation, resolved from templates/defaults.yaml).
 """
 from __future__ import annotations
@@ -170,6 +177,55 @@ def durability_check(spec, spec_checks, v):
     return ok, t
 
 
+def is_false_alarm(spec):
+    return spec["task"].get("kind") == "false_alarm"
+
+
+def validate_false_alarm(spec, rec, spec_checks, invariants, hold_s):
+    """Steps 3-6 of a false alarm (see the module docstring). Sets and returns rec; validate() restores."""
+    v = spec["validation"]
+    log(f"  3. the alarm must be raised: alarm checks FAIL (<= {v['detect_timeout_s']}s)")
+    ok, _, t = poll(spec["verifier"]["alarm_checks"], checks.FAIL, v["detect_timeout_s"], v["poll_s"])
+    rec["timings"]["alarm_s"] = t
+    if not ok:
+        rec["verdict"] = "ALARM_NOT_RAISED"
+        return rec
+    log(f"  3b. nothing is broken: the checks must PASS (<= {v['recover_timeout_s']}s)")
+    ok, _, t = poll(spec_checks, checks.PASS, v["recover_timeout_s"], v["poll_s"])
+    rec["timings"]["healthy_s"] = t
+    if not ok:
+        rec["verdict"] = "NOT_HEALTHY_UNDER_ALARM"
+        return rec
+    hold = max(hold_s or v["hold_s"], stable_age(spec_checks) + 30)
+    rec["hold_s"] = hold
+    log(f"  4. the checks must keep passing for {hold}s")
+    t_end = time.time() + hold
+    fails = polls = 0
+    while time.time() < t_end:
+        time.sleep(min(v["poll_s"], max(0, t_end - time.time())))
+        polls += 1
+        res = checks.run_checks(spec_checks)
+        if checks.overall(res) == checks.FAIL:
+            fails += 1
+            res = checks.run_checks(spec_checks)   # confirm, so one flaky request is not a broken service
+            if checks.overall(res) == checks.FAIL:
+                show(res)
+                rec["hold_fail_ratio"] = f"{fails}/{polls}"
+                rec["verdict"] = "ALARM_IS_REAL"
+                return rec
+    rec["hold_fail_ratio"] = f"{fails}/{polls}"
+    log(f"      unconfirmed failures in {fails}/{polls} checks during the hold")
+    if invariants:
+        log(f"  6b. invariants must PASS ({', '.join(spec['verifier']['invariants'])})")
+        ok, _, t = poll(invariants, checks.PASS, v["recover_timeout_s"], v["poll_s"])
+        rec["timings"]["invariants_s"] = t
+        if not ok:
+            rec["verdict"] = "INVARIANT_FAILED"
+            return rec
+    rec["verdict"] = "VALIDATED"
+    return rec
+
+
 def validate(spec_path, world_timeout=300, hold_s=None):
     """One validation run. hold_s overrides the do-nothing hold of step 4; a long hold (the agent's whole
     wall-clock budget) proves the fault stays broken for as long as an episode can last."""
@@ -212,6 +268,8 @@ def validate(spec_path, world_timeout=300, hold_s=None):
         log("  2. inject")
         injected = True
         faults.inject(spec, sdir)
+        if is_false_alarm(spec):
+            return validate_false_alarm(spec, rec, spec_checks, invariants, hold_s)
         log(f"  3. verifier must FAIL (<= {v['detect_timeout_s']}s)")
         ok, _, t = poll(spec_checks, checks.FAIL, v["detect_timeout_s"], v["poll_s"])
         rec["timings"]["detect_s"] = t

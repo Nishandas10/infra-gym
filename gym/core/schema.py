@@ -15,12 +15,13 @@ import re
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$")
 MECHANISM_RE = re.compile(r"^[a-z0-9-]+/[a-z0-9-]+$")
 HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-COMPONENT_RE = re.compile(r"^[a-z]+/(?:[A-Za-z0-9._,-]+|\$workers)$")   # node/$workers: every worker node
+# node/$workers: every worker node; node/$worker: one of them (the first by name)
+COMPONENT_RE = re.compile(r"^[a-z]+/(?:[A-Za-z0-9._,-]+|\$workers?)$")
 TAXONOMY_FILE = pathlib.Path(__file__).resolve().parents[2] / "templates" / "taxonomy.yaml"
 
 
@@ -154,6 +155,8 @@ def _invariant_names(v):
 class Verifier(Strict):
     """The verifier as a template writes it; scripts/generate.py fills in what is left out."""
     checks: list[Check] = Field(min_length=1)
+    alarm_checks: list[Check] | None = Field(None, min_length=1, description=(
+        "false_alarm only: checks that FAIL once the alarm is raised, proving it is there (`checks` stay PASS)"))
     invariants: list[str] | None = None      # None = templates/defaults.yaml
     durability: list[Restart] | None = None  # None = derived from the fault (gym/core/generate.py)
     forbidden_extra: list[str] = []          # added to the defaults.yaml forbidden list
@@ -172,6 +175,7 @@ class Verifier(Strict):
 class ResolvedVerifier(Strict):
     """The verifier of an instance: everything explicit."""
     checks: list[Check] = Field(min_length=1)
+    alarm_checks: list[Check] | None = Field(None, min_length=1)   # false_alarm only; absent otherwise
     invariants: list[str]
     durability: list[Restart]
     forbidden: list[str]
@@ -188,7 +192,8 @@ class ResolvedVerifier(Strict):
 
 
 class Reference(Strict):
-    commands: list[str] = Field(min_length=1, description="The reference fix, run by the validation harness")
+    commands: list[str] = Field(description="The reference fix, run by the validation harness; empty only for a "
+                                "false alarm (nothing to fix)")
     agent_commands: list[str] = Field([], description="The same fix as the agent can run it in its sandbox (kubectl, "
                                       "bash, sed), when `commands` uses the repo's scripts; run by the oracle episodes "
                                       "(bench/agent_bench.py oracle). In no hash: it changes neither the fault nor the grading")
@@ -256,6 +261,21 @@ class Template(Strict):
         if not MECHANISM_RE.match(v):
             raise ValueError(f"mechanism {v!r} must look like 'family/name'")
         return v
+
+    @model_validator(mode="after")
+    def task_kind_rules(self):
+        """A false alarm raises an alarm (alarm_checks) and has nothing to fix; every other kind has a fix."""
+        if self.task.kind == "false_alarm":
+            if not self.verifier.alarm_checks:
+                raise ValueError("a false_alarm needs verifier.alarm_checks (checks that FAIL while the alarm is up)")
+            if self.reference.commands:
+                raise ValueError("a false_alarm has nothing to fix: reference.commands must be []")
+        else:
+            if self.verifier.alarm_checks:
+                raise ValueError("verifier.alarm_checks is only for task.kind false_alarm")
+            if not self.reference.commands:
+                raise ValueError("reference.commands is empty; only a false_alarm has nothing to fix")
+        return self
 
 
 class InstanceOf(Strict):

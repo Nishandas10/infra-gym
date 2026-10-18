@@ -86,11 +86,15 @@ def _sha(payload):
 
 def validation_hash(inst, files):
     v = inst["verifier"]
-    return _sha({
+    payload = {
         "fault": inst["fault"], "checks": v["checks"], "invariants": v["invariants"], "durability": v["durability"],
         "commands": inst["reference"]["commands"], "validation": inst["validation"],
         "files": {n: hashlib.sha256(t.encode()).hexdigest() for n, t in sorted(files.items())},
-    })
+    }
+    # A false alarm is validated differently (gym/harness.py). Only when set, so other hashes stay as they were.
+    if inst["task"].get("kind") == "false_alarm":
+        payload.update(kind="false_alarm", alarm_checks=v["alarm_checks"])
+    return _sha(payload)
 
 
 def content_hash(inst, files):
@@ -139,12 +143,15 @@ def derive_durability(fault):
     return out
 
 
-def resolve_verifier(verifier, fault, defaults):
+def resolve_verifier(verifier, fault, defaults, kind="incident"):
     extra = [f for f in verifier.get("forbidden_extra", []) if f not in defaults.forbidden]
     durability = verifier.get("durability")
+    if durability is None:   # a false alarm has no fix, so there is nothing to survive a restart
+        durability = [] if kind == "false_alarm" else derive_durability(fault)
     return {"checks": verifier["checks"],
+            **({"alarm_checks": verifier["alarm_checks"]} if verifier.get("alarm_checks") else {}),
             "invariants": list(defaults.invariants if verifier.get("invariants") is None else verifier["invariants"]),
-            "durability": derive_durability(fault) if durability is None else durability,
+            "durability": durability,
             "forbidden": list(defaults.forbidden) + extra}
 
 
@@ -152,7 +159,7 @@ def resolve(raw, defaults, files, records=None):
     """The instance dict: the template's own keys in its order, defaults filled in, hashes added, and
     the validation status from `records` (gym/core/status.py load_records; none = draft)."""
     inst = json.loads(json.dumps(raw))
-    inst["verifier"] = resolve_verifier(inst["verifier"], inst["fault"], defaults)
+    inst["verifier"] = resolve_verifier(inst["verifier"], inst["fault"], defaults, inst["task"].get("kind", "incident"))
     validation = {**defaults.validation.model_dump(),
                   **{k: v for k, v in (inst.pop("validation", None) or {}).items() if v is not None}}
     resolved = {"tools": inst.get("tools") or list(defaults.tools),
@@ -190,26 +197,33 @@ def reference_markdown(inst):
     if gt.get("red_herrings"):
         lines += ["", "## Noise in this scenario (not the cause)", ""] + [f"- {n}" for n in gt["red_herrings"]]
     lines += ["", "## Fix", ""] + ([ref["fix"], ""] if ref.get("fix") else [])
-    lines += ["```bash", *ref["commands"], "```", "", "## Confirm", "",
-              f"`python verifiers/verify.py scenarios/{inst['id']}` passes.", ""]
+    if ref["commands"]:
+        lines += ["```bash", *ref["commands"], "```", ""]
+    else:
+        lines += ["None: this is a false alarm. The correct response changes nothing and explains why.", ""]
+    lines += ["## Confirm", "", f"`python verifiers/verify.py scenarios/{inst['id']}` passes.", ""]
     return "\n".join(lines)
 
 
 def answer_key(inst):
     """The judge's answer key: the ground truth as plain text."""
     gt = inst["ground_truth"]
-    lines = ["ROOT CAUSE(S). A correct report names every one of these:"]
+    false_alarm = inst["task"].get("kind") == "false_alarm"
+    lines = ["FALSE ALARM: nothing is broken. A correct report says so, changes nothing, and names what raised the "
+             "alarm:" if false_alarm else "ROOT CAUSE(S). A correct report names every one of these:"]
     for i, rc in enumerate(gt["root_causes"], 1):
         where = f" (namespace {rc['namespace']})" if rc.get("namespace") else " (cluster-scoped)"
         if rc["component"].endswith("/$workers"):
             where = " (every worker node)"
+        elif rc["component"].endswith("/$worker"):
+            where = " (one worker node)"
         lines.append(f"{i}. {rc['component']}{where}: {rc['what']}")
     lines += ["", "HOW IT CAUSES THE SYMPTOM:", gt["explanation"], "", "EVIDENCE AN ENGINEER CAN SEE:"]
     lines += [f"- {e}" for e in gt["evidence"]]
     if gt.get("red_herrings"):
         lines += ["", "NOISE (observed, but NOT the cause):"] + [f"- {r}" for r in gt["red_herrings"]]
     lines += ["", "REFERENCE FIX:"] + ([inst["reference"]["fix"]] if inst["reference"].get("fix") else [])
-    lines += [f"  {c}" for c in inst["reference"]["commands"]]
+    lines += [f"  {c}" for c in inst["reference"]["commands"]] or ["  none: any change is wrong"]
     return "\n".join(lines)
 
 

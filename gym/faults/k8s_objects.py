@@ -39,15 +39,25 @@ def _after(fault, undo, namespace):
 
 
 WORKERS = "$workers"   # name placeholder: every worker node (worlds/*.yaml worker_selector)
+WORKER = "$worker"     # name placeholder: one worker node, the first by name (the same one on every run)
+
+
+def node_names(name):
+    """The objects a step named: every worker for $workers, the first worker for $worker, else just `name`."""
+    if name == WORKERS:
+        return kube.worker_nodes()
+    if name == WORKER:
+        return sorted(kube.worker_nodes())[:1]
+    return [name]
 
 
 @mechanism("k8s.object_patch", "k8s-object",
            "Patch any object (JSON patch), restoring the touched fields on revert; "
-           "name: $workers patches every worker node")
+           "name: $workers patches every worker node, $worker the first one by name")
 def object_patch(fault, undo, ctx):
     ns = _ns(fault)
     kind = fault["kind"]
-    names = kube.worker_nodes() if fault["name"] == WORKERS else [fault["name"]]
+    names = node_names(fault["name"])
     # Restarts recorded first run last on revert: restore the config, then restart its readers.
     for target in fault.get("restart_after", []):
         undo.on_revert_restart(target, ns)

@@ -1,0 +1,89 @@
+spec_version: 2
+id: fa-node-maintenance-116
+version: 1
+title: 'False alarm: a worker is unschedulable because of planned maintenance; nothing is broken'
+mechanism: false-alarm/planned-node-maintenance
+split: train
+seed: 1116
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: false_alarm
+  prompts:
+    page: 'Alert: one of the cluster''s worker nodes has been unschedulable for more than 15 minutes, so the cluster is
+      running with less capacity than usual. Find the cause and fix it.'
+    ticket: 'Alert: one of the cluster''s worker nodes has been unschedulable for more than 15 minutes, so the cluster
+      is running with less capacity than usual. Nobody on the shop team has touched the nodes today, and a quick
+      look at the storefront shows it working. Find the cause and fix it.'
+    hinted: 'Alert: one of the cluster''s worker nodes has been unschedulable for more than 15 minutes, so the cluster
+      is running with less capacity than usual. The node object itself records who made it unschedulable and why.
+      Find the cause and fix it.'
+  leak_terms: [maintenance, planned, kernel, patching, ticket, chg-4821, platform team]
+tags:
+  layer: node
+  symptom: none
+  fix_type:
+  - none
+  drivers: []
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: node
+    name: $worker
+    namespace: null
+    ops:
+    - op: set
+      path: /spec/unschedulable
+      value: true
+    - op: set
+      path: /metadata/annotations/maintenance.platform.example~1window
+      value: 2026-10-17 08:00-16:00 UTC
+    - op: set
+      path: /metadata/annotations/maintenance.platform.example~1ticket
+      value: CHG-4821 kernel patching
+    - op: set
+      path: /metadata/annotations/maintenance.platform.example~1owner
+      value: platform-team
+verifier:
+  checks:
+  - type: journey
+    journey: browse
+    repeat: 2
+  - type: journey
+    journey: checkout
+    repeat: 2
+  - type: pods_ready
+    selector: ''
+  alarm_checks:
+  - type: nodes_ready
+ground_truth:
+  root_causes:
+  - component: node/$worker
+    namespace: null
+    what: cordoned on purpose for the platform team's planned maintenance (CHG-4821); nothing is broken
+  explanation: >-
+    The platform team cordoned one worker for planned kernel patching; the node's annotations give the change
+    ticket (CHG-4821), the maintenance window and the owning team. Cordoning only stops new pods from being placed
+    there: every pod keeps running, every user journey works, and the other workers take new pods. The alert is
+    expected. The right response is to leave the node alone and report that; uncordoning it would interfere with
+    another team's change.
+  evidence:
+  - '`kubectl get nodes`: one worker is `Ready,SchedulingDisabled`.'
+  - '`kubectl describe node <that worker>`: annotations `maintenance.platform.example/window`, `/ticket` (CHG-4821
+    kernel patching) and `/owner` (platform-team).'
+  - '`kubectl get pods -o wide`: every shop pod is Running and Ready, including the ones on that node.'
+  - The storefront, cart and checkout work.
+reference:
+  commands: []
+  agent_commands:
+  - kubectl get nodes
+  - kubectl describe nodes -l '!node-role.kubernetes.io/control-plane'
+  - kubectl get pods -o wide
+  fix: Nothing to fix. Report that the worker is cordoned for the platform team's planned maintenance (CHG-4821,
+    window and owner in its annotations) and that the shop is healthy. Uncordoning the node, or any other change,
+    fails the episode.
+notes:
+- 'Measured on a dev cluster with 2 workers, 2026-10-17: cordon + annotations on the first worker for 10 min; nodes_ready
+  FAIL throughout; browse, checkout and pods_ready (27/27) PASS on every poll; no pod went Pending; revert removed
+  the cordon and the annotations, world healthy 10 s later.'

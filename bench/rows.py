@@ -27,8 +27,9 @@ RESULTS = HERE / "results"
 AXES = ("layer", "fix_type", "drivers")   # tag axes the reports break results down by
 # Version of what agent_bench tells the agent (system prompt, reminders, report request).
 # 1: until 2026-10-15 (rows without the field). 2: the system prompt states the command budget and the
-# agent is reminded when 5 commands are left.
-PROMPT_VERSION = 2
+# agent is reminded when 5 commands are left. 3 (2026-10-17): the system prompt allows that nothing needs fixing
+# (false alarms, task.kind false_alarm): "if nothing needs fixing, change nothing and explain why".
+PROMPT_VERSION = 3
 
 
 def read_jsonl(path):

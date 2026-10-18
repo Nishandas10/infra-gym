@@ -1,0 +1,93 @@
+spec_version: 2
+id: fa-drained-consumer-lag-118
+version: 1
+title: 'False alarm: the fraud-detection consumer group had no consumers for a few minutes and has since caught up'
+mechanism: false-alarm/consumer-gap-recovered
+split: train
+seed: 1118
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: false_alarm
+  prompts:
+    page: 'Alert from the fraud team: the fraud-detection consumer group on the orders topic had no active consumers
+      for a few minutes. Find the cause and fix it.'
+    ticket: 'Alert from the fraud team: the fraud-detection consumer group on the orders topic had no active
+      consumers for a few minutes. Customers can still place orders. Find the cause and fix it.'
+    hinted: 'Alert from the fraud team: the fraud-detection consumer group on the orders topic had no active
+      consumers for a few minutes. The fraud-detection pod is only a few minutes old. Find the cause and fix it.'
+  leak_terms: [scale, scaling, zero, caught up, recovered, stale]
+tags:
+  layer: datastore
+  symptom: none
+  fix_type:
+  - none
+  drivers:
+  - async-path
+  injector: k8s-api
+fault:
+  steps:
+  # Someone scaled fraud-detection to zero and back; the consumer group is empty in between.
+  - mechanism: k8s.object_patch
+    kind: deployment
+    name: fraud-detection
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 0
+    pause_s: 150
+  - mechanism: k8s.object_patch
+    kind: deployment
+    name: fraud-detection
+    ops:
+    - op: replace
+      path: /spec/replicas
+      value: 1
+verifier:
+  checks:
+  - type: kafka_lag
+    group: fraud-detection
+    max_lag: 200
+  - type: kafka_lag
+    group: accounting
+    max_lag: 200
+  - type: journey
+    journey: checkout
+    repeat: 2
+  alarm_checks:
+  # FAILs while the group has no active member: from the scale-down until the new pod has joined (~40 s after).
+  - type: kafka_lag
+    group: fraud-detection
+    max_lag: 50
+ground_truth:
+  root_causes:
+  - component: deployment/fraud-detection
+    namespace: default
+    what: was scaled to zero for about two and a half minutes and back to one; the new consumer joined the group and
+      caught up, so nothing is broken now
+  explanation: >-
+    fraud-detection was scaled to zero and back to one a few minutes ago, so the consumer group had no member for
+    about three minutes (until the new pod's JVM started and joined), which fired the alert. The orders that
+    arrived meanwhile (a handful) were consumed as soon as the new pod joined: the group has one active member and
+    its lag is about zero, accounting is unaffected and checkout works. The alert is stale and nothing needs to be
+    changed; who scaled the Deployment is worth a follow-up, but not a change.
+  evidence:
+  - '`kubectl exec deploy/kafka -- /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092
+    --describe --group fraud-detection`: one consumer, lag 0 or close to it.'
+  - '`kubectl get pods -l opentelemetry.io/name=fraud-detection`: Running, Ready, 0 restarts, a few minutes old.'
+  - '`kubectl get events` / `kubectl describe deployment fraud-detection`: ScalingReplicaSet to 0, then to 1.'
+  - fraud-detection's logs show it consuming orders again.
+reference:
+  commands: []
+  agent_commands:
+  - kubectl get pods -l opentelemetry.io/name=fraud-detection
+  - kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= /opt/kafka/bin/kafka-consumer-groups.sh
+    --bootstrap-server localhost:9092 --describe --group fraud-detection
+  - kubectl describe deployment fraud-detection
+  fix: Nothing to fix. Report that the consumer group was empty while fraud-detection was scaled to zero and back,
+    and has since caught up (lag about 0). Restarting or scaling fraud-detection, resetting offsets or changing Kafka
+    fails the episode.
+notes:
+- 'Measured on a dev cluster, 2026-10-17: pauses of 60 s and 150 s built only 6-9 messages of lag (few orders per minute),
+  so the alert is the empty group, not the lag. kafka_lag FAILs with "no active members" until ~35-50 s after the
+  scale-up, then lag 0-2 for the rest of the 10-min watch; accounting unaffected; no wedge in either run.'

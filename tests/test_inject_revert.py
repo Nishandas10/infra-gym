@@ -65,6 +65,11 @@ EXPECT = {   # what must be true right after injection (Hard tier)
 }
 
 
+# Injections that end where they started (a scale to zero and back); tests/test_false_alarm.py checks the state in
+# between.
+NO_NET_CHANGE = {"fa-drained-consumer-lag-118"}
+
+
 def test_every_hard_scenario_has_an_expectation():
     hard = {p.parent.name for p in SPECS if p.parent.name.startswith("hard-")}
     assert hard == set(EXPECT)
@@ -81,7 +86,7 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
 
     changed = (fake.state() != objects_before or fake.flags_live() != flags_before
                or any(cmd[:1] != ["cat"] for _, cmd, _ in fake.execs))
-    assert changed, "injection changed nothing"
+    assert changed or spec["id"] in NO_NET_CHANGE, "injection changed nothing"
     if spec["id"] in EXPECT:
         assert EXPECT[spec["id"]](fake), "injected state is not as expected"
 

@@ -50,6 +50,9 @@ def contract(spec):
         "validation": spec["validation"],
         "prompt": spec["task"]["prompts"]["page"],
         "budget": spec["budget"],
+        # false alarms only, so the entries of every other scenario keep their recorded shape
+        **({"kind": "false_alarm", "alarm_checks": spec["verifier"]["alarm_checks"]}
+           if spec["task"].get("kind") == "false_alarm" else {}),
     }
 
 

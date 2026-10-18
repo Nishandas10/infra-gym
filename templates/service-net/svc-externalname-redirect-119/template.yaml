@@ -1,0 +1,90 @@
+spec_version: 2
+id: svc-externalname-redirect-119
+version: 1
+title: cart Service converted to ExternalName for an unfinished migration; new connections to cart cannot resolve
+mechanism: service/externalname-redirect
+split: train
+seed: 1119
+world: k8s-shop
+bench_eligible: true
+task:
+  kind: incident
+  prompts:
+    page: Since this morning's frontend and checkout deploys, adding items to the cart fails for every shopper and no
+      order goes through. Find the cause and fix it.
+    ticket: Since this morning's frontend and checkout deploys, adding items to the cart fails for every shopper and no
+      order goes through. The cart pod is Running and Ready and its logs show no errors. Find the cause and fix it.
+    hinted: Since this morning's frontend and checkout deploys, adding items to the cart fails for every shopper and no
+      order goes through. Calls to cart fail before they ever reach the cart pod. Find the cause and fix it.
+  leak_terms: [externalname, external name, cname, service type, cart-v2, migration, migrated, resolve, resolution]
+tags:
+  layer: service-net
+  symptom: hard-errors
+  fix_type:
+  - config-edit
+  drivers:
+  - looks-healthy
+  - recent-change-bias
+  injector: k8s-api
+fault:
+  steps:
+  - mechanism: k8s.object_patch
+    kind: service
+    name: cart
+    ops:
+    - op: replace
+      path: /spec/type
+      value: ExternalName
+    - op: add
+      path: /spec/externalName
+      value: cart.cart-v2.svc.cluster.local
+    # Long-lived gRPC connections survive the change (kube-proxy keeps established flows), so the fault only bites
+    # on new connections: restart the callers, as their deploys would.
+    restart_after:
+    - deployment/frontend
+    - deployment/checkout
+verifier:
+  checks:
+  - type: journey
+    journey: cart
+    repeat: 3
+    max_error_pct: 0
+    max_avg_ms: 2500
+  - type: journey
+    journey: checkout
+    repeat: 2
+    max_error_pct: 0
+    max_avg_ms: 5000
+ground_truth:
+  root_causes:
+  - component: service/cart
+    namespace: default
+    what: its type was changed to ExternalName pointing at cart.cart-v2.svc.cluster.local, a name that does not
+      exist, so new connections to cart cannot be resolved
+  explanation: >-
+    An unfinished migration converted the cart Service to `type: ExternalName` with `externalName:
+    cart.cart-v2.svc.cluster.local`; the namespace cart-v2 does not exist. The change dropped the Service's cluster
+    IP, and the cluster DNS now answers `cart` with a CNAME to a name that does not resolve. Frontend and checkout
+    kept working on their existing gRPC connections until they were redeployed; every new connection fails, so
+    adding to the cart and checkout fail while the cart pod itself is healthy. The deploys are not the cause.
+  evidence:
+  - '`kubectl logs deploy/frontend`: errors calling the cart service (name resolution / UNAVAILABLE).'
+  - '`kubectl get svc cart`: TYPE `ExternalName`, EXTERNAL-IP `cart.cart-v2.svc.cluster.local`, no cluster IP;
+    every other shop Service is `ClusterIP`.'
+  - '`kubectl get ns cart-v2`: NotFound.'
+  - '`kubectl get pods -l opentelemetry.io/name=cart`: Running and Ready; its EndpointSlice still lists the pod.'
+  red_herrings:
+  - The frontend and checkout deploys look like the trigger; rolling them back or restarting them changes nothing.
+reference:
+  commands:
+  - kubectl patch service cart --type merge -p '{"spec":{"type":"ClusterIP","externalName":null}}'
+  fix: >-
+    Change the cart Service back to `type: ClusterIP` and drop `externalName` (Kubernetes assigns a new cluster
+    IP; clients use the name, so that is fine). Deleting the Service and recreating it as ClusterIP with the same
+    selector and port also works. Rolling back or restarting frontend and checkout does not.
+notes:
+- 'Measured on a dev cluster, 2026-10-17: without restarting the callers, cart and checkout kept passing for 4 min after
+  the change (established gRPC connections), and the EndpointSlice kept its endpoint, so `endpoints` cannot see the
+  fault. With frontend and checkout restarted: cart and checkout journeys FAIL (500/503) on every poll for 5 min.
+  After the patch back to ClusterIP, cart PASSed within 30 s and checkout within 90 s with no restart; PASS for the
+  remaining 5 min.'

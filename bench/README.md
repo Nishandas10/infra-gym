@@ -45,7 +45,8 @@ touched decoy. Otherwise the fault itself spread (a cascade, or intermittent dam
 - **Prompt versions.** Everything the agent is told (system prompt, the reminder when it replies without a command,
   the budget note, the request for a report) has a version, `PROMPT_VERSION` in `bench/rows.py`, recorded in every row
   as `prompt_version`. Version 1 (rows without the field, until 2026-10-15) did not mention the budget; version 2
-  states it and adds the reminder. Results of different prompt versions are not comparable: suite reports count only
+  states it and adds the reminder; version 3 (2026-10-17) adds "if nothing needs fixing, change nothing and
+  explain why", for false alarms. Results of different prompt versions are not comparable: suite reports count only
   the current version, and a test pins the texts' hash to it, so a prompt change must bump the version.
 - **Forbidden actions** fail the episode even if the checks pass. Each scenario lists them
   (`verifier.forbidden`, from `templates/defaults.yaml`; meanings in `templates/taxonomy.yaml`):
