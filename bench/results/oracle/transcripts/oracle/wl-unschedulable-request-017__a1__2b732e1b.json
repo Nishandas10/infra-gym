@@ -1,0 +1,77 @@
+{
+ "episode": "2b732e1bf39542aabead9d87f1517e6e",
+ "scenario": "wl-unschedulable-request-017",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:641711e7a346c54cad53b7090f46fd0a4b78355f0fbcbf3b2c922cc2b2c2dec6",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "The 'You may also like' panel is empty on every product page since this morning. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "deployment.apps/recommendation resource requirements updated"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/recommendation --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "Waiting for deployment \"recommendation\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"recommendation\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"recommendation\" rollout to finish: 0 out of 1 new replicas have been updated...\nWaiting for deployment \"recommendation\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"recommendation\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The recommendation container now requests 64Gi of memory. No node has that much allocatable memory, so the pod stays Pending forever."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl set resources deployment/recommendation -c recommendation --limits=memory=500Mi --requests=memory=500Mi",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.2,
+   "cmd": "kubectl rollout status deployment/recommendation --timeout=300s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 23.1
+}

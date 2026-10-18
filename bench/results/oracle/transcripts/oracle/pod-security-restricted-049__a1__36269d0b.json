@@ -1,0 +1,104 @@
+{
+ "episode": "36269d0baa1a4aa4862344943db48442",
+ "scenario": "pod-security-restricted-049",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:4fc7ad5b306f59d4c70bfd5896ace0d59f1caeb9a92e77b541f8d3bb0419cbea",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Product images broke after the image service restarted, and its pod is gone. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl label namespace default pod-security.kubernetes.io/enforce-\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "namespace/default unlabeled"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout restart deployment/image-provider\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "deployment.apps/image-provider restarted"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-3",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/image-provider --timeout=300s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-3",
+   "content": "Waiting for deployment \"image-provider\" rollout to finish: 0 of 1 updated replicas are available...\ndeployment \"image-provider\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The namespace was labelled `pod-security.kubernetes.io/enforce=restricted`. Existing pods keep running, but any recreated pod that does not meet the restricted profile is rejected at admission."
+  }
+ ],
+ "cleanup": [
+  "restored deployments.apps/image-provider"
+ ],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl label namespace default pod-security.kubernetes.io/enforce-",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.3,
+   "cmd": "kubectl rollout restart deployment/image-provider",
+   "changes": true
+  },
+  {
+   "step": 3,
+   "t": 0.6,
+   "cmd": "kubectl rollout status deployment/image-provider --timeout=300s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 7.0
+}

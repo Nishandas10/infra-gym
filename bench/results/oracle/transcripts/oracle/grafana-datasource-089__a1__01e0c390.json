@@ -1,0 +1,52 @@
+{
+ "episode": "01e0c390eb8e4cebb9e6e096cb0c90e8",
+ "scenario": "grafana-datasource-089",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:8ccfa3ebd7f30c2fae44aa0cef519fd59da59562be30963d95d1608d134f80d6",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 30 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "Every Grafana dashboard shows 'No data'. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "configmap/grafana-datasources replaced"
+  },
+  {
+   "role": "assistant",
+   "content": "The provisioned Prometheus datasource URL was changed to port 9099, where nothing listens, so Grafana's queries time out while Prometheus and the data are fine. The datasource sidecar applies ConfigMap edits to Grafana live, so fixing the ConfigMap is enough; no restart is needed."
+  }
+ ],
+ "cleanup": [],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl get configmap grafana-datasources -o yaml | sed 's|prometheus:9099|prometheus:9090|' | kubectl replace -f -",
+   "changes": true
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 5.2
+}

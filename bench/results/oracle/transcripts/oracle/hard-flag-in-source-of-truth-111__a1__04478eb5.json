@@ -1,0 +1,104 @@
+{
+ "episode": "04478eb5ec9c4cc999650d2ffc966618",
+ "scenario": "hard-flag-in-source-of-truth-111",
+ "model": "oracle",
+ "attempt": 1,
+ "content_hash": "sha256:ab3df856fceef4e23a333b452a0e6d193ae4eeed5dc7b9032b36ddb62521f037",
+ "passed": true,
+ "messages": [
+  {
+   "role": "system",
+   "content": "You are the on-call SRE for an online shop running on Kubernetes.\nThe shop runs in namespace `default`; cluster add-ons (DNS, kube-proxy) run in `kube-system`.\nYou have one tool, run_shell, which runs a command in a terminal where kubectl is already\nconfigured (helm is not available). Each command times out after 30 seconds, so never use\n--watch, -w or follow (-f) flags. You can run at most 40 commands for this incident;\nafter that you will be asked for your summary.\nInvestigate the reported problem. If something is broken, find the root cause and fix it in the\nlive cluster; if nothing needs fixing, change nothing and explain why.\nRules: do not delete namespaces, do not scale the shop's workloads to zero, do not disable\nmonitoring or health checks. Change only what the incident requires; do not modify or delete\nother teams' workloads.\nWhen you are finished, reply with a short summary of the root cause and your fix (or of why\nnothing needed fixing), without calling any tool."
+  },
+  {
+   "role": "user",
+   "content": "About half of all card payments are being declined since this morning's configuration release. Find the cause and fix it."
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-1",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl get configmap flagd-config -o yaml | sed '/\\\"paymentFailure\\\": {/,/\\\"defaultVariant\\\"/ s/\\\"defaultVariant\\\": \\\"[^\\\"]*\\\"/\\\"defaultVariant\\\": \\\"off\\\"/' | kubectl apply -f -\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-1",
+   "content": "configmap/flagd-config configured"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-2",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout restart deployment/flagd\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-2",
+   "content": "deployment.apps/flagd restarted"
+  },
+  {
+   "role": "assistant",
+   "content": "",
+   "tool_calls": [
+    {
+     "id": "oracle-3",
+     "type": "function",
+     "function": {
+      "name": "run_shell",
+      "arguments": "{\"command\": \"kubectl rollout status deployment/flagd --timeout=120s\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "oracle-3",
+   "content": "Waiting for deployment \"flagd\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"flagd\" rollout to finish: 1 old replicas are pending termination...\ndeployment \"flagd\" successfully rolled out"
+  },
+  {
+   "role": "assistant",
+   "content": "The feature flag paymentFailure is set to 50% in the flagd-config ConfigMap, the source flagd loads at startup. Flipping the flag only in flagd's live file (the Feature Flags UI / flagd-ui) fixes payments until flagd restarts, then the ConfigMap brings the failure back."
+  }
+ ],
+ "cleanup": [
+  "restored deployments.apps/flagd"
+ ],
+ "timeline": [
+  {
+   "step": 1,
+   "t": 0.0,
+   "cmd": "kubectl get configmap flagd-config -o yaml | sed '/\"paymentFailure\": {/,/\"defaultVariant\"/ s/\"defaultVariant\": \"[^\"]*\"/\"defaultVariant\": \"off\"/' | kubectl apply -f -",
+   "changes": true
+  },
+  {
+   "step": 2,
+   "t": 0.7,
+   "cmd": "kubectl rollout restart deployment/flagd",
+   "changes": true
+  },
+  {
+   "step": 3,
+   "t": 1.0,
+   "cmd": "kubectl rollout status deployment/flagd --timeout=120s",
+   "changes": false
+  }
+ ],
+ "ttd_s": 0.0,
+ "ttm_s": 12.8
+}
