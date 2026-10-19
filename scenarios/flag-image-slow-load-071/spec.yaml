@@ -2,12 +2,12 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: flag-image-slow-load-071
-version: 1
+version: 2
 instance_of:
   template: flag-image-slow-load-071
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:1c9f0b2a38158c89170f2a9837d359e4c2dc2231ac2ba2fc3926e53ec62b8a04
+content_hash: sha256:7627ffdc06b1b9b2a2f29a7ff0aa945fd85865278b1d746c20826a41151120e7
 validation_hash: sha256:d75050bf117455de751a693ca78c0ad64e1a58f96f2257d21d4b814bbd06e701
 status: validated
 title: Images served with an artificial delay (imageSlowLoad)
@@ -67,10 +67,12 @@ ground_truth:
     with `x-envoy-fault-delay-request: 10000`. The Envoy edge proxy honours that header and holds each image for
     10 seconds. The image server itself is fast.'
   evidence:
-  - Only image requests are slow; the rest of each page is fast.
-  - 'The browser dev tools / frontend-proxy logs: image requests carry `x-envoy-fault-delay-request`; image-provider''s
-    own response time is milliseconds.'
-  - 'Feature Flags UI: `imageSlowLoad` is at 10sec.'
+  - Only image requests are slow for customers; the rest of each page is fast.
+  - 'An image fetched through frontend-proxy with curl is fast: the delay applies only to requests that carry the
+    header the browser code adds. image-provider answers in milliseconds.'
+  - 'flagd''s live flag file (`/app/data/demo.flagd.json`, flagd pod, container flagd-ui) or the Feature Flags UI:
+    `imageSlowLoad` is at 10sec. The change is live only: restarting flagd reloads the default (off) from its ConfigMap.'
+  - frontend-proxy writes no access log in this world, so the slow requests do not show in its logs.
 reference:
   commands:
   - python injectors/toggle_flag.py imageSlowLoad --off
@@ -84,3 +86,7 @@ validation:
   recover_timeout_s: 300
   poll_s: 10
   restart_settle_s: 45
+notes:
+- 'v2 (2026-10-19): the evidence no longer claims the frontend-proxy logs show the delayed image requests. Checked
+  live on ai-gym-3: under the fault the probe''s browser journey took 10 s per image, and frontend-proxy logged
+  no request line at all (its log holds only Envoy start-up messages). The flag definition is the observable evidence.'

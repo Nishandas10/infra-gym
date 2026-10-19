@@ -6,9 +6,10 @@
 
 ## How to find it
 
-1. Only image requests are slow; the rest of each page is fast.
-2. The browser dev tools / frontend-proxy logs: image requests carry `x-envoy-fault-delay-request`; image-provider's own response time is milliseconds.
-3. Feature Flags UI: `imageSlowLoad` is at 10sec.
+1. Only image requests are slow for customers; the rest of each page is fast.
+2. An image fetched through frontend-proxy with curl is fast: the delay applies only to requests that carry the header the browser code adds. image-provider answers in milliseconds.
+3. flagd's live flag file (`/app/data/demo.flagd.json`, flagd pod, container flagd-ui) or the Feature Flags UI: `imageSlowLoad` is at 10sec. The change is live only: restarting flagd reloads the default (off) from its ConfigMap.
+4. frontend-proxy writes no access log in this world, so the slow requests do not show in its logs.
 
 ## Fix
 
