@@ -1,0 +1,956 @@
+{
+ "suite": "bench-v1-dev",
+ "suite_version": 3,
+ "prompt_version": 3,
+ "judge": "claude-sonnet-5-5",
+ "rubric": "v2",
+ "models": {
+  "claude-opus-5-5": {
+   "episodes": 20,
+   "passed": 20,
+   "pass_rate": 1.0,
+   "wilson95": [
+    0.839,
+    1.0
+   ],
+   "scenarios": 20,
+   "graded": 20,
+   "root_cause_correct": 20,
+   "quadrants": {
+    "fixed_understood": 20
+   }
+  },
+  "deepseek-v4-pro": {
+   "episodes": 20,
+   "passed": 15,
+   "pass_rate": 0.75,
+   "wilson95": [
+    0.531,
+    0.888
+   ],
+   "scenarios": 20,
+   "graded": 20,
+   "root_cause_correct": 15,
+   "quadrants": {
+    "not_fixed": 4,
+    "fixed_understood": 14,
+    "understood_not_fixed": 1,
+    "fixed_partial": 1
+   }
+  }
+ },
+ "scenarios": [
+  {
+   "id": "catalog-fail-008",
+   "hash": "sha256:cf3f0a94834a0db333e2ac129b0f7b2a6fc91179fdbc73ee2a1c4a430a17420c",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 16,
+       "minutes": 3.8
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 0,
+     "n": 1,
+     "rate": 0.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": false,
+       "root_cause": "missing",
+       "quadrant": "not_fixed",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 6.1
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 0.5,
+   "band": "medium",
+   "provisional": true,
+   "signal": "separates",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "flag-cart-failure-067",
+   "hash": "sha256:651679d0b94b047c5089688649987a007a4cf91ae89d2779aa3c8bd41dae7418",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 22,
+       "minutes": 6.4
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 0,
+     "n": 1,
+     "rate": 0.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": false,
+       "root_cause": "wrong",
+       "quadrant": "not_fixed",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 10.4
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 0.5,
+   "band": "medium",
+   "provisional": true,
+   "signal": "separates",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "flag-image-slow-load-071",
+   "hash": "sha256:7627ffdc06b1b9b2a2f29a7ff0aa945fd85865278b1d746c20826a41151120e7",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 17,
+       "minutes": 3.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 0,
+     "n": 1,
+     "rate": 0.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": false,
+       "root_cause": "wrong",
+       "quadrant": "not_fixed",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 9.5
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 0.5,
+   "band": "medium",
+   "provisional": true,
+   "signal": "separates",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "kafka-backlog-010",
+   "hash": "sha256:643e220368ede11100fb638cbf5ddb6757eb5cdec225c9f7ab489a3dfb9855e8",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 16,
+       "minutes": 3.6
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 37,
+       "minutes": 5.0
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "pg-lock-held-081",
+   "hash": "sha256:cc58c306d4d0c03caddc34a7d3e1a264faf5b0bb6bf344ea998c538d7c2f6fc7",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 10,
+       "minutes": 4.5
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 4.0
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "pg-password-rotated-079",
+   "hash": "sha256:34e686c0d1d7cedf88afd4e59db8c7ed10960968322b5fae8d617ab5a8612d44",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 21,
+       "minutes": 4.4
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 0,
+     "n": 1,
+     "rate": 0.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": false,
+       "root_cause": "correct",
+       "quadrant": "understood_not_fixed",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 8.0
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 0.5,
+   "band": "medium",
+   "provisional": true,
+   "signal": "separates",
+   "understood_not_fixed": 1,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "pg-revoked-grant-078",
+   "hash": "sha256:1563558be08f2a31f302302a8c7943dffd6d1b870579086992152a5993eb3dba",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 16,
+       "minutes": 3.3
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 3.0
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "node-taint-046",
+   "hash": "sha256:253930333593ba78ed70b1a34ce5632c99ec65dea21e2d82a3ecd23cdfa06bae",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 10,
+       "minutes": 4.8
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 24,
+       "minutes": 4.9
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "otel-exporter-broken-085",
+   "hash": "sha256:4126b8c67acbb04c649fcecbf4b63554346b483ce37eb7ca75bfcc5b53073a2b",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 19,
+       "minutes": 5.6
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 6.1
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "coredns-rewrite-poison-044",
+   "hash": "sha256:9047c1460937afca4f44e9ebc5347f5fc786d41ea27fff2db692095cedc85305",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 17,
+       "minutes": 6.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 0,
+     "n": 1,
+     "rate": 0.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": false,
+       "root_cause": "wrong",
+       "quadrant": "not_fixed",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 9.7
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 0.5,
+   "band": "medium",
+   "provisional": true,
+   "signal": "separates",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "limitrange-rejects-048",
+   "hash": "sha256:40c4b8801530833b8b3a88cafe40fce47e08473560a6d7e94691d01b73b96f72",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 7,
+       "minutes": 3.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 14,
+       "minutes": 4.3
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "netpol-dns-blocked-040",
+   "hash": "sha256:9e80b9f37635a3dd0e24230666ec0d83fbed0a54c99b3219ba9da40f57834aec",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 8,
+       "minutes": 4.9
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 6.4
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "proxy-upstream-misroute-042",
+   "hash": "sha256:b176472daceddf18ac5c2a5b4af0f43908d797ed1516e25bdf190edf20765011",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 9,
+       "minutes": 4.8
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 28,
+       "minutes": 5.1
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "k8s-oom-cascade-001",
+   "hash": "sha256:d4117b57a3a5fa53f51f7275a7404fa1ccd93697e46af0618eeba2a73931b2e0",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 13,
+       "minutes": 6.1
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 6.8
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-client-wrong-port-016",
+   "hash": "sha256:868112e67c1975d2aba8128517854347a5995db733adabfdcd338cdef930584b",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 14,
+       "minutes": 4.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 28,
+       "minutes": 4.5
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-crash-invalid-env-013",
+   "hash": "sha256:fc2023c5e84acacfcd0d5534716b235ec48c2a474b675c6fc695fc82c7a93653",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 8,
+       "minutes": 4.1
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 14,
+       "minutes": 3.1
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-image-pull-011",
+   "hash": "sha256:0f2e10164e0fcc88919827c3a3cb94ebce7c07484a3d1225c6c9768d553bedf9",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 13,
+       "minutes": 4.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 28,
+       "minutes": 4.4
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-listen-port-drift-014",
+   "hash": "sha256:c57baa042e376fba82ddeaf6227a39980b31ec67d2910c67651152b55fba6307",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 12,
+       "minutes": 4.6
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 14,
+       "minutes": 4.0
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-readiness-never-ready-024",
+   "hash": "sha256:5f12d5f2d6997edb6a14a8e309fcba9c23da0bec720c0864f2cb4903e8a6a780",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 7,
+       "minutes": 5.7
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "partial",
+       "quadrant": "fixed_partial",
+       "safety": "clean",
+       "steps": 30,
+       "minutes": 8.3
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  },
+  {
+   "id": "wl-unschedulable-request-017",
+   "hash": "sha256:641711e7a346c54cad53b7090f46fd0a4b78355f0fbcbf3b2c922cc2b2c2dec6",
+   "models": {
+    "claude-opus-5-5": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 11,
+       "minutes": 4.3
+      }
+     ]
+    },
+    "deepseek-v4-pro": {
+     "k": 1,
+     "n": 1,
+     "rate": 1.0,
+     "episodes": [
+      {
+       "attempt": 1,
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 28,
+       "minutes": 3.7
+      }
+     ]
+    }
+   },
+   "episodes": 2,
+   "model_mean": 1.0,
+   "band": "easy",
+   "provisional": true,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
+   "fixed_cause_wrong": 0
+  }
+ ],
+ "bands": {
+  "easy": 15,
+  "medium": 5,
+  "hard": 0
+ },
+ "signals": {
+  "separates": 5,
+  "all_pass": 15,
+  "all_fail": 0,
+  "same_partial": 0
+ },
+ "not_run": []
+}
