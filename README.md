@@ -164,7 +164,7 @@ sequenceDiagram
 ## Setup (on a Linux host with Docker and kind, from the repo root)
 
 ```bash
-python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 kind create cluster --config scripts/kind-config.yaml   # cluster ai-gym: 1 control plane, 2 workers
 bash scripts/reset_world.sh          # the shop, trimmed to fit a small machine (see values-local.yaml)
 bash scripts/install_chaos_mesh.sh   # needed by the chaos-* scenarios
@@ -213,7 +213,7 @@ suites and benchmark results on the second.
 ## Offline tests (no cluster needed)
 
 ```bash
-ruff check .
+ruff check . --select E9,F
 python scripts/generate.py --check   # scenarios/ matches templates/
 python scripts/make_suite.py --check # every suite matches the current instances
 pytest
