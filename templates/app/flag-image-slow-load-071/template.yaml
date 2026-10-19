@@ -1,6 +1,6 @@
 spec_version: 2
 id: flag-image-slow-load-071
-version: 1
+version: 2
 title: Images served with an artificial delay (imageSlowLoad)
 mechanism: app-flag/image-slow-load
 split: train
@@ -42,13 +42,19 @@ ground_truth:
     with `x-envoy-fault-delay-request: 10000`. The Envoy edge proxy honours that header and holds each image for
     10 seconds. The image server itself is fast.'
   evidence:
-  - Only image requests are slow; the rest of each page is fast.
-  - 'The browser dev tools / frontend-proxy logs: image requests carry `x-envoy-fault-delay-request`; image-provider''s
-    own response time is milliseconds.'
-  - 'Feature Flags UI: `imageSlowLoad` is at 10sec.'
+  - Only image requests are slow for customers; the rest of each page is fast.
+  - 'An image fetched through frontend-proxy with curl is fast: the delay applies only to requests that carry the header
+    the browser code adds. image-provider answers in milliseconds.'
+  - 'flagd''s live flag file (`/app/data/demo.flagd.json`, flagd pod, container flagd-ui) or the Feature Flags UI:
+    `imageSlowLoad` is at 10sec. The change is live only: restarting flagd reloads the default (off) from its ConfigMap.'
+  - 'frontend-proxy writes no access log in this world, so the slow requests do not show in its logs.'
 reference:
   commands:
   - python injectors/toggle_flag.py imageSlowLoad --off
   agent_commands:
   - 'kubectl rollout restart deployment/flagd'
   - 'kubectl rollout status deployment/flagd --timeout=120s'
+notes:
+- 'v2 (2026-10-19): the evidence no longer claims the frontend-proxy logs show the delayed image requests. Checked live
+  on ai-gym-3: under the fault the probe''s browser journey took 10 s per image, and frontend-proxy logged no request
+  line at all (its log holds only Envoy start-up messages). The flag definition is the observable evidence.'
