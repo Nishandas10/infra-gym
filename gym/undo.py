@@ -133,6 +133,10 @@ def run_hook(hook):
         kube.node_exec(node, ["systemctl", "start", "kubelet"])
         if not kube.wait_until(lambda: kube.node_ready(node), 180, interval=5):
             raise RuntimeError(f"node {node} is not Ready 180 s after starting its kubelet")
+    if hook.get("sleep_s"):
+        # Something just removed keeps acting for a while (an admission policy is applied for a few seconds after
+        # its delete): wait before the restarts that follow the hooks.
+        time.sleep(hook["sleep_s"])
     if hook.get("kafka_topic"):
         # A fresh broker has no topics until someone produces; consumers that subscribe
         # before that can sit idle for minutes. Create it as soon as the broker answers.

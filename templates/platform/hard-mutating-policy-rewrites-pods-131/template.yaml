@@ -1,6 +1,6 @@
 spec_version: 2
 id: hard-mutating-policy-rewrites-pods-131
-version: 1
+version: 2
 title: Checkout calls the wrong payment port although its Deployment is correct
 mechanism: hard/mutating-admission-policy-rewrites-pods
 split: hard
@@ -68,6 +68,12 @@ fault:
     settle_s: 20
     recreate_pods_after:
     - opentelemetry.io/name=checkout
+  # Revert: the checkout pods the policy rewrote keep payment:8081 after it is deleted. Replace them once the deleted
+  # policy has stopped acting (v1 left checkout broken for the next episode whenever the agent had not fixed it).
+  revert_hooks:
+  - sleep_s: 20
+  restart_on_revert:
+  - opentelemetry.io/name=checkout
 verifier:
   checks:
   - type: journey
@@ -129,3 +135,6 @@ notes:
 - 'Validation (2026-10-19): one of 5 runs SELF_HEALED: the pods were replaced within a second of creating the policy,
   before the API server applied it, so they came up correct. The injection now waits 20 s (settle_s) before deleting
   the checkout pods.'
+- 'v2 (2026-10-19): calibration found the world broken after episodes the agent did not fix (DeepSeek attempt 1, the
+  diagnose/detect oracle): v1''s revert deleted the policy but left the rewritten checkout pods running. The revert
+  now waits 20 s and then replaces them (revert_hooks sleep_s + restart_on_revert).'

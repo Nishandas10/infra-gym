@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from gym import faults
+from gym import faults, kube
 from gym.spec import all_specs, load
 from tests.fakes import FakeCluster, install
 
@@ -119,6 +119,23 @@ def test_inject_then_revert_exactly(spec_path, monkeypatch, tmp_path):
     for st in spec["fault"]["steps"]:
         for cmd in st.get("undo_commands", []):
             assert cmd in reverted_cmds, f"undo command not run: {json.dumps(cmd)[:120]}"
+
+
+def test_mutating_policy_revert_replaces_the_rewritten_pods_after_the_policy(monkeypatch, tmp_path):
+    fake = FakeCluster()
+    install(fake, monkeypatch, tmp_path)
+    spec, sdir = load(next(p for p in SPECS if p.parent.name == "hard-mutating-policy-rewrites-pods-131"))
+    faults.inject(spec, sdir)
+    fake.pod_deletions.clear()
+    order = []
+    delete = fake.delete
+    monkeypatch.setattr(kube, "delete", lambda kind, *a, **k: (order.append(kind), delete(kind, *a, **k))[1])
+    pod_delete = fake.kubectl
+    monkeypatch.setattr(kube, "kubectl", lambda *a, **k: (order.append(" ".join(a)), pod_delete(*a, **k))[1])
+    assert not faults.revert(spec)
+    assert any("opentelemetry.io/name=checkout" in d for d in fake.pod_deletions)
+    restart = next(i for i, o in enumerate(order) if "opentelemetry.io/name=checkout" in o)
+    assert max(i for i, o in enumerate(order) if o.lower().startswith("mutatingadmissionpolicy")) < restart
 
 
 def test_workers_placeholder_patches_every_worker_and_only_workers(monkeypatch, tmp_path):
