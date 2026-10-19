@@ -88,5 +88,6 @@ validation:
   restart_settle_s: 45
 notes:
 - 'v2 (2026-10-19): the evidence no longer claims the frontend-proxy logs show the delayed image requests. Checked
-  live on ai-gym-3: under the fault the probe''s browser journey took 10 s per image, and frontend-proxy logged
-  no request line at all (its log holds only Envoy start-up messages). The flag definition is the observable evidence.'
+  live on a spare cluster: under the fault the probe''s browser journey took 10 s per image, and frontend-proxy
+  logged no request line at all (its log holds only Envoy start-up messages). The flag definition is the observable
+  evidence.'
