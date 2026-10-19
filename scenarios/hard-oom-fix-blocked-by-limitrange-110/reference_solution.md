@@ -8,7 +8,7 @@
 
 1. ad pods: OOMKilled / CrashLoopBackOff; the memory limit is 48Mi.
 2. After raising the limit (e.g. back to the previous revision), `kubectl rollout status` stalls; the new ReplicaSet's events say 'forbidden: maximum memory usage per Container is 128Mi'.
-3. `kubectl get limitrange` shows namespace-container-limits.
+3. `kubectl get limitrange` shows namespace-container-limits, annotated as a temporary cap added with the ad memory tuning (CHG-4412).
 
 ## Traps (why this is hard)
 

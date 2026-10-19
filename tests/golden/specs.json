@@ -2743,10 +2743,7 @@
        "kind": "LimitRange",
        "metadata": {
         "annotations": {
-         "platform.example.com/policy": "Containers in this namespace may not exceed 128Mi (FINOPS-88)"
-        },
-        "labels": {
-         "owner": "platform-team"
+         "kubernetes.io/description": "temporary cap added with the ad memory tuning (CHG-4412), remove after"
         },
         "name": "namespace-container-limits",
         "namespace": "default"
