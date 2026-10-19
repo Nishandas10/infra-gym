@@ -69,6 +69,14 @@ EXPECT = {   # what must be true right after injection (Hard tier)
         and f.obj("deployment", "accounting")["spec"]["strategy"] == {"type": "Recreate"}
         and [c["name"] for c in f.obj("deployment", "accounting")["spec"]["template"]["spec"]["initContainers"]]
         == ["wait-for-kafka", "wait-for-ledger-migration"]),
+    "hard-kafka-consumer-quota-130": lambda f: any(
+        "consumer_byte_rate=1" in c and "rdkafka" in c for _, c, _ in f.execs),
+    "hard-mutating-policy-rewrites-pods-131": lambda f: (
+        f.obj("mutatingadmissionpolicy", "platform-pod-defaults", namespace=None)
+        and f.obj("mutatingadmissionpolicybinding", "platform-pod-defaults", namespace=None)),
+    "hard-flag-targeting-rule-132": lambda f: all(
+        src["paymentFailure"]["defaultVariant"] == "off" and src["paymentFailure"]["targeting"]["if"][1] == "90%"
+        for src in (f.flags_source(), f.flags_live())),
 }
 
 

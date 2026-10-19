@@ -241,7 +241,9 @@ class FakeCluster:
     def evaluate(self, flag, context=None):
         f = self.flags_live()[flag]
         rule = (f.get("targeting") or {}).get("if")
-        if context and isinstance(rule, list) and len(rule) == 3:
+        # a rule on the request context matches when a context is given; one on flagd's own variables only
+        # ($flagd.timestamp >= a time in the past, as app.flag_targeting writes it) always matches
+        if isinstance(rule, list) and len(rule) == 3 and (context or '"$flagd.' in json.dumps(rule[0])):
             return {"variant": rule[1]}
         return {"variant": f["defaultVariant"]}
 
