@@ -1,9 +1,18 @@
-# Runtime dependencies (the same as pyproject.toml). For development and tests use:
-#   pip install -e ".[dev]"
+# Python >= 3.11. Install with:
+#   python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+
+# Runtime
 PyYAML>=6.0
 pydantic>=2.7
 requests>=2.31
+
+# bench/: model APIs
 openai>=1.40
 anthropic>=0.40
 httpx>=0.27
 python-dotenv>=1.0
+
+# Development and tests
+pytest>=8
+jsonpatch>=1.33
+ruff>=0.6
