@@ -46,6 +46,23 @@ def test_usage_counts_per_api():
     assert ab.usage_counts(None) == (0, 0, 0, 0)
 
 
+def test_a_bad_request_is_not_retried(monkeypatch):
+    class BadRequest(Exception):
+        status_code = 400
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        raise BadRequest("Error code: 400 - this API key is not scoped to a workspace")
+    client = NS(chat=NS(completions=NS(create=create)))
+    monkeypatch.setattr(ab.time, "sleep", lambda s: calls.append(("slept", s)))
+    try:
+        ab.chat(client, {"id": "m", "base_url": "http://model.invalid"}, [], 0.2)
+    except BadRequest:
+        pass
+    assert len(calls) == 1                        # one call, no retry, no wait
+
+
 def test_billed_cost_per_api():
     assert ab.billed_cost(Extra(prompt_tokens=10, completion_tokens=1, model_extra={"cost": 0.0123})) == 0.0123
     assert ab.billed_cost(Extra(prompt_tokens=10, completion_tokens=1)) == 0.0

@@ -337,7 +337,9 @@ def chat(client, ms, messages, temperature):
             # 429 = rate limited: free tiers need longer waits than ordinary hiccups
             busy = "429" in text or "529" in text or "rate limit" in text.lower() or "overloaded" in text.lower()
             waits = (30, 60, 120, 240) if busy else (5, 20, 60)
-            if attempt >= len(waits) or "402" in text or "insufficient" in text.lower():
+            # a bad request, key or permission (400/401/403) fails the same way on every retry
+            status = getattr(e, "status_code", None) or getattr(e, "code", None)
+            if attempt >= len(waits) or "402" in text or "insufficient" in text.lower() or status in (400, 401, 403):
                 raise
             log(f"  API error ({text[:150]}), retrying in {waits[attempt]}s")
             time.sleep(waits[attempt])
