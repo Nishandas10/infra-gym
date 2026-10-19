@@ -7,8 +7,8 @@ instance_of:
   template: hard-kafka-consumer-quota-130
   version: 1
   params: {}
-content_hash: sha256:9e75c23d8ea2ea35bacfd409b97912126add7565f82ae910ce1d4dfd84c3cdb9
-validation_hash: sha256:1abac8714d5fdd143dd8fcdcfce5b343f186e282662d3bd4d15d998fb46e618a
+content_hash: sha256:da4b00de97c6ad74c41d98b7d2995c4a25c4281da22cd37a7a3d92b484c4f074
+validation_hash: sha256:6d51d8e2784ac4868cd7538b96c884e6c6067ff7fc133b11de81874feed48289
 status: draft
 title: New orders stop reaching the ledger; Kafka, accounting and every pod look healthy
 mechanism: hard/kafka-client-quota-throttles-consumer
@@ -58,16 +58,11 @@ fault:
       - --add-config
       - consumer_byte_rate=1
     undo_commands:
-    - - /opt/kafka/bin/kafka-configs.sh
-      - --bootstrap-server
-      - kafka.default.svc.cluster.local:9092
-      - --alter
-      - --entity-type
-      - clients
-      - --entity-name
-      - rdkafka
-      - --delete-config
-      - consumer_byte_rate
+    - - sh
+      - -c
+      - out=$(/opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type
+        clients --entity-name rdkafka --delete-config consumer_byte_rate 2>&1) || echo "$out" | grep -q "Invalid
+        config" || { echo "$out"; exit 1; }
 verifier:
   checks:
   - type: orders_recorded
@@ -135,3 +130,6 @@ notes:
   in 19 min, fraud-detection 0 throughout (one sample showed the group with no active members while a throttled
   fetch was pending). Deleting the quota drained 78 orders within a minute and lag stayed 0-1. Healthy lag is 0-1,
   so max_lag 20 leaves margin both ways.'
+- 'Validation (2026-10-19): the first run passed but its restore failed: after the reference fix, deleting the quota
+  again makes Kafka answer "Invalid config(s): consumer_byte_rate" (exit 1). The undo command now accepts that one
+  answer and still fails on any other error.'

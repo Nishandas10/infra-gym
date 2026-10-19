@@ -7,8 +7,8 @@ instance_of:
   template: hard-mutating-policy-rewrites-pods-131
   version: 1
   params: {}
-content_hash: sha256:c78db32fffc08584cd9b809b4ae16150d29233f25ff624eebc7a5a07ce18a373
-validation_hash: sha256:2e929ff1b0517d5a97c0661086020a53ce24a2ac9e3a9065e554bc0c62857361
+content_hash: sha256:3bda9803f30f12fe5d8276344fa0efcb1ee0cc58ac9c4083ae7d8af2860db848
+validation_hash: sha256:0f91de2e932077133a2be641ead9b9e1c8994c98ae1682349a6c1905a11a1788
 status: draft
 title: Checkout calls the wrong payment port although its Deployment is correct
 mechanism: hard/mutating-admission-policy-rewrites-pods
@@ -83,9 +83,9 @@ fault:
           namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: default
-  - mechanism: k8s.workload_patch
-    target: checkout
-    ops: []
+    settle_s: 20
+    recreate_pods_after:
+    - opentelemetry.io/name=checkout
 verifier:
   checks:
   - type: journey
@@ -95,7 +95,7 @@ verifier:
   invariants:
   - shop_health
   durability:
-  - restart: deployment/checkout
+  - restart: opentelemetry.io/name=checkout
   forbidden:
   - delete_namespace
   - scale_to_zero
@@ -153,3 +153,6 @@ notes:
   did NOT recover: a pod created 2 s after the delete was still mutated (admission policy cache), and nothing created
   a new pod after it. Deleting, waiting 15 s, then restarting recovered (checkout 3/3 about 3 min later). The agent
   may get, list and delete mutating admission policies and bindings, not create or change them (bench/sandbox_up.sh).'
+- 'Validation (2026-10-19): one of 5 runs SELF_HEALED: the pods were replaced within a second of creating the policy,
+  before the API server applied it, so they came up correct. The injection now waits 20 s (settle_s) before deleting
+  the checkout pods.'

@@ -2663,16 +2663,9 @@
    "type": "exec_commands",
    "undo_commands": [
     [
-     "/opt/kafka/bin/kafka-configs.sh",
-     "--bootstrap-server",
-     "kafka.default.svc.cluster.local:9092",
-     "--alter",
-     "--entity-type",
-     "clients",
-     "--entity-name",
-     "rdkafka",
-     "--delete-config",
-     "consumer_byte_rate"
+     "sh",
+     "-c",
+     "out=$(/opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type clients --entity-name rdkafka --delete-config consumer_byte_rate 2>&1) || echo \"$out\" | grep -q \"Invalid config\" || { echo \"$out\"; exit 1; }"
     ]
    ]
   },
@@ -2851,85 +2844,79 @@
   ],
   "durability": [
    {
-    "restart": "deployment/checkout"
+    "restart": "opentelemetry.io/name=checkout"
    }
   ],
   "fault": {
-   "steps": [
+   "manifests": [
     {
-     "manifests": [
-      {
-       "apiVersion": "admissionregistration.k8s.io/v1",
-       "kind": "MutatingAdmissionPolicy",
-       "metadata": {
-        "name": "platform-pod-defaults",
-        "namespace": null
-       },
-       "spec": {
-        "failurePolicy": "Fail",
-        "matchConditions": [
-         {
-          "expression": "has(object.metadata.labels) && object.metadata.labels.exists(k, k == 'opentelemetry.io/name') && object.metadata.labels['opentelemetry.io/name'] == 'checkout'",
-          "name": "checkout-pods"
-         }
-        ],
-        "matchConstraints": {
-         "resourceRules": [
-          {
-           "apiGroups": [
-            ""
-           ],
-           "apiVersions": [
-            "v1"
-           ],
-           "operations": [
-            "CREATE"
-           ],
-           "resources": [
-            "pods"
-           ]
-          }
+     "apiVersion": "admissionregistration.k8s.io/v1",
+     "kind": "MutatingAdmissionPolicy",
+     "metadata": {
+      "name": "platform-pod-defaults",
+      "namespace": null
+     },
+     "spec": {
+      "failurePolicy": "Fail",
+      "matchConditions": [
+       {
+        "expression": "has(object.metadata.labels) && object.metadata.labels.exists(k, k == 'opentelemetry.io/name') && object.metadata.labels['opentelemetry.io/name'] == 'checkout'",
+        "name": "checkout-pods"
+       }
+      ],
+      "matchConstraints": {
+       "resourceRules": [
+        {
+         "apiGroups": [
+          ""
+         ],
+         "apiVersions": [
+          "v1"
+         ],
+         "operations": [
+          "CREATE"
+         ],
+         "resources": [
+          "pods"
          ]
-        },
-        "mutations": [
-         {
-          "applyConfiguration": {
-           "expression": "Object{spec: Object.spec{containers: [Object.spec.containers{name: \"checkout\", env: [Object.spec.containers.env{name: \"PAYMENT_ADDR\", value: \"payment:8081\"}]}]}}"
-          },
-          "patchType": "ApplyConfiguration"
-         }
-        ],
-        "reinvocationPolicy": "Never"
-       }
+        }
+       ]
       },
-      {
-       "apiVersion": "admissionregistration.k8s.io/v1",
-       "kind": "MutatingAdmissionPolicyBinding",
-       "metadata": {
-        "name": "platform-pod-defaults",
-        "namespace": null
-       },
-       "spec": {
-        "matchResources": {
-         "namespaceSelector": {
-          "matchLabels": {
-           "kubernetes.io/metadata.name": "default"
-          }
-         }
+      "mutations": [
+       {
+        "applyConfiguration": {
+         "expression": "Object{spec: Object.spec{containers: [Object.spec.containers{name: \"checkout\", env: [Object.spec.containers.env{name: \"PAYMENT_ADDR\", value: \"payment:8081\"}]}]}}"
         },
-        "policyName": "platform-pod-defaults"
+        "patchType": "ApplyConfiguration"
        }
-      }
-     ],
-     "type": "create_objects"
+      ],
+      "reinvocationPolicy": "Never"
+     }
     },
     {
-     "ops": [],
-     "target": "checkout",
-     "type": "workload_patch"
+     "apiVersion": "admissionregistration.k8s.io/v1",
+     "kind": "MutatingAdmissionPolicyBinding",
+     "metadata": {
+      "name": "platform-pod-defaults",
+      "namespace": null
+     },
+     "spec": {
+      "matchResources": {
+       "namespaceSelector": {
+        "matchLabels": {
+         "kubernetes.io/metadata.name": "default"
+        }
+       }
+      },
+      "policyName": "platform-pod-defaults"
+     }
     }
    ],
-   "type": "composite"
+   "recreate_pods_after": [
+    "opentelemetry.io/name=checkout"
+   ],
+   "settle_s": 20,
+   "type": "create_objects"
   },
   "forbidden": [
    "delete_namespace",
