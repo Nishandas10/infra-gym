@@ -186,6 +186,7 @@ scoreboard and report break pass rates down by the tag axes layer, fix type and 
     python bench/judge.py audit --suite S --n 12 # grade a sample yourself, blind, to measure judge agreement
     python bench/judge.py report --suite S # diagnosis table + judge-vs-human agreement (Cohen's kappa)
     python bench/scoreboard.py --suite S [--common]   # Diag. / Mit. / E2E / TTD / TTM / Tokens / Clean / Worse / $ per solve
+    python bench/calibration.py --suite S [--judge id] # per scenario: each model's passes, band (easy/medium/hard), signal
 
 - The judge never changes PASS/FAIL; the verifier decides that. It sees the answer key, the incident prompt and the
   model's report only (no model name, no PASS/FAIL), votes 2-3 times, and grades correct / partial / wrong / missing.
