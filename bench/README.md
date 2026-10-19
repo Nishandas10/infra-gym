@@ -64,6 +64,13 @@ touched decoy. Otherwise the fault itself spread (a cascade, or intermittent dam
 - **`world.py` snapshots and restores everything else the model could change.** This covers
   objects in `default`, CoreDNS and kube-proxy, node labels, cordons and taints, namespace
   labels and webhooks. One episode can't leak into the next.
+- **Known trait of the world (v1): the Kafka broker's memory is tight.** A Kafka CLI (`kafka-configs.sh`,
+  `kafka-consumer-groups.sh`, ...) run inside the broker's pod inherits its `KAFKA_HEAP_OPTS=-Xmx400M` and the OTel Java
+  agent, and the two JVMs together exceed the pod's 1Gi limit: the broker is OOMKilled (exit 137), and Kafka clients
+  such as checkout's producer can stay wedged after it restarts. The CLI works with a small heap (`env
+  KAFKA_HEAP_OPTS='-Xmx96M -Xms16M' JAVA_TOOL_OPTIONS= ...`, as the reference fixes do). It concerns the Kafka
+  scenarios (031, 082, 083, 118, 130); an agent that sees the OOM can recover, and the world check before the next
+  episode resets the shop if it did not.
 
 ## Suites
 
@@ -73,7 +80,7 @@ instance's `content_hash` when the suite was frozen (`gym/core/suites.py`, made 
 | Suite | Where | Instances | What for |
 |---|---|---|---|
 | `bench-v1-dev` | `suites/` (public) | 20 standard | development and published results |
-| `hard-v1` | `suites/` (public) | the 12 Hard scenarios | the Hard tier |
+| `hard-v1` | `suites/` (public) | the 16 Hard scenarios | the Hard tier |
 | `lite` | `suites/` (public) | 10 fast standard | smoke runs and onboarding |
 | `bench-v1-test` | `private/suites/` (private) | 40 standard, 5/5 validated, at most 4 flag scenarios | held-out test; no results published |
 

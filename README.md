@@ -287,7 +287,7 @@ Models are compared on frozen suites, all graded on the `page` prompt (symptoms 
 | Suite | Members | Use |
 |---|---|---|
 | `bench-v1-dev` | 20 standard scenarios | development and published results |
-| `hard-v1` | the 12 Hard-tier scenarios (multi-fault, noisy) | the Hard tier |
+| `hard-v1` | the 16 Hard-tier scenarios (multi-fault, noisy) | the Hard tier |
 | `lite` | 10 fast scenarios that never failed validation | smoke runs and onboarding |
 | `bench-v1-test` | 40 standard scenarios, 5/5 validated (private) | held-out test; results are not published |
 
