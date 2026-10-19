@@ -1,2 +1,3 @@
 Model,Episodes,Diag. (%),Mit. (%),E2E (%),TTD (s),TTM (s),Tokens,Clean (%),Worse,$/solved
+claude-opus-5-5,20,not judged,100.0,not judged,27,101,121K,100.0,0,0.15
 deepseek-v4-pro,20,not judged,75.0,not judged,53,108,204K,75.0,0,0.04
