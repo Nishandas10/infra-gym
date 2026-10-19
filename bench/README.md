@@ -20,6 +20,15 @@ undo/restart`, SQL and Valkey writes; `auth can-i` and dry runs do not count), a
 touched decoy. Otherwise the fault itself spread (a cascade, or intermittent damage), which is recorded as
 `fault_spread` and not blamed on the agent.
 
+
+In an incident whose layers show one after another (driver `sequential-layers`), a correct fix of the first layer
+exposes the next by design (103: fixing cart's port turns "connection refused" into NOAUTH). Checks that break after an
+agent whose changes stayed on the fault's own objects (no collateral change, no unrelated restart, no decoy touched)
+are recorded as `revealed`, not as made worse; pass/fail is unchanged. Rows graded before this rule (2026-10-19) get
+it applied when the reports read them. Kafka's own admin commands that change the broker (`kafka-configs --alter`,
+`kafka-topics --create/--delete`, `kafka-consumer-groups --reset-offsets ... --execute`) count as changes too (TTD,
+changes made, made worse); `--describe`, `--list` and dry runs do not.
+
 ## Fairness and safety rules
 
 - **Chaos Mesh scenarios are excluded** (`bench_eligible: false` in their templates). Their only

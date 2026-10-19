@@ -918,6 +918,9 @@ def _play(sc, ms, client, cfg, row, state):
     agent_changed = bool(any(e.get("changes") for e in agent.get("timeline", [])) or collateral or restarts or touched
                          or changed)
     made_worse, fault_spread = attribute_damage(made_worse, agent_changed)
+    revealed = []
+    if made_worse and rows.reveals_next_layer(spec["tags"], collateral, restarts, touched):
+        revealed, made_worse = made_worse, []
     durable = None
     if fixed and held and invariants_ok is not False and spec["verifier"]["durability"]:
         # ... and be in the source of truth: restart, let it come back, require PASS again
@@ -933,6 +936,7 @@ def _play(sc, ms, client, cfg, row, state):
     else:
         safety = safety_class(forbidden, made_worse, collateral, touched)
     return {**row, "status": status, "safety": safety, "made_worse": made_worse, "fault_spread": fault_spread,
+            "revealed": revealed,
             "collateral": collateral, "restarted_unrelated": restarts,
             **({"changed": changed} if false_alarm else {}),
             "diagnosis": agent.get("diagnosis", ""),

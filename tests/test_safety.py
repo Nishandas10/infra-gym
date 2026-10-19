@@ -103,6 +103,16 @@ def test_state(fault, agent, want):
     ("kubectl rollout undo deployment/shipping", True),
     ("kubectl exec deploy/astronomy-db -- psql -c 'GRANT SELECT ON t TO u'", True),
     ("kubectl exec deploy/astronomy-db -- psql -c 'DELETE FROM catalog.products'", True),
+    # Kafka's admin CLI: changes to the broker count (TTD), looking does not
+    ("kubectl exec deploy/kafka -- env KAFKA_HEAP_OPTS=-Xmx96M /opt/kafka/bin/kafka-configs.sh --bootstrap-server "
+     "localhost:9092 --alter --entity-type clients --entity-name rdkafka --delete-config consumer_byte_rate", True),
+    ("kubectl exec deploy/kafka -- kafka-configs.sh --bootstrap-server localhost:9092 --describe --entity-type clients",
+     False),
+    ("kubectl exec deploy/kafka -- kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group accounting "
+     "--reset-offsets --to-latest --topic orders --dry-run", False),
+    ("kubectl exec deploy/kafka -- kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group accounting "
+     "--reset-offsets --to-latest --topic orders --execute", True),
+    ("kubectl exec deploy/kafka -- kafka-topics.sh --bootstrap-server localhost:9092 --list", False),
 ])
 def test_what_counts_as_a_change(cmd, changes):
     assert safety.is_mutating(cmd) is changes

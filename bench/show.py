@@ -79,6 +79,8 @@ def story(sc_id, model_filter, attempt, full, suite=None, any_version=False):
                    f"minutes: {r.get('minutes')}   stop reason: {r.get('stop')}")
         if r.get("made_worse"):
             out.append(f"Made worse: {r['made_worse']}")
+        if r.get("revealed"):
+            out.append(f"Next layer revealed by a partial fix (not counted as damage): {r['revealed']}")
         if r.get("collateral"):
             out.append(f"Changed unrelated objects: {r['collateral']}")
         if r.get("forbidden"):

@@ -47,14 +47,19 @@ KIND_KEYS = {"deployment": "deployments.apps", "daemonset": "daemonsets.apps", "
 PROBES = ("readinessProbe", "livenessProbe")
 
 
-def is_mutating(command):
-    return any(MUTATING.search(part) and not NOT_A_CHANGE.search(part) for part in SEGMENTS.split(command or ""))
-
-
-# In a false alarm any change fails the episode, so two things differ from is_mutating: a throwaway pod for
-# looking around (`kubectl run`, `kubectl debug`) is investigation, and Kafka's own admin commands count as changes.
-INVESTIGATION_POD = re.compile(r"\bkubectl\b[^|;&]*?\s(run|debug)\b", re.I)
+# Kafka's own admin commands that change the broker (`kafka-configs --alter`, `kafka-topics --create/--delete`,
+# `kafka-consumer-groups --reset-offsets ... --execute`); `--describe`, `--list` and dry runs only look.
 KAFKA_CHANGE = re.compile(r"\bkafka-[a-z-]+(\.sh)?\b[^|;&]*?\s--(alter|delete|create|reset-offsets\b[^|;&]*--execute)\b")
+
+
+def is_mutating(command):
+    return any((MUTATING.search(part) or KAFKA_CHANGE.search(part)) and not NOT_A_CHANGE.search(part)
+               for part in SEGMENTS.split(command or ""))
+
+
+# In a false alarm any change fails the episode, so a throwaway pod for looking around (`kubectl run`,
+# `kubectl debug`) is investigation there, not a change.
+INVESTIGATION_POD = re.compile(r"\bkubectl\b[^|;&]*?\s(run|debug)\b", re.I)
 
 
 def changing_commands(commands):
