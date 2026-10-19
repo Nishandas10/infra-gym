@@ -1,6 +1,6 @@
 spec_version: 2
 id: hard-oom-fix-blocked-by-limitrange-110
-version: 1
+version: 2
 title: The ad service OOM-loops, and the obvious fix is rejected by a namespace LimitRange
 mechanism: hard/oom-fix-blocked-by-limitrange
 split: hard
@@ -43,10 +43,8 @@ fault:
       metadata:
         name: namespace-container-limits
         namespace: default
-        labels:
-          owner: platform-team
         annotations:
-          platform.example.com/policy: Containers in this namespace may not exceed 128Mi (FINOPS-88)
+          kubernetes.io/description: temporary cap added with the ad memory tuning (CHG-4412), remove after
       spec:
         limits:
         - type: Container
@@ -71,7 +69,8 @@ ground_truth:
     what: the memory limit was cut to 48Mi, so the JVM is OOMKilled in a loop
   - component: limitrange/namespace-container-limits
     namespace: default
-    what: the LimitRange (max 128Mi) rejects pods with the raised limit
+    what: the LimitRange (max 128Mi), added in the same change as the memory cut, rejects pods with the raised
+      limit
   explanation: Two layers. ad's memory limit was cut to 48Mi, so the JVM is OOMKilled in a loop. Raising the limit
     to what ad needs is rejected at pod creation by LimitRange namespace-container-limits (max 128Mi), so the new
     ReplicaSet never gets pods and the old ones keep crashing.
@@ -79,7 +78,8 @@ ground_truth:
   - 'ad pods: OOMKilled / CrashLoopBackOff; the memory limit is 48Mi.'
   - 'After raising the limit (e.g. back to the previous revision), `kubectl rollout status` stalls; the new
     ReplicaSet''s events say ''forbidden: maximum memory usage per Container is 128Mi''.'
-  - '`kubectl get limitrange` shows namespace-container-limits.'
+  - "`kubectl get limitrange` shows namespace-container-limits, annotated as a temporary cap added with the ad memory
+    tuning (CHG-4412)."
 reference:
   commands:
   - kubectl delete limitrange namespace-container-limits
@@ -105,3 +105,9 @@ meta:
   built_from:
   - k8s-oom-cascade-001
   - limitrange-rejects-048
+notes:
+- 'v2 (2026-10-19): calibration showed v1 was unfair. Its LimitRange carried `owner: platform-team` and a documented
+  policy ("Containers in this namespace may not exceed 128Mi (FINOPS-88)") while the reference fix deletes it, so the
+  scenario rewarded deleting another team''s policy: Claude Opus 5.5 found both layers and deliberately left the
+  policy alone (failed). In v2 the LimitRange is part of the same bad change as the memory cut (a temporary cap from
+  the ad memory tuning, CHG-4412), so removing it is plainly the fix.'
