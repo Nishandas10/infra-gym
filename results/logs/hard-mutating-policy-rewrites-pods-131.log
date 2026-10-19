@@ -1,33 +1,33 @@
-07:49:13 === hard-mutating-policy-rewrites-pods-131 (k8s.create_objects)
-07:49:14   0. world healthy?
-07:49:23   1. baseline must PASS
-07:49:24       [PASS   ] journey:checkout - 3/3 ok, avg 84ms
-07:49:24   2. inject
-07:49:44   3. verifier must FAIL (<= 300s)
-07:50:30       [FAIL   ] journey:checkout - 0/3 ok, avg 15057ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
-07:50:30   4. do-nothing agent: still FAIL after 1200s?
-08:10:31       [FAIL   ] journey:checkout - 0/3 ok, avg 47ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
-08:10:31       failing in 104/104 checks during the hold
-08:10:31   5. reference solution
-08:10:31     $ kubectl delete mutatingadmissionpolicybinding platform-pod-defaults
-08:10:31       mutatingadmissionpolicybinding.admissionregistration.k8s.io "platform-pod-defaults" deleted
-08:10:31     $ kubectl delete mutatingadmissionpolicy platform-pod-defaults
-08:10:31       mutatingadmissionpolicy.admissionregistration.k8s.io "platform-pod-defaults" deleted
-08:10:31     $ sleep 15
-08:10:46     $ kubectl rollout restart deployment/checkout
-08:10:46       deployment.apps/checkout restarted
-08:10:46     $ kubectl rollout status deployment/checkout --timeout=300s
-08:10:48       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-08:10:48       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
-08:10:48       deployment "checkout" successfully rolled out
-08:10:48   6. verifier must PASS (<= 420s)
-08:13:13       [PASS   ] journey:checkout - 3/3 ok, avg 92ms
-08:13:13   6b. invariants must PASS (shop_health)
-08:13:14       [PASS   ] journey:browse - 2/2 ok, avg 20ms
-08:13:14       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
-08:13:14       [PASS   ] journey:cart - 2/2 ok, avg 42ms
-08:13:14       [PASS   ] journey:checkout - 2/2 ok, avg 83ms
-08:13:14   6c. the fix must survive a restart of opentelemetry.io/name=checkout
-08:14:00       [PASS   ] journey:checkout - 3/3 ok, avg 93ms
-08:14:00   7. restore exactly
-08:14:09   => VALIDATED  {'world_ready_s': 9, 'detect_s': 46, 'recover_s': 146, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 8}
+13:54:37 === hard-mutating-policy-rewrites-pods-131 (k8s.create_objects)
+13:54:38   0. world healthy?
+13:54:46   1. baseline must PASS
+13:54:47       [PASS   ] journey:checkout - 3/3 ok, avg 97ms
+13:54:47   2. inject
+13:55:08   3. verifier must FAIL (<= 300s)
+13:55:53       [FAIL   ] journey:checkout - 0/3 ok, avg 15036ms; e.g. POST /api/checkout -> 504 b'upstream request timeout'
+13:55:53   4. do-nothing agent: still FAIL after 1200s?
+14:15:54       [FAIL   ] journey:checkout - 0/3 ok, avg 49ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+14:15:54       failing in 105/105 checks during the hold
+14:15:54   5. reference solution
+14:15:54     $ kubectl delete mutatingadmissionpolicybinding platform-pod-defaults
+14:15:54       mutatingadmissionpolicybinding.admissionregistration.k8s.io "platform-pod-defaults" deleted
+14:15:54     $ kubectl delete mutatingadmissionpolicy platform-pod-defaults
+14:15:54       mutatingadmissionpolicy.admissionregistration.k8s.io "platform-pod-defaults" deleted
+14:15:54     $ sleep 15
+14:16:09     $ kubectl rollout restart deployment/checkout
+14:16:09       deployment.apps/checkout restarted
+14:16:09     $ kubectl rollout status deployment/checkout --timeout=300s
+14:16:11       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+14:16:11       Waiting for deployment "checkout" rollout to finish: 1 old replicas are pending termination...
+14:16:11       deployment "checkout" successfully rolled out
+14:16:11   6. verifier must PASS (<= 420s)
+14:18:38       [PASS   ] journey:checkout - 3/3 ok, avg 171ms
+14:18:38   6b. invariants must PASS (shop_health)
+14:18:40       [PASS   ] journey:browse - 2/2 ok, avg 32ms
+14:18:40       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+14:18:40       [PASS   ] journey:cart - 2/2 ok, avg 52ms
+14:18:40       [PASS   ] journey:checkout - 2/2 ok, avg 80ms
+14:18:40   6c. the fix must survive a restart of opentelemetry.io/name=checkout
+14:19:26       [PASS   ] journey:checkout - 3/3 ok, avg 102ms
+14:19:26   7. restore exactly
+14:22:19   => VALIDATED  {'world_ready_s': 8, 'detect_s': 46, 'recover_s': 148, 'invariants_s': 1, 'durable_s': 1, 'restore_s': 153}

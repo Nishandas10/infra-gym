@@ -1,6 +1,6 @@
 # Oracle episodes (detect mode)
 
-Every bench-eligible scenario played end to end by `python bench/agent_bench.py oracle`: the reference fix run in the agent's sandbox with the agent's permissions, then graded and cleaned up like a model's episode. 101 of 102 are a clean pass.
+Every bench-eligible scenario played end to end by `python bench/agent_bench.py oracle`: the reference fix run in the agent's sandbox with the agent's permissions, then graded and cleaned up like a model's episode. 102 of 102 are a clean pass.
 
 | Scenario | Result | Problems |
 |---|---|---|
@@ -35,7 +35,7 @@ Every bench-eligible scenario played end to end by `python bench/agent_bench.py 
 | `hard-job-sidecar-never-completes-127` | ok |  |
 | `hard-kafka-consumer-quota-130` | ok |  |
 | `hard-masked-second-fault-107` | ok |  |
-| `hard-mutating-policy-rewrites-pods-131` | problem | the world was broken before this episode (helm reset ({'type': 'journey', 'journey': 'checkout', 'repeat': 2}: 0/2 ok, avg 51ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place orde); suspect the cleanup of `hard-masked-second-fault-107` |
+| `hard-mutating-policy-rewrites-pods-131` | ok |  |
 | `hard-oom-fix-blocked-by-limitrange-110` | ok |  |
 | `hard-pinned-endpoints-108` | ok |  |
 | `hard-silent-ledger-write-denied-105` | ok |  |
