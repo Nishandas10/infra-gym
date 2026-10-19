@@ -73,6 +73,10 @@ rules:
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
     verbs: ["get", "list", "watch", "patch", "update", "delete"]
+  # Mutating admission policies: look and remove (a scenario adds a bad one); never create or change one.
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingadmissionpolicies", "mutatingadmissionpolicybindings"]
+    verbs: ["get", "list", "watch", "delete"]
   - apiGroups: ["storage.k8s.io", "scheduling.k8s.io", "node.k8s.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch"]

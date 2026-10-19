@@ -1088,6 +1088,7 @@ def cmd_preflight(cfg, args):
              (f"delete networkpolicies -n {app}", "yes"), (f"delete resourcequotas -n {app}", "yes"),
              ("patch deployments -n kube-system", "yes"), ("patch nodes", "yes"),
              ("delete validatingwebhookconfigurations", "yes"),
+             ("delete mutatingadmissionpolicies", "yes"), ("create mutatingadmissionpolicies", "no"),
              (f"get pods -n {gym_ns}", "no"), (f"get configmaps -n {gym_ns}", "no"),
              (f"list networkchaos.chaos-mesh.org -n {app}", "no"), ("delete namespaces", "no"),
              (f"delete namespaces/{app} -n {app}", "no"),

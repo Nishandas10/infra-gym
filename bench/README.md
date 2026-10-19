@@ -34,7 +34,7 @@ touched decoy. Otherwise the fault itself spread (a cascade, or intermittent dam
   solutions, checks or the undo log.
 - **Its Kubernetes account** (`sandbox_up.sh`) can operate the app namespace (`app_namespace` in `worlds/k8s-shop.yaml`, `default`) and `kube-system`, nodes,
   namespace labels and admission webhooks. It has **no access to `gym-system`** (the
-  verifier's probe pods) or `chaos-mesh`, and cannot change admission policies.
+  verifier's probe pods) or `chaos-mesh`, and cannot create or change admission policies (it may list and delete mutating admission policies and their bindings, as an SRE removes a bad one).
 - **No pod in the app namespace may run on the control-plane node.** `sandbox_up.sh` installs a
   ValidatingAdmissionPolicy (`gym-no-control-plane`) that rejects pods pinned there by `nodeName` and, for pods the
   scheduler places, tolerations of the control-plane taint (a wildcard toleration included). A pod pinned to a worker

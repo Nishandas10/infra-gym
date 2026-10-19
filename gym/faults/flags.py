@@ -118,3 +118,37 @@ def flag_in_source_config(fault, undo, ctx):
                           timeout=fault.get("load_timeout_s", 180), interval=5)
     if not got:
         raise RuntimeError(f"flagd did not load {flag}={variant} from the ConfigMap: {evaluate(flag, context)}")
+
+
+def with_targeting(config_text, flag, rule):
+    """Return new config text where `flag` has the targeting rule `rule`; its defaultVariant stays as it is."""
+    cfg = json.loads(config_text)
+    if flag not in cfg["flags"]:
+        raise KeyError(f"unknown flag {flag!r}; known: {', '.join(sorted(cfg['flags']))}")
+    cfg["flags"][flag]["targeting"] = rule
+    return json.dumps(cfg, indent=2) + "\n"
+
+
+@mechanism("app.flag_targeting", "application",
+           "Give a flag a targeting rule that serves a variant to matching requests while its defaultVariant (what "
+           "the flag looks like at a glance) stays off")
+def flag_targeting(fault, undo, ctx):
+    """`targeting` is a flagd JsonLogic rule; the string "$SINCE" in it becomes the injection time minus `since_s`
+    (an experiment that "started" a while ago, via $flagd.timestamp). With `source_config: true` the flagd-config
+    ConfigMap gets the same rule, so restarting flagd does not clear it."""
+    from ..undo import restart
+    flag, expect = fault["flag"], str(fault["expect_variant"])
+    since = int(time.time()) - int(fault.get("since_s", 0))
+    rule = json.loads(json.dumps(fault["targeting"]).replace('"$SINCE"', str(since)))
+    if fault.get("source_config"):
+        # recorded first, so on revert it runs last: ConfigMap restored, then flagd rebuilds its live file from it
+        undo.on_revert_restart("deployment/flagd")
+        obj = undo.snapshot("configmap", CONFIGMAP, [f"/data/{kube.escape(CONFIG_KEY)}"])
+        kube.patch("configmap", CONFIGMAP, {"data": {CONFIG_KEY: with_targeting(obj["data"][CONFIG_KEY], flag, rule)}},
+                   "merge")
+    original = read_config()
+    undo.on_revert_exec(FLAGD, ["sh", "-c", f"cat > {LIVE_FILE}"], container=UI_CONTAINER, stdin=original)
+    write_config(with_targeting(original, flag, rule))
+    got = kube.wait_until(lambda: evaluate(flag, fault.get("context")).get("variant") == expect, timeout=30, interval=2)
+    if not got:
+        raise RuntimeError(f"flagd does not serve {flag}={expect} with the rule: {evaluate(flag, fault.get('context'))}")
