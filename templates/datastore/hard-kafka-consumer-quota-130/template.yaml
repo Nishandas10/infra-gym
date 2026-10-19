@@ -41,17 +41,13 @@ fault:
       - rdkafka
       - --add-config
       - consumer_byte_rate=1
+    # the fix already removed the quota: Kafka then answers "Invalid config(s)", which is fine; any other error is not
     undo_commands:
-    - - /opt/kafka/bin/kafka-configs.sh
-      - --bootstrap-server
-      - kafka.default.svc.cluster.local:9092
-      - --alter
-      - --entity-type
-      - clients
-      - --entity-name
-      - rdkafka
-      - --delete-config
-      - consumer_byte_rate
+    - - sh
+      - -c
+      - out=$(/opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type
+        clients --entity-name rdkafka --delete-config consumer_byte_rate 2>&1) || echo "$out" | grep -q "Invalid config"
+        || { echo "$out"; exit 1; }
 verifier:
   checks:
   - type: orders_recorded
@@ -111,3 +107,6 @@ notes:
   min, fraud-detection 0 throughout (one sample showed the group with no active members while a throttled fetch was
   pending). Deleting the quota drained 78 orders within a minute and lag stayed 0-1. Healthy lag is 0-1, so
   max_lag 20 leaves margin both ways.'
+- 'Validation (2026-10-19): the first run passed but its restore failed: after the reference fix, deleting the quota
+  again makes Kafka answer "Invalid config(s): consumer_byte_rate" (exit 1). The undo command now accepts that one
+  answer and still fails on any other error.'

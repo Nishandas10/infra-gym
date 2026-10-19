@@ -63,9 +63,11 @@ fault:
           namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: default
-  - mechanism: k8s.workload_patch
-    target: checkout
-    ops: []
+    # the API server takes a few seconds to start applying a new policy: replace the pods only then (no new
+    # Deployment revision, so the rollout history stays clean)
+    settle_s: 20
+    recreate_pods_after:
+    - opentelemetry.io/name=checkout
 verifier:
   checks:
   - type: journey
@@ -124,3 +126,6 @@ notes:
   NOT recover: a pod created 2 s after the delete was still mutated (admission policy cache), and nothing created a
   new pod after it. Deleting, waiting 15 s, then restarting recovered (checkout 3/3 about 3 min later). The agent may
   get, list and delete mutating admission policies and bindings, not create or change them (bench/sandbox_up.sh).'
+- 'Validation (2026-10-19): one of 5 runs SELF_HEALED: the pods were replaced within a second of creating the policy,
+  before the API server applied it, so they came up correct. The injection now waits 20 s (settle_s) before deleting
+  the checkout pods.'
