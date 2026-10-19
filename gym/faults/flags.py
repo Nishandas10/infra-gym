@@ -136,7 +136,6 @@ def flag_targeting(fault, undo, ctx):
     """`targeting` is a flagd JsonLogic rule; the string "$SINCE" in it becomes the injection time minus `since_s`
     (an experiment that "started" a while ago, via $flagd.timestamp). With `source_config: true` the flagd-config
     ConfigMap gets the same rule, so restarting flagd does not clear it."""
-    from ..undo import restart
     flag, expect = fault["flag"], str(fault["expect_variant"])
     since = int(time.time()) - int(fault.get("since_s", 0))
     rule = json.loads(json.dumps(fault["targeting"]).replace('"$SINCE"', str(since)))
