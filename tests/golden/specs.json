@@ -2915,6 +2915,14 @@
    "recreate_pods_after": [
     "opentelemetry.io/name=checkout"
    ],
+   "restart_on_revert": [
+    "opentelemetry.io/name=checkout"
+   ],
+   "revert_hooks": [
+    {
+     "sleep_s": 20
+    }
+   ],
    "settle_s": 20,
    "type": "create_objects"
   },

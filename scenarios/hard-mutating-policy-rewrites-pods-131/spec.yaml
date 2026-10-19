@@ -2,14 +2,14 @@
 # Edit the template and run: python scripts/generate.py
 spec_version: 2
 id: hard-mutating-policy-rewrites-pods-131
-version: 1
+version: 2
 instance_of:
   template: hard-mutating-policy-rewrites-pods-131
-  version: 1
+  version: 2
   params: {}
-content_hash: sha256:3bda9803f30f12fe5d8276344fa0efcb1ee0cc58ac9c4083ae7d8af2860db848
-validation_hash: sha256:0f91de2e932077133a2be641ead9b9e1c8994c98ae1682349a6c1905a11a1788
-status: validated
+content_hash: sha256:969f232fd2dc8e34812f3e8d4b0c26ca0f5b4760e418680731f4a85c31d8b060
+validation_hash: sha256:a4e93f4cc5645c9a15b6ac8ea35778b4ba0e80717ca95f63aea23f56b999e67a
+status: draft
 title: Checkout calls the wrong payment port although its Deployment is correct
 mechanism: hard/mutating-admission-policy-rewrites-pods
 split: hard
@@ -86,6 +86,10 @@ fault:
     settle_s: 20
     recreate_pods_after:
     - opentelemetry.io/name=checkout
+  revert_hooks:
+  - sleep_s: 20
+  restart_on_revert:
+  - opentelemetry.io/name=checkout
 verifier:
   checks:
   - type: journey
@@ -156,3 +160,6 @@ notes:
 - 'Validation (2026-10-19): one of 5 runs SELF_HEALED: the pods were replaced within a second of creating the policy,
   before the API server applied it, so they came up correct. The injection now waits 20 s (settle_s) before deleting
   the checkout pods.'
+- 'v2 (2026-10-19): calibration found the world broken after episodes the agent did not fix (DeepSeek attempt 1,
+  the diagnose/detect oracle): v1''s revert deleted the policy but left the rewritten checkout pods running. The
+  revert now waits 20 s and then replaces them (revert_hooks sleep_s + restart_on_revert).'
