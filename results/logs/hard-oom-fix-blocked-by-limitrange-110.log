@@ -1,41 +1,41 @@
-07:14:52 === hard-oom-fix-blocked-by-limitrange-110 (composite)
-07:14:53   0. world healthy?
-07:15:02   1. baseline must PASS
-07:15:03       [PASS   ] journey:ads - 3/3 ok, avg 45ms
-07:15:03       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
-07:15:03       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
-07:15:03   2. inject
-07:15:23   3. verifier must FAIL (<= 300s)
-07:15:24       [FAIL   ] journey:ads - 0/3 ok, avg 27ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-07:15:24       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-dc84fb88c-ff4zj (ad: last exit OOMKilled)
-07:15:24       [FAIL   ] pods_stable:opentelemetry.io/name=ad - ad-dc84fb88c-ff4zj is only 20s old; ad-dc84fb88c-ff4zj/ad restarted 16s ago (OOMKilled)
-07:15:24   4. do-nothing agent: still FAIL after 1200s?
-07:35:25       [FAIL   ] journey:ads - 0/3 ok, avg 24ms; e.g. GET /api/data -> 500 b'Internal Server Error'
-07:35:25       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-dc84fb88c-ff4zj (ad: CrashLoopBackOff)
-07:35:25       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
-07:35:25       failing in 111/111 checks during the hold
-07:35:25   5. reference solution
-07:35:25     $ kubectl delete limitrange namespace-container-limits
-07:35:25       limitrange "namespace-container-limits" deleted from default namespace
-07:35:25     $ kubectl rollout undo deployment/ad
-07:35:25       deployment.apps/ad rolled back
-07:35:25     $ kubectl rollout status deployment/ad --timeout=300s
-07:35:26       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
-07:35:26       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
-07:35:26       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
-07:35:26       deployment "ad" successfully rolled out
-07:35:26   6. verifier must PASS (<= 420s)
-07:37:26       [PASS   ] journey:ads - 3/3 ok, avg 63ms
-07:37:26       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
-07:37:26       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
-07:37:26   6b. invariants must PASS (shop_health)
-07:37:27       [PASS   ] journey:browse - 2/2 ok, avg 21ms
-07:37:27       [PASS   ] journey:recommendations - 2/2 ok, avg 66ms
-07:37:27       [PASS   ] journey:cart - 2/2 ok, avg 44ms
-07:37:27       [PASS   ] journey:checkout - 2/2 ok, avg 133ms
-07:37:27   6c. the fix must survive a restart of deployment/ad
-07:39:29       [PASS   ] journey:ads - 3/3 ok, avg 50ms
-07:39:29       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
-07:39:29       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
-07:39:29   7. restore exactly
-07:39:38   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 120, 'invariants_s': 1, 'durable_s': 77, 'restore_s': 9}
+07:03:20 === hard-oom-fix-blocked-by-limitrange-110 (composite)
+07:03:21   0. world healthy?
+07:03:29   1. baseline must PASS
+07:03:30       [PASS   ] journey:ads - 3/3 ok, avg 60ms
+07:03:30       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:03:30       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+07:03:30   2. inject
+07:03:51   3. verifier must FAIL (<= 300s)
+07:03:52       [FAIL   ] journey:ads - 0/3 ok, avg 48ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+07:03:52       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-dc84fb88c-q78ld (ad: last exit OOMKilled)
+07:03:52       [FAIL   ] pods_stable:opentelemetry.io/name=ad - ad-dc84fb88c-q78ld is only 21s old; ad-dc84fb88c-q78ld/ad restarted 18s ago (OOMKilled)
+07:03:52   4. do-nothing agent: still FAIL after 1200s?
+07:23:53       [FAIL   ] journey:ads - 0/3 ok, avg 33ms; e.g. GET /api/data -> 500 b'Internal Server Error'
+07:23:53       [FAIL   ] pods_ready:opentelemetry.io/name=ad - 0/1 pods ready for opentelemetry.io/name=ad; ad-dc84fb88c-q78ld (ad: CrashLoopBackOff)
+07:23:53       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+07:23:53       failing in 111/111 checks during the hold
+07:23:53   5. reference solution
+07:23:53     $ kubectl delete limitrange namespace-container-limits
+07:23:53       limitrange "namespace-container-limits" deleted from default namespace
+07:23:53     $ kubectl rollout undo deployment/ad
+07:23:53       deployment.apps/ad rolled back
+07:23:53     $ kubectl rollout status deployment/ad --timeout=300s
+07:23:55       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+07:23:55       Waiting for deployment "ad" rollout to finish: 0 out of 1 new replicas have been updated...
+07:23:55       Waiting for deployment "ad" rollout to finish: 0 of 1 updated replicas are available...
+07:23:55       deployment "ad" successfully rolled out
+07:23:55   6. verifier must PASS (<= 420s)
+07:25:55       [PASS   ] journey:ads - 3/3 ok, avg 183ms
+07:25:55       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:25:55       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+07:25:55   6b. invariants must PASS (shop_health)
+07:25:56       [PASS   ] journey:browse - 2/2 ok, avg 21ms
+07:25:56       [PASS   ] journey:recommendations - 2/2 ok, avg 50ms
+07:25:56       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+07:25:56       [PASS   ] journey:checkout - 2/2 ok, avg 99ms
+07:25:56   6c. the fix must survive a restart of deployment/ad
+07:27:59       [PASS   ] journey:ads - 3/3 ok, avg 50ms
+07:27:59       [PASS   ] pods_ready:opentelemetry.io/name=ad - 1/1 pods ready for opentelemetry.io/name=ad
+07:27:59       [PASS   ] pods_stable:opentelemetry.io/name=ad - 1 pod(s) stable for >= 120s (opentelemetry.io/name=ad)
+07:27:59   7. restore exactly
+07:28:08   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 120, 'invariants_s': 1, 'durable_s': 78, 'restore_s': 9}

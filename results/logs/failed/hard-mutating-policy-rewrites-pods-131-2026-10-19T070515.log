@@ -1,0 +1,12 @@
+07:05:15 === hard-mutating-policy-rewrites-pods-131 (composite)
+07:05:16   0. world healthy?
+07:05:25   1. baseline must PASS
+07:05:26       [PASS   ] journey:checkout - 3/3 ok, avg 130ms
+07:05:26   2. inject
+07:05:27   3. verifier must FAIL (<= 300s)
+07:05:28       [FAIL   ] journey:checkout - 0/3 ok, avg 56ms; e.g. POST /api/checkout -> 500 b'{"error":"Failed to place order."}'
+07:05:28   4. do-nothing agent: still FAIL after 60s?
+07:06:29       [PASS   ] journey:checkout - 3/3 ok, avg 131ms
+07:06:29       failing in 0/5 checks during the hold
+07:06:29   7. restore exactly
+07:06:38   => SELF_HEALED  {'world_ready_s': 9, 'detect_s': 1, 'restore_s': 9}

@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:da4b00de97c6ad74c41d98b7d2995c4a25c4281da22cd37a7a3d92b484c4f074
 validation_hash: sha256:6d51d8e2784ac4868cd7538b96c884e6c6067ff7fc133b11de81874feed48289
-status: draft
+status: validated
 title: New orders stop reaching the ledger; Kafka, accounting and every pod look healthy
 mechanism: hard/kafka-client-quota-throttles-consumer
 split: hard

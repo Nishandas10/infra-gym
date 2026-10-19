@@ -1,0 +1,10 @@
+07:29:22 === hard-kafka-consumer-quota-130 (runtime.exec)
+07:29:23   0. world healthy?
+07:29:33   1. baseline must PASS
+07:29:38       [PASS   ] orders_recorded - accounting recorded the new order (3720 -> 3721 rows)
+07:29:38       [PASS   ] kafka_lag:accounting - consumer group accounting lag 1 (max 20)
+07:29:38   2. inject
+07:29:38   ERROR RuntimeError: hard-kafka-consumer-quota-130 is already injected; revert it first (or pass --force)
+07:29:38   7. restore exactly
+07:29:42       revert errors: ['exec  : OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended\n[otel.javaagent 2026-10-19 07:29:39:869 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1\nInvalid config(s): consumer_byte_rate\ncommand terminated with exit code 1']
+07:29:51   => ERROR  {'world_ready_s': 10, 'restore_s': 9}

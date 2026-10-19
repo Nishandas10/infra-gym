@@ -1,0 +1,29 @@
+07:41:03 === hard-flag-targeting-rule-132 (app.flag_targeting)
+07:41:04   0. world healthy?
+07:41:14   1. baseline must PASS
+07:41:14       [PASS   ] journey:checkout - 4/4 ok, avg 105ms
+07:41:14   2. inject
+07:41:16   3. verifier must FAIL (<= 300s)
+07:41:17       [FAIL   ] journey:checkout - 1/4 ok, avg 97ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+07:41:17   4. do-nothing agent: still FAIL after 1200s?
+08:01:17       [FAIL   ] journey:checkout - 0/4 ok, avg 61ms; e.g. POST /api/checkout -> 422 b'{"error":"Your payment could not be processed. Please check your card details and try again.","code":"PAYMENT_FAILED"}'
+08:01:17       failing in 110/110 checks during the hold
+08:01:17   5. reference solution
+08:01:17     $ kubectl get configmap flagd-config -o yaml | sed 's/^\(\s*\)"90%",$/\1"off",/' | kubectl apply -f -
+08:01:18       configmap/flagd-config configured
+08:01:18     $ sleep 20
+08:01:38     $ kubectl rollout restart deployment/flagd
+08:01:38       deployment.apps/flagd restarted
+08:01:38     $ kubectl rollout status deployment/flagd --timeout=180s
+08:01:40       Waiting for deployment "flagd" rollout to finish: 1 old replicas are pending termination...
+08:01:40       Waiting for deployment "flagd" rollout to finish: 1 old replicas are pending termination...
+08:01:40       deployment "flagd" successfully rolled out
+08:01:40   6. verifier must PASS (<= 420s)
+08:01:52       [PASS   ] journey:checkout - 4/4 ok, avg 103ms
+08:01:52   6b. invariants must PASS (shop_health)
+08:01:53       [PASS   ] journey:browse - 2/2 ok, avg 23ms
+08:01:53       [PASS   ] journey:recommendations - 2/2 ok, avg 63ms
+08:01:53       [PASS   ] journey:cart - 2/2 ok, avg 41ms
+08:01:53       [PASS   ] journey:checkout - 2/2 ok, avg 95ms
+08:01:53   7. restore exactly
+08:02:22   => VALIDATED  {'world_ready_s': 9, 'detect_s': 1, 'recover_s': 12, 'invariants_s': 1, 'restore_s': 29}

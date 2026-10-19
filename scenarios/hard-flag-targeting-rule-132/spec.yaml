@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:f1178fe483ccd863377949e1b7ccb0732d38d3798b5ab96722775bfeab349aa9
 validation_hash: sha256:d58cf7183f89e758b53661688a9062134a8f2cc39ea1834389f262e605a6cdcb
-status: draft
+status: validated
 title: Almost every card payment is declined, while the payment flag reads off
 mechanism: hard/flag-targeting-rule-overrides-default
 split: hard

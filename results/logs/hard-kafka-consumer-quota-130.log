@@ -1,0 +1,31 @@
+08:08:04 === hard-kafka-consumer-quota-130 (runtime.exec)
+08:08:05   0. world healthy?
+08:08:14   1. baseline must PASS
+08:08:18       [PASS   ] orders_recorded - accounting recorded the new order (3935 -> 3936 rows)
+08:08:18       [PASS   ] kafka_lag:accounting - consumer group accounting lag 1 (max 20)
+08:08:18   2. inject
+08:08:22   3. verifier must FAIL (<= 300s)
+08:09:29       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 3936 rows)
+08:09:29       [PASS   ] kafka_lag:accounting - consumer group accounting lag 6 (max 20)
+08:09:29   4. do-nothing agent: still FAIL after 1200s?
+08:31:27       [FAIL   ] orders_recorded - order placed but accounting did not record it within 60s (still 3936 rows)
+08:31:27       [FAIL   ] kafka_lag:accounting - consumer group accounting lag 102 (max 20)
+08:31:27       failing in 16/16 checks during the hold
+08:31:27   5. reference solution
+08:31:27     $ kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type clients --entity-name rdkafka --delete-config consumer_byte_rate
+08:31:31       Completed updating config for client rdkafka.
+08:31:31       OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+08:31:31       [otel.javaagent 2026-10-19 08:31:28:902 +0000] [main] INFO io.opentelemetry.javaagent.tooling.VersionLogger - opentelemetry-javaagent - version: 2.31.1
+08:31:31   6. verifier must PASS (<= 300s)
+08:31:51       [PASS   ] orders_recorded - accounting recorded the new order (3936 -> 4039 rows)
+08:31:51       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 20)
+08:31:51   6b. invariants must PASS (shop_health)
+08:31:53       [PASS   ] journey:browse - 2/2 ok, avg 24ms
+08:31:53       [PASS   ] journey:recommendations - 2/2 ok, avg 52ms
+08:31:53       [PASS   ] journey:cart - 2/2 ok, avg 44ms
+08:31:53       [PASS   ] journey:checkout - 2/2 ok, avg 104ms
+08:31:53   6c. the fix must survive a restart of deployment/accounting
+08:32:43       [PASS   ] orders_recorded - accounting recorded the new order (4042 -> 4043 rows)
+08:32:43       [PASS   ] kafka_lag:accounting - consumer group accounting lag 0 (max 20)
+08:32:43   7. restore exactly
+08:32:56   => VALIDATED  {'world_ready_s': 8, 'detect_s': 67, 'recover_s': 20, 'invariants_s': 1, 'durable_s': 6, 'restore_s': 9}

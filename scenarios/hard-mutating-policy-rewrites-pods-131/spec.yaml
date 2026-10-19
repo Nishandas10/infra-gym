@@ -9,7 +9,7 @@ instance_of:
   params: {}
 content_hash: sha256:3bda9803f30f12fe5d8276344fa0efcb1ee0cc58ac9c4083ae7d8af2860db848
 validation_hash: sha256:0f91de2e932077133a2be641ead9b9e1c8994c98ae1682349a6c1905a11a1788
-status: draft
+status: validated
 title: Checkout calls the wrong payment port although its Deployment is correct
 mechanism: hard/mutating-admission-policy-rewrites-pods
 split: hard
