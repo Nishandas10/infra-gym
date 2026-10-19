@@ -2245,6 +2245,68 @@
    "restart_settle_s": 45
   }
  },
+ "hard-flag-targeting-rule-132": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_avg_ms": 5000,
+    "max_error_pct": 0,
+    "repeat": 4,
+    "type": "journey"
+   }
+  ],
+  "durability": [],
+  "fault": {
+   "expect_variant": "90%",
+   "flag": "paymentFailure",
+   "since_s": 600,
+   "source_config": true,
+   "targeting": {
+    "if": [
+     {
+      ">=": [
+       {
+        "var": "$flagd.timestamp"
+       },
+       "$SINCE"
+      ]
+     },
+     "90%",
+     "off"
+    ]
+   },
+   "type": "app.flag_targeting"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Almost every card payment has been declined for the last few minutes; a few still go through. Find the cause and fix it.",
+  "solution": [
+   "kubectl get configmap flagd-config -o yaml | sed 's/^\\(\\s*\\)\"90%\",$/\\1\"off\",/' | kubectl apply -f -",
+   "sleep 20",
+   "kubectl rollout restart deployment/flagd",
+   "kubectl rollout status deployment/flagd --timeout=180s"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
+  }
+ },
  "hard-ghost-legacy-email-pods-104": {
   "budget": {
    "max_steps": 40,
@@ -2560,6 +2622,83 @@
    "restart_settle_s": 45
   }
  },
+ "hard-kafka-consumer-quota-130": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "timeout_s": 60,
+    "type": "orders_recorded"
+   },
+   {
+    "group": "accounting",
+    "max_lag": 20,
+    "type": "kafka_lag"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/accounting"
+   }
+  ],
+  "fault": {
+   "commands": [
+    [
+     "/opt/kafka/bin/kafka-configs.sh",
+     "--bootstrap-server",
+     "kafka.default.svc.cluster.local:9092",
+     "--alter",
+     "--entity-type",
+     "clients",
+     "--entity-name",
+     "rdkafka",
+     "--add-config",
+     "consumer_byte_rate=1"
+    ]
+   ],
+   "namespace": "gym-system",
+   "target": "deploy/gym-kafka-tools",
+   "type": "exec_commands",
+   "undo_commands": [
+    [
+     "/opt/kafka/bin/kafka-configs.sh",
+     "--bootstrap-server",
+     "kafka.default.svc.cluster.local:9092",
+     "--alter",
+     "--entity-type",
+     "clients",
+     "--entity-name",
+     "rdkafka",
+     "--delete-config",
+     "consumer_byte_rate"
+    ]
+   ]
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Customers can check out normally, but finance says new orders stopped showing up in the accounting ledger a few minutes ago. Find the cause and fix it.",
+  "solution": [
+   "kubectl exec -n gym-system deploy/gym-kafka-tools -- /opt/kafka/bin/kafka-configs.sh --bootstrap-server kafka.default.svc.cluster.local:9092 --alter --entity-type clients --entity-name rdkafka --delete-config consumer_byte_rate"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 300,
+   "restart_settle_s": 45
+  }
+ },
  "hard-masked-second-fault-107": {
   "budget": {
    "max_steps": 40,
@@ -2687,6 +2826,128 @@
    "kubectl set env deployment/checkout PRODUCT_CATALOG_ADDR=product-catalog:8080",
    "kubectl rollout status deployment/checkout --timeout=300s",
    "kubectl patch service shipping --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":8080}]'"
+  ],
+  "validation": {
+   "baseline_timeout_s": 180,
+   "detect_timeout_s": 300,
+   "hold_s": 60,
+   "poll_s": 10,
+   "recover_timeout_s": 420,
+   "restart_settle_s": 45
+  }
+ },
+ "hard-mutating-policy-rewrites-pods-131": {
+  "budget": {
+   "max_steps": 40,
+   "wall_s": 1200
+  },
+  "checks": [
+   {
+    "journey": "checkout",
+    "max_error_pct": 0,
+    "repeat": 3,
+    "type": "journey"
+   }
+  ],
+  "durability": [
+   {
+    "restart": "deployment/checkout"
+   }
+  ],
+  "fault": {
+   "steps": [
+    {
+     "manifests": [
+      {
+       "apiVersion": "admissionregistration.k8s.io/v1",
+       "kind": "MutatingAdmissionPolicy",
+       "metadata": {
+        "name": "platform-pod-defaults",
+        "namespace": null
+       },
+       "spec": {
+        "failurePolicy": "Fail",
+        "matchConditions": [
+         {
+          "expression": "has(object.metadata.labels) && object.metadata.labels.exists(k, k == 'opentelemetry.io/name') && object.metadata.labels['opentelemetry.io/name'] == 'checkout'",
+          "name": "checkout-pods"
+         }
+        ],
+        "matchConstraints": {
+         "resourceRules": [
+          {
+           "apiGroups": [
+            ""
+           ],
+           "apiVersions": [
+            "v1"
+           ],
+           "operations": [
+            "CREATE"
+           ],
+           "resources": [
+            "pods"
+           ]
+          }
+         ]
+        },
+        "mutations": [
+         {
+          "applyConfiguration": {
+           "expression": "Object{spec: Object.spec{containers: [Object.spec.containers{name: \"checkout\", env: [Object.spec.containers.env{name: \"PAYMENT_ADDR\", value: \"payment:8081\"}]}]}}"
+          },
+          "patchType": "ApplyConfiguration"
+         }
+        ],
+        "reinvocationPolicy": "Never"
+       }
+      },
+      {
+       "apiVersion": "admissionregistration.k8s.io/v1",
+       "kind": "MutatingAdmissionPolicyBinding",
+       "metadata": {
+        "name": "platform-pod-defaults",
+        "namespace": null
+       },
+       "spec": {
+        "matchResources": {
+         "namespaceSelector": {
+          "matchLabels": {
+           "kubernetes.io/metadata.name": "default"
+          }
+         }
+        },
+        "policyName": "platform-pod-defaults"
+       }
+      }
+     ],
+     "type": "create_objects"
+    },
+    {
+     "ops": [],
+     "target": "checkout",
+     "type": "workload_patch"
+    }
+   ],
+   "type": "composite"
+  },
+  "forbidden": [
+   "delete_namespace",
+   "scale_to_zero",
+   "disable_monitoring",
+   "remove_health_checks",
+   "tamper_with_verifier"
+  ],
+  "invariants": [
+   "shop_health"
+  ],
+  "prompt": "Every checkout fails since the checkout pods were replaced during routine maintenance a few minutes ago. Find the cause and fix it.",
+  "solution": [
+   "kubectl delete mutatingadmissionpolicybinding platform-pod-defaults",
+   "kubectl delete mutatingadmissionpolicy platform-pod-defaults",
+   "sleep 15",
+   "kubectl rollout restart deployment/checkout",
+   "kubectl rollout status deployment/checkout --timeout=300s"
   ],
   "validation": {
    "baseline_timeout_s": 180,
