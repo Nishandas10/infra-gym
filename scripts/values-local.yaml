@@ -81,15 +81,16 @@ components:
   # KAFKA_HEAP_OPTS=-Xms400M, so one or two of them OOMKilled the broker (Sonnet 5.5 on
   # hard-kafka-consumer-quota-130). Its log dirs were in /tmp on the container's filesystem, so the restart also lost
   # the topics and offsets and wedged checkout's producer: a correct fix graded as made_worse. 2Gi leaves room for two
-  # CLI runs at once; the emptyDir keeps the data through a container restart (a pod deletion still starts empty,
-  # as before, so scenarios that delete or scale the broker behave as they did).
+  # CLI runs at once; the emptyDir keeps the data (/tmp/kafka-logs) through a container restart (a pod deletion still
+  # starts empty, as before, so scenarios that delete or scale the broker behave as they did). Only that directory:
+  # /tmp itself also holds the image's opentelemetry-javaagent.jar, and an emptyDir over /tmp hides it.
   kafka:
     resources:
       limits:
         memory: 2Gi
     mountedEmptyDirs:
       - name: kafka-data
-        mountPath: /tmp
+        mountPath: /tmp/kafka-logs
 
 # Jaeger keeps traces in memory. At the chart's cap of 25,000 traces it grew to
 # ~330 MB during long validation runs, and the shrinking headroom let a single
