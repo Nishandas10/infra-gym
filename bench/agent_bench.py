@@ -1019,6 +1019,8 @@ def episode(sc, ms, attempt, client, cfg, run):
     recovery = ensure_world() or []
     if UndoLog(sid).active:  # left over from a crash
         faults.revert(sc["spec"])
+    # Earlier episodes' rollout history and events, which this agent could read (or `rollout undo` back into).
+    world.clear_history()
     snap = world.snapshot()
     state = {"injected": False, "agent": None, "snap": snap}
     result = {**row, "status": "error", "passed": False, "error": "interrupted"}

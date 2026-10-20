@@ -41,6 +41,7 @@ def bench(tmp_path, monkeypatch):
     monkeypatch.setattr(ab, "ensure_world", lambda: [])
     monkeypatch.setattr(ab, "UndoLog", NoUndo)
     monkeypatch.setattr(ab.world, "snapshot", lambda: {})
+    monkeypatch.setattr(ab.world, "clear_history", lambda: {})
     monkeypatch.setattr(ab, "_play", play)
     monkeypatch.setattr(ab, "_cleanup", lambda spec, snap, state: [])
     return played

@@ -48,6 +48,47 @@ def _norm(obj):
     return o
 
 
+HISTORY_NAMESPACES = (kube.APP_NS, "kube-system")
+REVISION = "deployment.kubernetes.io/revision"
+
+
+def clear_history(namespaces=HISTORY_NAMESPACES):
+    """Delete what earlier episodes leave for the next agent to read, so every episode starts from the same history:
+    old ReplicaSets and ControllerRevisions (rollout history: a past episode's faulty revision, which
+    `kubectl rollout undo` would even bring back) and Events. Kept: each Deployment's current ReplicaSet, every
+    ReplicaSet that still has pods, each DaemonSet/StatefulSet's newest ControllerRevision. Run before the episode's
+    snapshot and injection, so a fault's own rollouts (and the good revision before them) are untouched.
+    Returns what was deleted, by kind."""
+    out = {"replicasets": 0, "controllerrevisions": 0}
+    for ns in namespaces:
+        current = {d["metadata"]["name"]: (d["metadata"].get("annotations") or {}).get(REVISION)
+                   for d in kube.items("deployments.apps", namespace=ns)}
+        old_rs = []
+        for rs in kube.items("replicasets.apps", namespace=ns):
+            owner = next((o["name"] for o in rs["metadata"].get("ownerReferences") or [] if o.get("kind") == "Deployment"),
+                         None)
+            revision = (rs["metadata"].get("annotations") or {}).get(REVISION)
+            has_pods = (rs["spec"].get("replicas") or 0) or ((rs.get("status") or {}).get("replicas") or 0)
+            if owner in current and revision != current[owner] and not has_pods:
+                old_rs.append(rs["metadata"]["name"])
+        newest, old_cr = {}, []
+        for cr in sorted(kube.items("controllerrevisions.apps", namespace=ns), key=lambda c: c.get("revision", 0),
+                         reverse=True):
+            owner = next((o["uid"] for o in cr["metadata"].get("ownerReferences") or []), None)
+            if owner is None:
+                continue
+            if owner in newest:
+                old_cr.append(cr["metadata"]["name"])
+            else:
+                newest[owner] = cr["metadata"]["name"]
+        for kind, names in (("replicasets.apps", old_rs), ("controllerrevisions.apps", old_cr)):
+            if names:
+                kube.kubectl("delete", kind, *names, "--wait=false", "--ignore-not-found", namespace=ns)
+                out[kind.split(".")[0]] += len(names)
+        kube.kubectl("delete", "events", "--all", "--wait=false", namespace=ns)
+    return out
+
+
 def _key(kind, obj):
     return f"{kind}/{obj['metadata']['name']}"
 
