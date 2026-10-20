@@ -246,7 +246,8 @@ def test_the_stop_file_stops_before_the_next_episode(bench, tmp_path, monkeypatc
 
     def play(sc, ms, client, cfg, row, state):    # the cancel arrives while the first episode runs
         bench.append((sc["id"], row["hint_level"]))
-        stop.touch()
+        if len(bench) == 1:
+            stop.touch()
         return {**row, "status": "done", "passed": True, "stop": "model_finished", "steps": 1}
     monkeypatch.setattr(ab, "_play", play)
     run("lite", limit=3, events=str(ev), stop_file=str(stop))
