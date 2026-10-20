@@ -260,6 +260,7 @@
    },
    "kind": "ConfigMap",
    "metadata": {
+    "annotations": {},
     "name": "coredns",
     "namespace": "kube-system"
    }
@@ -284,7 +285,7 @@
    "kind": "DaemonSet",
    "metadata": {
     "annotations": {
-     "deprecated.daemonset.template.generation": "1",
+     "deprecated.daemonset.template.generation": "30",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -312,7 +313,8 @@
     "template": {
      "metadata": {
       "annotations": {
-       "checksum/config": "6ad813744505f4a6428265570909cd2afffcac8d6f5838474a0f0d573bea89c1"
+       "checksum/config": "6ad813744505f4a6428265570909cd2afffcac8d6f5838474a0f0d573bea89c1",
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T00:07:19Z"
       },
       "labels": {
        "app.kubernetes.io/instance": "my-shop",
@@ -701,7 +703,7 @@
    "kind": "DaemonSet",
    "metadata": {
     "annotations": {
-     "deprecated.daemonset.template.generation": "1"
+     "deprecated.daemonset.template.generation": "5"
     },
     "labels": {
      "k8s-app": "kube-proxy"
@@ -823,7 +825,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "55",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -858,6 +860,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-20T19:27:13Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -891,6 +894,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "KAFKA_ADDR",
@@ -960,7 +967,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "81",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -995,6 +1002,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-17T23:55:07Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -1028,6 +1036,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "AD_PORT",
@@ -1102,7 +1114,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "11",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1214,7 +1226,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "122",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1249,6 +1261,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T00:37:02Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -1282,6 +1295,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "CART_PORT",
@@ -1370,7 +1387,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "146",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1405,6 +1422,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-20T19:27:13Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -1438,6 +1456,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "CHECKOUT_PORT",
@@ -1569,7 +1591,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "32",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1639,6 +1661,10 @@
           "value": "explicit_bucket_histogram"
          },
          {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
+         },
+         {
           "name": "CURRENCY_PORT",
           "value": "8080"
          },
@@ -1694,7 +1720,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "33",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1729,6 +1755,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-17T23:11:34Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -1762,6 +1789,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "EMAIL_PORT",
@@ -1823,7 +1854,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "101",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -1858,6 +1889,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T18:03:44Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -1901,6 +1933,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
@@ -1970,6 +2006,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
@@ -2071,7 +2111,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "26",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -2106,6 +2146,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-20T19:27:13Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -2139,6 +2180,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "KAFKA_ADDR",
@@ -2220,7 +2265,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "34",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -2288,6 +2333,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "FRONTEND_PORT",
@@ -2402,7 +2451,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "32",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -2473,6 +2522,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "ENVOY_PORT",
@@ -3134,7 +3187,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "11",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -3172,6 +3225,7 @@
        "io.opentelemetry.discovery.metrics/config": "endpoint: \"http://`endpoint`/status\"\ncollection_interval: \"10s\"\ntimeout: \"20s\"\n",
        "io.opentelemetry.discovery.metrics/enabled": "true",
        "io.opentelemetry.discovery.metrics/scraper": "nginx",
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T00:17:56Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -3205,6 +3259,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "IMAGE_PROVIDER_PORT",
@@ -3469,7 +3527,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "16",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -3539,6 +3597,10 @@
           "value": "explicit_bucket_histogram"
          },
          {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
+         },
+         {
           "name": "KAFKA_ADVERTISED_LISTENERS",
           "value": "PLAINTEXT://kafka:9092"
          },
@@ -3588,7 +3650,7 @@
         ],
         "resources": {
          "limits": {
-          "memory": "1Gi"
+          "memory": "2Gi"
          }
         },
         "securityContext": {
@@ -3597,7 +3659,13 @@
          "runAsUser": 1000
         },
         "terminationMessagePath": "/dev/termination-log",
-        "terminationMessagePolicy": "File"
+        "terminationMessagePolicy": "File",
+        "volumeMounts": [
+         {
+          "mountPath": "/tmp/kafka-logs",
+          "name": "kafka-data"
+         }
+        ]
        }
       ],
       "dnsPolicy": "ClusterFirst",
@@ -3606,7 +3674,13 @@
       "securityContext": {},
       "serviceAccount": "my-shop",
       "serviceAccountName": "my-shop",
-      "terminationGracePeriodSeconds": 30
+      "terminationGracePeriodSeconds": 30,
+      "volumes": [
+       {
+        "emptyDir": {},
+        "name": "kafka-data"
+       }
+      ]
      }
     }
    }
@@ -3616,7 +3690,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "2",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -3684,6 +3758,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "LOCUST_WEB_HOST",
@@ -3884,7 +3962,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "114",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -3952,6 +4030,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "PAYMENT_PORT",
@@ -4022,7 +4104,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "40",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4057,6 +4139,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T08:04:11Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -4090,6 +4173,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "PRODUCT_CATALOG_PORT",
@@ -4217,7 +4304,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "24",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4305,7 +4392,7 @@
         },
         "resources": {
          "limits": {
-          "memory": "400Mi"
+          "memory": "768Mi"
          }
         },
         "terminationMessagePath": "/dev/termination-log",
@@ -4357,7 +4444,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "12",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4427,6 +4514,10 @@
           "value": "explicit_bucket_histogram"
          },
          {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
+         },
+         {
           "name": "QUOTE_PORT",
           "value": "8080"
          },
@@ -4491,7 +4582,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "45",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4526,6 +4617,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-17T22:39:25Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -4559,6 +4651,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "RECOMMENDATION_PORT",
@@ -4632,7 +4728,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "58",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4667,6 +4763,7 @@
     "template": {
      "metadata": {
       "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T11:06:13Z",
        "resource.opentelemetry.io/service.namespace": "opentelemetry-demo"
       },
       "labels": {
@@ -4700,6 +4797,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "SHIPPING_PORT",
@@ -4799,7 +4900,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1",
+     "deployment.kubernetes.io/revision": "2",
      "meta.helm.sh/release-name": "my-shop",
      "meta.helm.sh/release-namespace": "default"
     },
@@ -4867,6 +4968,10 @@
          {
           "name": "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
           "value": "explicit_bucket_histogram"
+         },
+         {
+          "name": "FLAGD_CACHE",
+          "value": "disabled"
          },
          {
           "name": "TELEMETRY_DOCS_PORT",
@@ -5015,7 +5120,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1"
+     "deployment.kubernetes.io/revision": "2"
     },
     "labels": {
      "app": "gym-kafka-tools"
@@ -5088,6 +5193,7 @@
        ]
       },
       "dnsPolicy": "ClusterFirst",
+      "priorityClassName": "gym-critical",
       "restartPolicy": "Always",
       "schedulerName": "default-scheduler",
       "securityContext": {},
@@ -5101,7 +5207,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1"
+     "deployment.kubernetes.io/revision": "3"
     },
     "labels": {
      "app": "gym-probe"
@@ -5128,7 +5234,7 @@
     "template": {
      "metadata": {
       "annotations": {
-       "gym/script-sha": "563f659e369e"
+       "gym/script-sha": "eef9576755a7"
       },
       "labels": {
        "app": "gym-probe"
@@ -5169,6 +5275,7 @@
        ]
       },
       "dnsPolicy": "ClusterFirst",
+      "priorityClassName": "gym-critical",
       "restartPolicy": "Always",
       "schedulerName": "default-scheduler",
       "securityContext": {},
@@ -5191,7 +5298,7 @@
    "kind": "Deployment",
    "metadata": {
     "annotations": {
-     "deployment.kubernetes.io/revision": "1"
+     "deployment.kubernetes.io/revision": "19"
     },
     "labels": {
      "k8s-app": "kube-dns"
@@ -5217,6 +5324,9 @@
     },
     "template": {
      "metadata": {
+      "annotations": {
+       "kubectl.kubernetes.io/restartedAt": "2026-10-18T06:23:16Z"
+      },
       "labels": {
        "k8s-app": "kube-dns"
       }
@@ -6341,9 +6451,9 @@
      "app.kubernetes.io/name": "accounting",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "accounting",
-     "pod-template-hash": "97f86fb9"
+     "pod-template-hash": "89577b6d9"
     },
-    "name": "accounting-97f86fb9-jv6rg",
+    "name": "accounting-89577b6d9-lb8c5",
     "namespace": "default"
    },
    "spec": {
@@ -6364,9 +6474,9 @@
      "app.kubernetes.io/name": "ad",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "ad",
-     "pod-template-hash": "f9f89ff68"
+     "pod-template-hash": "b995ff79f"
     },
-    "name": "ad-f9f89ff68-s2chn",
+    "name": "ad-b995ff79f-pz5h5",
     "namespace": "default"
    },
    "spec": {
@@ -6400,7 +6510,7 @@
      "opentelemetry.io/name": "astronomy-db",
      "pod-template-hash": "85db75f6fd"
     },
-    "name": "astronomy-db-85db75f6fd-h6b94",
+    "name": "astronomy-db-85db75f6fd-mlq65",
     "namespace": "default"
    },
    "spec": {
@@ -6427,9 +6537,9 @@
      "app.kubernetes.io/name": "cart",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "cart",
-     "pod-template-hash": "5c788db849"
+     "pod-template-hash": "555c55d5c7"
     },
-    "name": "cart-5c788db849-fr9qc",
+    "name": "cart-555c55d5c7-q9rst",
     "namespace": "default"
    },
    "spec": {
@@ -6456,9 +6566,9 @@
      "app.kubernetes.io/name": "checkout",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "checkout",
-     "pod-template-hash": "5f7bd64878"
+     "pod-template-hash": "55c76c5b9b"
     },
-    "name": "checkout-5f7bd64878-4d8jz",
+    "name": "checkout-55c76c5b9b-5478c",
     "namespace": "default"
    },
    "spec": {
@@ -6485,9 +6595,9 @@
      "app.kubernetes.io/name": "currency",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "currency",
-     "pod-template-hash": "756866474"
+     "pod-template-hash": "78485ddbb8"
     },
-    "name": "currency-756866474-2sk94",
+    "name": "currency-78485ddbb8-fvx8w",
     "namespace": "default"
    },
    "spec": {
@@ -6514,9 +6624,9 @@
      "app.kubernetes.io/name": "email",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "email",
-     "pod-template-hash": "678846ffbb"
+     "pod-template-hash": "7cb599ffc7"
     },
-    "name": "email-678846ffbb-xsg4s",
+    "name": "email-7cb599ffc7-9n7kh",
     "namespace": "default"
    },
    "spec": {
@@ -6543,9 +6653,9 @@
      "app.kubernetes.io/name": "flagd",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "flagd",
-     "pod-template-hash": "bbb854b4b"
+     "pod-template-hash": "5cd66f7cd"
     },
-    "name": "flagd-bbb854b4b-987d8",
+    "name": "flagd-5cd66f7cd-xlvl4",
     "namespace": "default"
    },
    "spec": {
@@ -6587,9 +6697,9 @@
      "app.kubernetes.io/name": "fraud-detection",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "fraud-detection",
-     "pod-template-hash": "6544df847d"
+     "pod-template-hash": "54f457fcf4"
     },
-    "name": "fraud-detection-6544df847d-59cb9",
+    "name": "fraud-detection-54f457fcf4-v96nl",
     "namespace": "default"
    },
    "spec": {
@@ -6610,9 +6720,9 @@
      "app.kubernetes.io/name": "frontend",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "frontend",
-     "pod-template-hash": "7d45d76"
+     "pod-template-hash": "5cb45bcbbb"
     },
-    "name": "frontend-7d45d76-nxnvw",
+    "name": "frontend-5cb45bcbbb-8hgqm",
     "namespace": "default"
    },
    "spec": {
@@ -6639,9 +6749,9 @@
      "app.kubernetes.io/name": "frontend-proxy",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "frontend-proxy",
-     "pod-template-hash": "7b578cc97"
+     "pod-template-hash": "6bf7568c8c"
     },
-    "name": "frontend-proxy-7b578cc97-jhzzs",
+    "name": "frontend-proxy-6bf7568c8c-vkcxq",
     "namespace": "default"
    },
    "spec": {
@@ -6670,7 +6780,7 @@
      "helm.sh/chart": "grafana-13.2.5",
      "pod-template-hash": "7b59ccf69d"
     },
-    "name": "grafana-7b59ccf69d-2jswf",
+    "name": "grafana-7b59ccf69d-946nq",
     "namespace": "default"
    },
    "spec": {
@@ -6724,9 +6834,9 @@
      "app.kubernetes.io/name": "image-provider",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "image-provider",
-     "pod-template-hash": "79fcc4d4db"
+     "pod-template-hash": "7d5cf5b65f"
     },
-    "name": "image-provider-79fcc4d4db-h9mxf",
+    "name": "image-provider-7d5cf5b65f-fttl5",
     "namespace": "default"
    },
    "spec": {
@@ -6754,7 +6864,7 @@
      "app.kubernetes.io/name": "jaeger",
      "pod-template-hash": "5c65595555"
     },
-    "name": "jaeger-5c65595555-mcjnk",
+    "name": "jaeger-5c65595555-mwh98",
     "namespace": "default"
    },
    "spec": {
@@ -6824,9 +6934,9 @@
      "app.kubernetes.io/name": "kafka",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "kafka",
-     "pod-template-hash": "6d6c574fd9"
+     "pod-template-hash": "58f5795f97"
     },
-    "name": "kafka-6d6c574fd9-7hwvb",
+    "name": "kafka-58f5795f97-rscbd",
     "namespace": "default"
    },
    "spec": {
@@ -6858,9 +6968,9 @@
      "app.kubernetes.io/name": "load-generator",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "load-generator",
-     "pod-template-hash": "d88b7c9db"
+     "pod-template-hash": "5568b7dcf6"
     },
-    "name": "load-generator-d88b7c9db-nfwvr",
+    "name": "load-generator-5568b7dcf6-4gc6n",
     "namespace": "default"
    },
    "spec": {
@@ -6889,7 +6999,7 @@
      "opentelemetry.io/name": "opamp-server",
      "pod-template-hash": "6c5769b8bb"
     },
-    "name": "opamp-server-6c5769b8bb-drksc",
+    "name": "opamp-server-6c5769b8bb-hl56q",
     "namespace": "default"
    },
    "spec": {
@@ -6920,10 +7030,10 @@
      "app.kubernetes.io/instance": "my-shop",
      "app.kubernetes.io/name": "opentelemetry-collector",
      "component": "agent-collector",
-     "controller-revision-hash": "65677bbd76",
-     "pod-template-generation": "1"
+     "controller-revision-hash": "75b49967bf",
+     "pod-template-generation": "30"
     },
-    "name": "otel-collector-agent-6j9kv",
+    "name": "otel-collector-agent-lv79k",
     "namespace": "default"
    },
    "spec": {
@@ -6985,10 +7095,10 @@
      "app.kubernetes.io/instance": "my-shop",
      "app.kubernetes.io/name": "opentelemetry-collector",
      "component": "agent-collector",
-     "controller-revision-hash": "65677bbd76",
-     "pod-template-generation": "1"
+     "controller-revision-hash": "75b49967bf",
+     "pod-template-generation": "30"
     },
-    "name": "otel-collector-agent-z77kb",
+    "name": "otel-collector-agent-zxh2v",
     "namespace": "default"
    },
    "spec": {
@@ -7051,9 +7161,9 @@
      "app.kubernetes.io/name": "payment",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "payment",
-     "pod-template-hash": "7ddb666767"
+     "pod-template-hash": "65667f5db9"
     },
-    "name": "payment-7ddb666767-xcbxl",
+    "name": "payment-65667f5db9-qlcnl",
     "namespace": "default"
    },
    "spec": {
@@ -7080,9 +7190,9 @@
      "app.kubernetes.io/name": "product-catalog",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "product-catalog",
-     "pod-template-hash": "56dd69857d"
+     "pod-template-hash": "65756884f8"
     },
-    "name": "product-catalog-56dd69857d-ffr6n",
+    "name": "product-catalog-65756884f8-p952v",
     "namespace": "default"
    },
    "spec": {
@@ -7111,9 +7221,9 @@
      "app.kubernetes.io/part-of": "prometheus",
      "app.kubernetes.io/version": "v3.14.0",
      "helm.sh/chart": "prometheus-29.30.2",
-     "pod-template-hash": "c998cfdbb"
+     "pod-template-hash": "64b449f8cb"
     },
-    "name": "prometheus-c998cfdbb-jx2jm",
+    "name": "prometheus-64b449f8cb-tkqpp",
     "namespace": "default"
    },
    "spec": {
@@ -7139,9 +7249,9 @@
      "app.kubernetes.io/name": "quote",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "quote",
-     "pod-template-hash": "756b566769"
+     "pod-template-hash": "674f79cdc"
     },
-    "name": "quote-756b566769-r67gj",
+    "name": "quote-674f79cdc-6wmg7",
     "namespace": "default"
    },
    "spec": {
@@ -7168,9 +7278,9 @@
      "app.kubernetes.io/name": "recommendation",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "recommendation",
-     "pod-template-hash": "556fd56449"
+     "pod-template-hash": "c849787fc"
     },
-    "name": "recommendation-556fd56449-9t6kq",
+    "name": "recommendation-c849787fc-wgxlj",
     "namespace": "default"
    },
    "spec": {
@@ -7197,9 +7307,9 @@
      "app.kubernetes.io/name": "shipping",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "shipping",
-     "pod-template-hash": "7bf7fd5fc"
+     "pod-template-hash": "7476cc9bb9"
     },
-    "name": "shipping-7bf7fd5fc-wtd4g",
+    "name": "shipping-7476cc9bb9-m2pw9",
     "namespace": "default"
    },
    "spec": {
@@ -7226,9 +7336,9 @@
      "app.kubernetes.io/name": "telemetry-docs",
      "app.kubernetes.io/version": "3.1.0",
      "opentelemetry.io/name": "telemetry-docs",
-     "pod-template-hash": "b6df9658d"
+     "pod-template-hash": "66bcf77d66"
     },
-    "name": "telemetry-docs-b6df9658d-hpvhr",
+    "name": "telemetry-docs-66bcf77d66-qhrfs",
     "namespace": "default"
    },
    "spec": {
@@ -7257,7 +7367,7 @@
      "opentelemetry.io/name": "valkey-cart",
      "pod-template-hash": "7b4bb9c949"
     },
-    "name": "valkey-cart-7b4bb9c949-6g9th",
+    "name": "valkey-cart-7b4bb9c949-s7k45",
     "namespace": "default"
    },
    "spec": {
