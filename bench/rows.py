@@ -205,30 +205,37 @@ def axis_values(r, axis):
     return v if isinstance(v, list) else [v]
 
 
+def axis_counts(rows, axes=AXES, counted=lambda r: r.get("status") == "done", passed=lambda r: bool(r.get("passed"))):
+    """{axis: {tag value: {model: [passed, counted]}}}, values sorted; axes with no counted row are left out. An episode
+    counts once under each value of a multi-valued axis (fix_type, drivers)."""
+    out = {}
+    for axis in axes:
+        cells = defaultdict(dict)
+        for r in rows:
+            if not counted(r):
+                continue
+            for v in axis_values(r, axis):
+                c = cells[v].setdefault(r["model"], [0, 0])
+                c[0] += int(passed(r))
+                c[1] += 1
+        if cells:
+            out[axis] = {v: cells[v] for v in sorted(cells)}
+    return out
+
+
 def axis_tables(rows, models, axes=AXES, counted=lambda r: r.get("status") == "done",
                 passed=lambda r: bool(r.get("passed")), what="Pass rate"):
     """Markdown tables of passed/counted per tag value and model. An episode counts once under each value
     of a multi-valued axis (fix_type, drivers), so those columns can add up to more than the total."""
     out = []
-    for axis in axes:
-        cells = defaultdict(lambda: [0, 0])
-        for r in rows:
-            if not counted(r):
-                continue
-            for v in axis_values(r, axis):
-                c = cells[(v, r["model"])]
-                c[0] += passed(r)
-                c[1] += 1
-        groups = sorted({v for v, _ in cells})
-        if not groups:
-            continue
+    for axis, groups in axis_counts(rows, axes, counted, passed).items():
         multi = " (an episode counts under each of its values)" if axis != "layer" else ""
         out += ["", f"## {what} by {axis}{multi}", "", f"| {axis} | " + " | ".join(models) + " |",
                 "|---|" + "---|" * len(models)]
-        for g in groups:
+        for g, per in groups.items():
             row = []
             for m in models:
-                k, n = cells.get((g, m), (0, 0))
+                k, n = per.get(m, (0, 0))
                 row.append(f"{k}/{n} ({100 * k / n:.0f}%)" if n else "-")
             out.append(f"| {g} | " + " | ".join(row) + " |")
     return out

@@ -216,3 +216,126 @@ def test_the_spend_cap_needs_a_price(bench):
                               attempts=None, hint_level=None, max_cost=5.0)
     with pytest.raises(SystemExit):
         ab.cmd_run(CFG, args)
+
+
+# ------------------------------------------------------------------ web app hooks: --events, --stop-file, --job, --config
+def read_events(path):
+    return [json.loads(x) for x in path.read_text().splitlines()]
+
+
+def test_events_trace_the_run_and_rows_record_the_job(bench, tmp_path):
+    ev = tmp_path / "jobs" / "events-1.jsonl"
+    run("lite", limit=2, events=str(ev), job="job-7")
+    out = read_events(ev)
+    per_episode = ["episode_start", "verdict", "cleanup", "episode_end"]
+    assert [e["type"] for e in out] == ["run_start", *per_episode, *per_episode, "run_end"]
+    assert [e["seq"] for e in out] == list(range(1, len(out) + 1)) and {e["job"] for e in out} == {"job-7"}
+    assert out[0]["episodes"] == 2 and out[0]["suite"] == "lite" and out[0]["models"] == ["stub-model"]
+    assert out[1]["i"] == 1 and out[1]["n"] == 2 and out[1]["scenario"] == bench[0][0]
+    assert out[-1]["reason"] == "finished" and out[-1]["played"] == 2 and out[-1]["episode"] is None
+    rs = rows.read_jsonl(tmp_path / "results.jsonl")
+    assert {r["job"] for r in rs} == {"job-7"} and {e["episode"] for e in out[1:5]} == {rs[0]["episode"]}
+    assert rs[0]["model_config_hash"] == ab.model_config_hash(CFG["models"][0])
+    run("lite", limit=3, events=str(ev), job="job-7")       # resumed into the same file: numbering continues
+    more = read_events(ev)
+    assert [e["seq"] for e in more] == list(range(1, len(more) + 1)) and more[len(out)]["episodes"] == 1
+
+
+def test_the_stop_file_stops_before_the_next_episode(bench, tmp_path, monkeypatch):
+    stop, ev = tmp_path / "STOP", tmp_path / "events.jsonl"
+
+    def play(sc, ms, client, cfg, row, state):    # the cancel arrives while the first episode runs
+        bench.append((sc["id"], row["hint_level"]))
+        stop.touch()
+        return {**row, "status": "done", "passed": True, "stop": "model_finished", "steps": 1}
+    monkeypatch.setattr(ab, "_play", play)
+    run("lite", limit=3, events=str(ev), stop_file=str(stop))
+    assert len(bench) == 1                         # the episode in flight finished; no new one started
+    end = read_events(ev)[-1]
+    assert (end["type"], end["reason"], end["played"]) == ("run_end", "stopped", 1)
+    run("lite", limit=3, stop_file=str(stop))      # still there: nothing starts
+    assert len(bench) == 1
+    stop.unlink()
+    run("lite", limit=3, stop_file=str(stop))      # removed: the same command resumes
+    assert len(bench) == 3
+
+
+def test_a_run_that_dies_still_ends_its_events(bench, tmp_path, monkeypatch):
+    def broken():
+        raise SystemExit("The world is still unhealthy after a hard reset.")
+    monkeypatch.setattr(ab, "ensure_world", broken)
+    ev = tmp_path / "events.jsonl"
+    with pytest.raises(SystemExit):
+        run("lite", limit=2, events=str(ev))
+    end = read_events(ev)[-1]
+    assert (end["type"], end["reason"], end["played"]) == ("run_end", "error", 0) and "hard reset" in end["message"]
+    assert ab.EVENTS is ab.events.NONE             # the next run in this process starts without events
+
+
+def test_spend_cap_reason_in_events(bench, monkeypatch, tmp_path):
+    def play(sc, ms, client, cfg, row, state):
+        bench.append((sc["id"], row["hint_level"]))
+        return {**row, "status": "done", "passed": True, "stop": "model_finished", "steps": 1, "tokens_in": 1_000_000}
+    monkeypatch.setattr(ab, "_play", play)
+    ev = tmp_path / "events.jsonl"
+    cfg = dict(CFG, models=[{"id": "stub-model", "price": {"input": 1, "output": 1}}])
+    args = argparse.Namespace(suite="lite", only=None, model=None, limit=4, retry_errors=False, rerun=False,
+                              attempts=None, hint_level=None, max_cost=1.5, events=str(ev))
+    ab.cmd_run(cfg, args)
+    out = read_events(ev)
+    assert [e["cost_usd"] for e in out if e["type"] == "episode_end"] == [1.0, 1.0]
+    assert (out[-1]["reason"], out[-1]["spent_usd"]) == ("spend_cap", 2.0)
+    assert rows.read_jsonl(tmp_path / "results.jsonl")[0]["price"] == {"input": 1, "output": 1}
+
+
+def test_agent_steps_are_events(tmp_path, monkeypatch):
+    from types import SimpleNamespace as NS
+    calls = [NS(id="c1", function=NS(name="run_shell", arguments='{"command": "kubectl get pods"}'), model_extra={}),
+             NS(id="c2", function=NS(name="run_shell", arguments='{"command": "kubectl rollout restart deploy/ad"}'),
+                model_extra={})]
+    replies = [NS(choices=[NS(message=NS(content="Looking first.", tool_calls=calls, model_extra={}))], usage=None,
+                  model_extra={}),
+               NS(choices=[NS(message=NS(content="Fixed.", tool_calls=None, model_extra={}))], usage=None,
+                  model_extra={})]
+    monkeypatch.setattr(ab, "chat", lambda client, ms, messages, temperature: replies.pop(0))
+    monkeypatch.setattr(ab, "run_in_sandbox", lambda command: "x" * 3000)
+    monkeypatch.setattr(ab, "EVENTS", ab.events.Events(tmp_path / "e.jsonl", job="j", shard="1/3"))
+    ab.run_agent(None, {"id": "m", "base_url": "http://model.invalid"}, "Ads fail.", 5, 60, 0.2)
+    steps = read_events(tmp_path / "e.jsonl")
+    assert [(s["type"], s["step"], s["changes"], s["shard"]) for s in steps] == \
+        [("step", 1, False, "1/3"), ("step", 2, True, "1/3")]
+    assert steps[0]["text"] == "Looking first." and steps[1]["text"] is None   # the turn's text goes with its first step
+    assert steps[0]["cmd"] == "kubectl get pods" and len(steps[0]["output"]) < 3000
+    assert steps[0]["output"].endswith(f"[... {3000 - ab.events.OUTPUT_HEAD} more characters]")
+
+
+def test_events_without_a_file_are_a_no_op(tmp_path):
+    ab.events.NONE.emit("step", step=1)
+    assert ab.events.NONE.seq == 0
+
+
+def test_config_file_replaces_the_models(tmp_path, monkeypatch):
+    f = tmp_path / "models.yaml"
+    f.write_text(yaml.safe_dump({"models": [{"id": "partner/agent-1", "base_url": "https://agent.example/v1",
+                                             "api_key_env": "GYM_JOB_KEY", "price": {"input": 0, "output": 0}}],
+                                 "timeout_s": 900}))
+    cfg = ab.load_config(str(f))
+    assert [m["id"] for m in cfg["models"]] == ["partner/agent-1"] and cfg["timeout_s"] == 900
+    assert cfg["base_url"] == ab.load_config()["base_url"]          # what the file does not set stays
+    assert ab.model_settings(cfg, cfg["models"][0])["api_key_env"] == "GYM_JOB_KEY"
+    for bad in ("models: []\n", "timeout_s: 3\n", "models: [\n"):
+        f.write_text(bad)
+        with pytest.raises(SystemExit):
+            ab.load_config(str(f))
+
+
+def test_model_config_hash_follows_the_entry():
+    a = {"id": "m", "price": {"input": 1, "output": 2}}
+    assert ab.model_config_hash(a) == ab.model_config_hash({"price": {"output": 2, "input": 1}, "id": "m"})
+    assert ab.model_config_hash(a) != ab.model_config_hash({**a, "effort": "high"})
+
+
+def test_an_unknown_model_is_refused(bench):
+    with pytest.raises(SystemExit, match="No model matches"):
+        run("lite", limit=1, model="no-such-model")
+    assert bench == []

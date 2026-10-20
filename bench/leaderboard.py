@@ -30,34 +30,22 @@ def wilson(k, n, z=1.96):
     return p, max(0.0, c - h), min(1.0, c + h)
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    R.add_suite_args(ap)
-    ap.add_argument("--common", action="store_true",
-                    help="only scenarios that every model has a finished result for (fair comparison)")
-    ap.add_argument("--model", default="", help="only models whose ID contains one of these (comma-separated)")
-    args = ap.parse_args()
-    suite = R.suite_from_args(args)
-    latest = R.load(suite, args.any_version, args.mode)
-    if args.model:
-        wanted = [w.strip() for w in args.model.split(",") if w.strip()]
-        latest = [r for r in latest if any(w in r["model"] for w in wanted)]
-    notes = []
-    if args.common:
-        models_all = {r["model"] for r in latest}
-        have = defaultdict(set)
-        for r in latest:
-            if r.get("status") == "done":
-                have[r["scenario"]].add(r["model"])
-        shared = {k for k, ms in have.items() if ms == models_all}
-        latest = [r for r in latest if r["scenario"] in shared]
-        notes.append(f"Compared on the {len(shared)} scenarios that all {len(models_all)} models finished.")
-    if not latest:
-        sys.exit("Nothing to show with these filters." + ("" if suite else " Run: python bench/agent_bench.py run"))
+def common_only(latest):
+    """Only the scenarios every model has a finished result for; returns (rows, number of such scenarios, models)."""
+    models_all = {r["model"] for r in latest}
+    have = defaultdict(set)
+    for r in latest:
+        if r.get("status") == "done":
+            have[r["scenario"]].add(r["model"])
+    shared = {k for k, ms in have.items() if ms == models_all}
+    return [r for r in latest if r["scenario"] in shared], len(shared), len(models_all)
+
+
+def model_stats(latest):
+    """One entry per model, best pass rate first (also used by bench/export.py)."""
     by_model = defaultdict(list)
     for r in latest:
         by_model[r["model"]].append(r)
-
     stats = []
     for model, rs in by_model.items():
         done = [r for r in rs if r.get("status") == "done"]
@@ -73,6 +61,28 @@ def main():
                       "tokens": toks, "forbidden": forb, "skipped": len(rs) - n, "clean": clean,
                       "touched": touched, "worse": worse})
     stats.sort(key=lambda s: (-s["p"], s["model"]))
+    return stats
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    R.add_suite_args(ap)
+    ap.add_argument("--common", action="store_true",
+                    help="only scenarios that every model has a finished result for (fair comparison)")
+    ap.add_argument("--model", default="", help="only models whose ID contains one of these (comma-separated)")
+    args = ap.parse_args()
+    suite = R.suite_from_args(args)
+    latest = R.load(suite, args.any_version, args.mode)
+    if args.model:
+        wanted = [w.strip() for w in args.model.split(",") if w.strip()]
+        latest = [r for r in latest if any(w in r["model"] for w in wanted)]
+    notes = []
+    if args.common:
+        latest, shared, models_all = common_only(latest)
+        notes.append(f"Compared on the {shared} scenarios that all {models_all} models finished.")
+    if not latest:
+        sys.exit("Nothing to show with these filters." + ("" if suite else " Run: python bench/agent_bench.py run"))
+    stats = model_stats(latest)
 
     name = R.title(suite, args.any_version, args.mode)
     out = [f"# Leaderboard ({name})", "", *R.provenance(suite, latest, args.any_version), *notes, "",

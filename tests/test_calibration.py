@@ -33,8 +33,9 @@ def test_build(monkeypatch):
             {**row("b", "ds", 2, False, "e6"), "status": "error"}]          # not finished: not counted
     grades = {"e1": {"root_cause": "correct"}, "e3": {"root_cause": "correct"}, "e4": {"root_cause": "wrong"}}
     monkeypatch.setattr(cal.R, "load", lambda suite: rows)
-    monkeypatch.setattr(cal, "judgments", lambda judge: grades)
-    suite = SimpleNamespace(name="s", version=1, instances=[SimpleNamespace(id=i, hash="h" + i) for i in "abc"])
+    monkeypatch.setattr(cal, "judgments", lambda judge, results=None: grades)
+    suite = SimpleNamespace(name="s", version=1, visibility="public",
+                            instances=[SimpleNamespace(id=i, hash="h" + i) for i in "abc"])
     out = cal.build(suite, "judge")
     a, b, c = out["scenarios"]
     assert (a["models"]["opus"]["k"], a["models"]["opus"]["n"], a["models"]["ds"]["rate"]) == (2, 2, 0)

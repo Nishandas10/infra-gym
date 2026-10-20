@@ -62,9 +62,10 @@ def quadrant(passed, grade):
     return "understood_not_fixed" if grade == "correct" else "not_fixed"
 
 
-def judgments(judge):
+def judgments(judge, results=None):
+    """The judge's latest grade per episode, from the suite's results folder (private/results for a private suite)."""
     out = {}
-    for j in R.read_jsonl(R.RESULTS / "judgments.jsonl"):
+    for j in R.read_jsonl((results or R.RESULTS) / "judgments.jsonl"):
         if j.get("judge") == judge and j.get("rubric") == RUBRIC:
             out[j["key"]] = j   # later lines win
     return out
@@ -72,7 +73,7 @@ def judgments(judge):
 
 def build(suite, judge):
     rows = [r for r in R.load(suite) if r.get("status") == "done"]
-    grades = judgments(judge)
+    grades = judgments(judge, R.results_dir(suite))
     models = sorted({r["model"] for r in rows})
     eps = defaultdict(lambda: defaultdict(list))   # scenario -> model -> episodes
     for r in rows:

@@ -6,6 +6,7 @@
   python bench/agent_bench.py run --suite bench-v1-dev   run every model on a frozen suite (suites/*.yaml)
   python bench/agent_bench.py run         run every model on every bench-eligible, validated scenario
   python bench/agent_bench.py oracle      play every bench-eligible scenario with its reference fix as the agent
+  python bench/agent_bench.py status --json   clusters (lock, undo logs, sandbox, nodes), suites and models; read-only
   KUBECONFIG=~/.kube/gym/ai-gym-2 python bench/agent_bench.py oracle --shard 2/3   one cluster's share, in parallel
                                           (each cluster has its own sandbox container, agent-box-<cluster>)
   python scripts/make_suite.py            freeze a new suite (replaces the old `pick` command)
@@ -25,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import subprocess
@@ -41,10 +43,11 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "bench"))
 
-from gym import checks, faults, harness, kube, lock, recovery, toolbox  # noqa: E402
+from gym import checks, faults, harness, kube, lock, recovery, toolbox, undo  # noqa: E402
 from gym.core import status, suites  # noqa: E402
 from gym.spec import all_specs, checks_of, fault_label, layer_of, load, prompt_of, tier_of  # noqa: E402
 from gym.undo import UndoLog  # noqa: E402
+import events  # noqa: E402
 import modes  # noqa: E402
 import rows  # noqa: E402
 import world  # noqa: E402
@@ -53,6 +56,7 @@ from safety import (changing_commands, forbidden_actions, is_mutating, live_guar
 
 HERE = REPO / "bench"
 _SANDBOX = []
+EVENTS = events.NONE   # run --events: the live event file (bench/events.py); a no-op otherwise
 
 
 def sandbox_name():
@@ -153,8 +157,26 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def load_config():
-    return yaml.safe_load(open(HERE / "config.yaml"))
+def load_config(extra=None):
+    """bench/config.yaml, or with `extra` (run --config, a file outside the repo, e.g. a model added in the web app):
+    its top-level settings override config.yaml's and its `models` list replaces config.yaml's. The repo stays clean,
+    so rows keep git_dirty: false; each row records its model entry's hash (model_config_hash) instead."""
+    cfg = yaml.safe_load(open(HERE / "config.yaml"))
+    if extra:
+        try:
+            more = yaml.safe_load(Path(extra).read_text()) or {}
+        except (OSError, yaml.YAMLError) as e:
+            sys.exit(f"--config {extra}: {e}")
+        if not isinstance(more, dict) or not isinstance(more.get("models"), list) or not more["models"]:
+            sys.exit(f"--config {extra}: needs a non-empty `models:` list (entries as in bench/config.yaml)")
+        cfg = {**cfg, **more}
+    return cfg
+
+
+def model_config_hash(entry):
+    """Fingerprint of one model entry as configured (id, provider, params, price; never a key: keys are in .env)."""
+    blob = json.dumps(entry, sort_keys=True, separators=(",", ":"), default=str)
+    return "sha256:" + hashlib.sha256(blob.encode()).hexdigest()
 
 
 # ------------------------------------------------------------------ scenarios
@@ -626,6 +648,9 @@ def run_agent(client, ms, prompt, max_steps, wall_s, temperature, mode="fix"):
             else:
                 out = run_in_sandbox(command)
             messages.append({"role": "tool", "tool_call_id": c.id, "content": out})
+            EVENTS.emit("step", step=steps, t=timeline[-1]["t"], cmd=events.head(command, 2000),
+                        changes=timeline[-1]["changes"], output=events.head(out, events.OUTPUT_HEAD),
+                        text=events.head(msg.content, events.TEXT_HEAD) if steps == steps_before + 1 else None)
         note = budget_note(steps_before, steps, max_steps)
         if note:
             messages[-1]["content"] += "\n\n" + note
@@ -828,6 +853,7 @@ def _play(sc, ms, client, cfg, row, state):
         return {**row, "status": "invalid", "passed": False, "error": "baseline did not pass"}
     faults.inject(spec, sc["dir"])
     state["injected"] = True
+    EVENTS.emit("injected")
     false_alarm = harness.is_false_alarm(spec)
     if false_alarm:   # the alarm must be up, and the service healthy under it, before the agent starts
         ok, _, _ = harness.poll(spec["verifier"]["alarm_checks"], checks.FAIL, v["detect_timeout_s"], poll_s, quiet=True)
@@ -858,12 +884,15 @@ def _play(sc, ms, client, cfg, row, state):
     budget = spec.get("budget") or {}
     max_steps = budget.get("max_steps", cfg.get("default_max_steps", 30))
     prompt = task_prompt(spec, row["hint_level"], mode)
+    EVENTS.emit("agent_start", max_steps=max_steps, prompt=prompt)
     if ms.get("oracle"):
         agent = run_oracle(spec, prompt, max_steps, mode)
     else:
         agent = run_agent(client, ms, prompt, max_steps, budget.get("wall_s", cfg.get("default_wall_s", 900)),
                           cfg.get("temperature", 0.2), mode)
     state["agent"] = agent
+    EVENTS.emit("agent_done", stop=agent["stop"], steps=agent["steps"], agent_s=agent.get("agent_s"),
+                tokens_in=agent["tokens_in"], tokens_out=agent["tokens_out"], error=agent["error"])
     t_agent_done = time.time()
     try:
         guards = (guards_pre, guards_before, live_guards())
@@ -971,7 +1000,8 @@ def _cleanup(spec, snap, state):
 
 
 def episode(sc, ms, attempt, client, cfg, run):
-    """One episode. run: {"results_dir", "provenance"} (suite name/version/fingerprint and git commit)."""
+    """One episode. run: {"results_dir", "provenance"} (suite name/version/fingerprint, git commit, job) and, from
+    cmd_run, "position" (i, n) for the live events."""
     sid, model, spec = sc["id"], ms["id"], sc["spec"]
     row = {"episode": uuid.uuid4().hex, "key": sid, "scenario": sid, "layer": sc["layer"], "tier": sc["tier"],
            "fault_type": sc["fault_type"], "task_kind": spec["task"].get("kind", "incident"), "tags": spec["tags"],
@@ -980,6 +1010,11 @@ def episode(sc, ms, attempt, client, cfg, run):
            "hint_level": cfg.get("hint_level", "page"), "prompt_version": rows.PROMPT_VERSION, **run["provenance"],
            "mode": cfg.get("mode", "fix"),
            "model": model, "attempt": attempt, "at": now()}
+    if ms.get("config_hash"):   # set by cmd_run: which model entry ran, and its price (reports fall back to it)
+        row.update(model_config_hash=ms["config_hash"], price=ms.get("price"))
+    EVENTS.episode = row["episode"]
+    i, n = run.get("position", (None, None))
+    EVENTS.emit("episode_start", i=i, n=n, scenario=sid, model=model, attempt=attempt)
     start = time.time()
     recovery = ensure_world() or []
     if UndoLog(sid).active:  # left over from a crash
@@ -992,7 +1027,10 @@ def episode(sc, ms, attempt, client, cfg, run):
     except Exception as e:
         result = {**row, "status": "error", "passed": False, "error": f"{type(e).__name__}: {e}"[:500]}
     finally:  # runs even after Ctrl+C, so the cluster is never left broken
+        EVENTS.emit("verdict", **{k: result.get(k) for k in ("status", "passed", "clean", "safety", "fixed", "held",
+                                                              "error")})
         result["cleanup"] = _cleanup(sc["spec"], snap, state)
+        EVENTS.emit("cleanup", notes=result["cleanup"])
         if recovery:
             result["world_recovery"] = recovery
         result["minutes"] = round((time.time() - start) / 60, 1)
@@ -1168,11 +1206,12 @@ def matches_only(args, sid):
     return not args.only or any(part.strip() in sid for part in args.only.split(",") if part.strip())
 
 
-def run_provenance(suite):
-    """Fields every row of this run records: which suite (if any) and which code."""
+def run_provenance(suite, job=None):
+    """Fields every row of this run records: which suite (if any), which code and (run --job) which web app job."""
     sha, dirty = harness.git_state(exclude=("results", "bench/results"))
     return {"suite": suite.name if suite else None, "suite_version": suite.version if suite else None,
-            "suite_hash": suites.fingerprint(suite) if suite else None, "git_sha": sha, "git_dirty": dirty}
+            "suite_hash": suites.fingerprint(suite) if suite else None, "git_sha": sha, "git_dirty": dirty,
+            **({"job": job} if job else {})}
 
 
 def cmd_run(cfg, args):
@@ -1206,9 +1245,14 @@ def cmd_run(cfg, args):
         scenarios = scenarios[:args.limit]
     if not scenarios:
         sys.exit("No scenarios selected. Check bench/config.yaml or the suite.")
-    settings = {m["id"]: with_overrides(model_settings(cfg, m), args)
+    settings = {m["id"]: {**with_overrides(model_settings(cfg, m), args), "config_hash": model_config_hash(m),
+                          "price": m.get("price")}
                 for m in cfg["models"] if not args.model or args.model in m["id"]}
     models = list(settings)
+    if not models:
+        sys.exit(f"No model matches --model {args.model}." + (f" Models in {args.config}: "
+                 if getattr(args, "config", None) else " Models in bench/config.yaml: ")
+                 + ", ".join(m["id"] for m in cfg["models"]))
     for ms in settings.values():
         make_client(ms)  # fail fast if a key is missing
     results_dir = rows.results_dir(suite)
@@ -1238,45 +1282,164 @@ def cmd_run(cfg, args):
         sys.exit("--max-cost needs a price in config.yaml for: " + ", ".join(m for m in models if not prices.get(m)))
     log(f"{len(plan)} episodes to run ({len(scenarios)} scenarios x {len(models)} models x "
         f"{cfg['attempts_per_model']} attempts, minus finished ones{shard}); results: {path}")
-    run = {"results_dir": results_dir, "provenance": run_provenance(suite)}
+    job = getattr(args, "job", None)
+    run = {"results_dir": results_dir, "provenance": run_provenance(suite, job)}
     if run["provenance"]["git_dirty"]:
         log("note: the working tree has uncommitted code changes; rows record git_dirty: true")
-    toolbox.ensure()
-    # Before the first episode's world snapshot: on a cluster the sandbox never ran on, the agent's ServiceAccount would
-    # otherwise appear after the snapshot and count as the agent's collateral change.
-    refresh_sandbox()
-    t0 = time.time()
-    api_fail_streak, given_up = {}, set()
-    spent = 0.0   # this process's episodes, at config.yaml prices
-    for i, (attempt, sc, model) in enumerate(plan, 1):
-        if model in given_up:
-            continue
-        eta = ""
-        if i > 1:
-            eta = f", about {(time.time() - t0) / (i - 1) * (len(plan) - i + 1) / 3600:.1f}h left"
-        log(f"[{i}/{len(plan)}{eta}] {sc['id']} | {model} | attempt {attempt}")
-        ms = settings[model]
-        row = episode(sc, ms, attempt, make_client(ms), cfg, run)
-        append(path, row)
-        api_fail_streak[model] = api_fail_streak.get(model, 0) + 1 if row.get("stop") == "api_error" else 0
-        if api_fail_streak[model] >= 3:
-            given_up.add(model)
-            log(f"   !! {model}: 3 episodes in a row failed at the API (out of credits or daily free quota?). "
-                f"Skipping it for the rest of this run; later: python bench/agent_bench.py run --retry-errors")
-        label = {"done": "PASS" if row["passed"] else "FAIL"}.get(row["status"], row["status"].upper())
-        extra = f", forbidden: {row['forbidden']}" if row.get("forbidden") else ""
-        if row.get("distractors_touched"):
-            extra += f", changed unrelated objects: {', '.join(row['distractors_touched'])}"
-        spent += rows.cost_usd(row, prices.get(model)) or 0
-        log(f"   -> {label} ({row.get('stop', row.get('error'))}, {row.get('steps', 0)} commands, "
-            f"{row['minutes']} min, ${spent:.2f} so far{extra})")
-        if row.get("cleanup"):
-            log(f"   cleanup: {'; '.join(row['cleanup'])[:300]}")
-        if max_cost is not None and spent >= max_cost:
-            log(f"Spend cap reached: ${spent:.2f} of ${max_cost:.2f}. Stopped; the same command continues where "
-                "this stopped (finished episodes are kept).")
-            break
+    global EVENTS
+    EVENTS = events.Events(getattr(args, "events", None), job=job, shard=getattr(args, "shard", None))
+    stop_file = Path(args.stop_file) if getattr(args, "stop_file", None) else None
+    EVENTS.emit("run_start", suite=suite.name if suite else None, suite_version=suite.version if suite else None,
+                mode=cfg["mode"], models=models, attempts=cfg["attempts_per_model"], episodes=len(plan),
+                git_sha=run["provenance"]["git_sha"], pid=os.getpid())
+    played, spent, reason, message = 0, 0.0, "finished", None   # spent: this process's episodes (rows.cost_usd)
+    try:
+        toolbox.ensure()
+        # Before the first episode's world snapshot: on a cluster the sandbox never ran on, the agent's ServiceAccount
+        # would otherwise appear after the snapshot and count as the agent's collateral change.
+        refresh_sandbox()
+        t0 = time.time()
+        api_fail_streak, given_up = {}, set()
+        for i, (attempt, sc, model) in enumerate(plan, 1):
+            if model in given_up:
+                continue
+            if stop_file and stop_file.exists():   # cancel: stop before the next episode (no episode is cut short)
+                reason = "stopped"
+                log(f"Stop file {stop_file} found: stopped before episode {i} of {len(plan)}. The same command "
+                    "continues where this stopped (finished episodes are kept).")
+                break
+            eta = ""
+            if i > 1:
+                eta = f", about {(time.time() - t0) / (i - 1) * (len(plan) - i + 1) / 3600:.1f}h left"
+            log(f"[{i}/{len(plan)}{eta}] {sc['id']} | {model} | attempt {attempt}")
+            ms = settings[model]
+            row = episode(sc, ms, attempt, make_client(ms), cfg, {**run, "position": (i, len(plan))})
+            append(path, row)
+            played += 1
+            api_fail_streak[model] = api_fail_streak.get(model, 0) + 1 if row.get("stop") == "api_error" else 0
+            if api_fail_streak[model] >= 3:
+                given_up.add(model)
+                log(f"   !! {model}: 3 episodes in a row failed at the API (out of credits or daily free quota?). "
+                    f"Skipping it for the rest of this run; later: python bench/agent_bench.py run --retry-errors")
+            label = {"done": "PASS" if row["passed"] else "FAIL"}.get(row["status"], row["status"].upper())
+            extra = f", forbidden: {row['forbidden']}" if row.get("forbidden") else ""
+            if row.get("distractors_touched"):
+                extra += f", changed unrelated objects: {', '.join(row['distractors_touched'])}"
+            cost = rows.cost_usd(row, prices.get(model))
+            spent += cost or 0
+            EVENTS.emit("episode_end", status=row["status"], passed=row["passed"], minutes=row["minutes"],
+                        cost_usd=cost, spent_usd=round(spent, 4))
+            EVENTS.episode = None
+            log(f"   -> {label} ({row.get('stop', row.get('error'))}, {row.get('steps', 0)} commands, "
+                f"{row['minutes']} min, ${spent:.2f} so far{extra})")
+            if row.get("cleanup"):
+                log(f"   cleanup: {'; '.join(row['cleanup'])[:300]}")
+            if max_cost is not None and spent >= max_cost:
+                reason = "spend_cap"
+                log(f"Spend cap reached: ${spent:.2f} of ${max_cost:.2f}. Stopped; the same command continues where "
+                    "this stopped (finished episodes are kept).")
+                break
+    except KeyboardInterrupt:
+        reason, message = "interrupted", "KeyboardInterrupt"
+        raise
+    except SystemExit as e:   # e.g. the world stayed broken after a hard reset
+        reason, message = "error", str(e.code)[:2000]
+        raise
+    except Exception as e:
+        reason, message = "error", f"{type(e).__name__}: {e}"[:2000]
+        raise
+    finally:
+        EVENTS.episode = None
+        EVENTS.emit("run_end", reason=reason, played=played, spent_usd=round(spent, 4), message=message)
+        EVENTS = events.NONE
     log("Finished. Build the table with: python bench/leaderboard.py" + (f" --suite {suite.name}" if suite else ""))
+
+
+KUBECONFIGS = Path.home() / ".kube" / "gym"   # one kubeconfig file per cluster, named after it
+
+
+def _context_of(kubeconfig):
+    try:
+        return (yaml.safe_load(Path(kubeconfig).read_text()) or {}).get("current-context") or None
+    except (OSError, yaml.YAMLError):
+        return None
+
+
+def _quiet(cmd, timeout=20):
+    """(exit code, stdout) of a read-only command; (None, error text) if it could not run."""
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return r.returncode, r.stdout if r.returncode == 0 else (r.stderr or r.stdout).strip()[-300:]
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return None, f"{type(e).__name__}: {e}"[:300]
+
+
+def cluster_status(kubeconfig):
+    """One cluster, as a job launcher needs it: who holds its lock, faults in place (undo logs), the agent's sandbox
+    container and node readiness. `free` = no lock holder, no undo log and every node Ready. Only looks."""
+    name, ctx = Path(kubeconfig).name, _context_of(kubeconfig)
+    box = "agent-box-" + (ctx or name).removeprefix("kind-")
+    rc, out = _quiet(["docker", "inspect", "-f", "{{.State.Status}}", box])
+    sandbox = out.strip() if rc == 0 else "missing"
+    rc, out = _quiet(["kubectl", "--kubeconfig", str(kubeconfig), "get", "nodes", "-o", "json"])
+    if rc == 0:
+        items = json.loads(out)["items"]
+        ready = sum(any(c["type"] == "Ready" and c["status"] == "True" for c in n["status"].get("conditions", []))
+                    for n in items)
+        nodes = {"ready": ready, "total": len(items)}
+    else:
+        nodes = {"error": out}
+    holder = lock.holder(ctx) if ctx else None
+    pending = undo.pending(kubeconfig)
+    return {"name": name, "kubeconfig": str(kubeconfig), "context": ctx, "lock": holder, "undo_logs": pending,
+            "sandbox": {"name": box, "state": sandbox}, "nodes": nodes,
+            "free": bool(ctx) and not holder and not pending and nodes.get("total", 0) > 0
+                    and nodes.get("ready") == nodes.get("total")}
+
+
+def suite_status():
+    """Every suite this checkout can see (private ones too when the private checkout is there): can it run as frozen?"""
+    insts, records, out = suites.instances(), status.load_records(), []
+    for p in suites.all_suites():
+        try:
+            s = suites.load(p)
+        except (ValueError, OSError) as e:
+            out.append({"file": str(p), "error": str(e)})
+            continue
+        problems = [str(x) for x in suites.verify(s, insts, records)]
+        out.append({"name": s.name, "version": s.version, "visibility": s.visibility, "hint_level": s.hint_level,
+                    "instances": len(s.instances), "fingerprint": suites.fingerprint(s), "runnable": not problems,
+                    "problems": problems})
+    return out
+
+
+def cmd_status(cfg, args):
+    """What a job launcher (the web app's runner) checks before it claims a job: engine version, clusters, suites and
+    the configured models. Changes nothing and takes no lock, so it is safe while jobs run."""
+    sha, dirty = harness.git_state(exclude=("results", "bench/results"))
+    kdir = Path(args.kubeconfigs) if getattr(args, "kubeconfigs", None) else KUBECONFIGS
+    report = {"at": now(), "engine": {"git_sha": sha, "git_dirty": dirty, "prompt_version": rows.PROMPT_VERSION},
+              "clusters": [cluster_status(p) for p in sorted(kdir.glob("*")) if p.is_file()] if kdir.is_dir() else [],
+              "suites": suite_status(), "models": [m["id"] for m in cfg["models"]]}
+    if getattr(args, "json", False):
+        print(json.dumps(report, indent=1))
+        return
+    e = report["engine"]
+    print(f"engine {e['git_sha'] and e['git_sha'][:10]}{' (dirty)' if e['git_dirty'] else ''}, "
+          f"prompt version {e['prompt_version']}")
+    if not report["clusters"]:
+        print(f"no kubeconfigs in {kdir}")
+    for c in report["clusters"]:
+        n = c["nodes"]
+        nodes = f"{n['ready']}/{n['total']} nodes Ready" if "total" in n else f"nodes: {n['error']}"
+        print(f"{c['name']:12s} {'free' if c['free'] else 'BUSY':5s} {nodes}; lock: {c['lock'] or '-'}; "
+              f"undo logs: {', '.join(c['undo_logs']) or '-'}; sandbox {c['sandbox']['state']}")
+    for s in report["suites"]:
+        if "error" in s:
+            print(f"suite {s['file']}: {s['error']}")
+        else:
+            print(f"suite {s['name']} v{s['version']} ({s['visibility']}, {s['instances']}): "
+                  + ("runnable" if s["runnable"] else f"NOT runnable: {'; '.join(s['problems'])[:300]}"))
 
 
 def oracle_problems(row):
@@ -1370,7 +1533,7 @@ def oracle_report(scenarios, path, out, mode="fix"):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("command", choices=["preflight", "smoke", "run", "oracle"])
+    p.add_argument("command", choices=["preflight", "smoke", "run", "oracle", "status"])
     p.add_argument("--suite", help="run: a frozen suite, by name (bench-v1-dev) or path (suites/bench-v1-dev.yaml)")
     p.add_argument("--set", dest="suite", help="old name of --suite (kept for one release)")
     p.add_argument("--only", help="only scenarios whose id contains this text (comma-separated: any of them)")
@@ -1396,15 +1559,28 @@ def main():
     p.add_argument("--mode", choices=modes.MODES, default="fix",
                    help="run, oracle: fix (default), diagnose (name the root cause, change nothing) or detect (a "
                         "health check with no symptom given); see bench/modes.py")
+    p.add_argument("--config", metavar="PATH",
+                   help="model entries from this YAML file (a `models:` list as in bench/config.yaml; other top-level "
+                        "keys override config.yaml's), e.g. a model added in the web app; keeps the repo clean")
+    p.add_argument("--events", metavar="PATH", help="run: append live events (JSONL, bench/events.py) to this file")
+    p.add_argument("--stop-file", metavar="PATH",
+                   help="run: stop before the next episode once this file exists (the episode in flight finishes "
+                        "and is cleaned up; the same command resumes)")
+    p.add_argument("--job", metavar="ID", help="run: a job id (the web app's) recorded in every row and event")
+    p.add_argument("--json", action="store_true", help="status: print JSON")
+    p.add_argument("--kubeconfigs", metavar="DIR", help="status: one kubeconfig per cluster (default ~/.kube/gym)")
     args = p.parse_args()
     if args.shard and (args.command not in ("run", "oracle") or not os.environ.get("KUBECONFIG")):
         p.error("--shard is for run and oracle, with one cluster per worker (KUBECONFIG=~/.kube/gym/<cluster>)")
+    if (args.events or args.stop_file or args.job) and args.command != "run":
+        p.error("--events, --stop-file and --job are for run")
     if args.command in ("run", "oracle", "preflight"):
-        lock.hold_cluster(f"agent_bench {args.command}")   # one job per cluster
-    cfg = load_config()
+        lock.hold_cluster(f"agent_bench {args.command}" + (f" job {args.job}" if args.job else ""))   # one per cluster
+    cfg = load_config(args.config)
     if args.hint_level:
         cfg["hint_level"] = args.hint_level
-    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run, "oracle": cmd_oracle}[args.command](cfg, args)
+    {"preflight": cmd_preflight, "smoke": cmd_smoke, "run": cmd_run, "oracle": cmd_oracle,
+     "status": cmd_status}[args.command](cfg, args)
 
 
 if __name__ == "__main__":

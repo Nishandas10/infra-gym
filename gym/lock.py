@@ -26,11 +26,30 @@ def current_context():
         return "default"
 
 
+def _path(ctx):
+    return LOCK_DIR / (re.sub(r"[^\w.-]", "_", ctx) + ".lock")
+
+
+def holder(context):
+    """The job that holds this cluster's lock ("agent_bench run, pid 123"), or None when the cluster is free.
+    Only looks: never keeps the lock."""
+    p = _path(context)
+    if not p.exists():
+        return None
+    with open(p) as f:
+        try:
+            fcntl.flock(f, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return f.read().strip() or "another job"
+        fcntl.flock(f, fcntl.LOCK_UN)
+    return None
+
+
 def hold_cluster(what, context=None):
     """Take this cluster's lock for the rest of the process, or exit naming the job that holds it."""
     ctx = context or current_context()
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
-    f = open(LOCK_DIR / (re.sub(r"[^\w.-]", "_", ctx) + ".lock"), "a+")
+    f = open(_path(ctx), "a+")
     try:
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:

@@ -18,10 +18,17 @@ from . import kube
 STATE_DIR = pathlib.Path(__file__).resolve().parents[1] / ".gym_state"
 
 
-def cluster_key():
-    """Which cluster this process works on: its KUBECONFIG file's name (one per parallel worker)."""
-    cfg = os.environ.get("KUBECONFIG", "").split(os.pathsep)[0]
+def cluster_key(kubeconfig=None):
+    """Which cluster this process works on (or `kubeconfig` names): its KUBECONFIG file's name (one per parallel
+    worker)."""
+    cfg = str(kubeconfig) if kubeconfig else os.environ.get("KUBECONFIG", "").split(os.pathsep)[0]
     return re.sub(r"[^\w.-]", "_", pathlib.Path(cfg).name) if cfg else "default"
+
+
+def pending(kubeconfig=None):
+    """Scenarios with an undo log on that cluster: a fault in place (an episode in flight, or stranded by a crash)."""
+    d = STATE_DIR / cluster_key(kubeconfig)
+    return sorted(p.stem for p in d.glob("*.json")) if d.is_dir() else []
 
 
 # Server-managed fields that must not be sent back when recreating an object.

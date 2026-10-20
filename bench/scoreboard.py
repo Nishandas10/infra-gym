@@ -43,12 +43,58 @@ def prices():
 
 
 def cost(r, p):
-    if not p:
-        return None
-    cr, cw = r.get("tokens_cache_read", 0) or 0, r.get("tokens_cache_write", 0) or 0
-    tin = (r.get("tokens_in", 0) or 0) - cr - cw
-    return (tin * p["input"] + cw * p.get("cache_write", p["input"]) + cr * p.get("cache_read", p["input"])
-            + (r.get("tokens_out", 0) or 0) * p["output"]) / 1e6
+    """The episode's dollars: what the provider billed (OpenRouter) if recorded, else its tokens at price `p` (from
+    config.yaml; the price the row recorded when config.yaml does not list the model, e.g. one added in the web app)."""
+    return R.cost_usd(r, p or r.get("price"))
+
+
+def judge_grades(judgments, rows, judge=None):
+    """(judge, {episode key: root-cause grade}): the given judge, else the one that graded most of these rows."""
+    if not judge:
+        keys = {ep_key(r) for r in rows}
+        used = Counter(j["judge"] for j in judgments if j["key"] in keys)
+        judge = used.most_common(1)[0][0] if used else None
+    grade = {}
+    for j in judgments:
+        if j["judge"] == judge:
+            grade[j["key"]] = j["root_cause"]  # later lines win
+    return judge, grade
+
+
+def score_table(rows, grade, pr):
+    """One entry per model, best Mit. first (also used by bench/export.py). Keys starting with _ are raw counts."""
+    by = defaultdict(list)
+    for r in rows:
+        by[r["model"]].append(r)
+    table = []
+    for m, rs in by.items():
+        n = len(rs)
+        judged = [r for r in rs if ep_key(r) in grade]
+        diag = sum(grade[ep_key(r)] == "correct" for r in judged)
+        e2e = sum(bool(r.get("passed")) and grade[ep_key(r)] == "correct" for r in judged)
+        mit = sum(bool(r.get("passed")) for r in rs)
+        costs = [cost(r, pr.get(m)) for r in rs]
+        total = sum(c for c in costs if c is not None) if any(c is not None for c in costs) else None
+        table.append({
+            "Model": m, "Episodes": n,
+            "Diag. (%)": pct(diag, len(judged)) if judged else "not judged",
+            "Mit. (%)": pct(mit, n),
+            "E2E (%)": pct(e2e, len(judged)) if judged else "not judged",
+            "TTD (s)": "-" if mean(r.get("ttd_s") for r in rs) is None else f"{mean(r.get('ttd_s') for r in rs):.0f}",
+            "TTM (s)": "-" if mean(r.get("ttm_s") for r in rs if r.get("passed")) is None
+                       else f"{mean(r.get('ttm_s') for r in rs if r.get('passed')):.0f}",
+            "Tokens": fmt_tokens(mean((r.get("tokens_in", 0) or 0) + (r.get("tokens_out", 0) or 0) for r in rs)),
+            "Clean (%)": pct(sum(bool(r.get("clean")) for r in rs), n),
+            "Worse": str(sum(bool(r.get("made_worse")) for r in rs)),
+            "$/solved": "-" if total is None or not mit else f"{total / mit:.2f}",
+            "_judged": len(judged), "_mit": mit, "_diag": diag, "_e2e": e2e, "_cost": total,
+            "_clean": sum(bool(r.get("clean")) for r in rs), "_worse": sum(bool(r.get("made_worse")) for r in rs),
+            "_ttd": mean(r.get("ttd_s") for r in rs), "_ttm": mean(r.get("ttm_s") for r in rs if r.get("passed")),
+            "_tokens": mean((r.get("tokens_in", 0) or 0) + (r.get("tokens_out", 0) or 0) for r in rs),
+            "_timed": sum(r.get("agent_s") is not None for r in rs),  # rows from the timing-aware runner
+        })
+    table.sort(key=lambda t: (-t["_mit"] / t["Episodes"], t["Model"]))
+    return table
 
 
 def mean(xs):
@@ -94,45 +140,8 @@ def main():
         rows = [r for r in rows if r["scenario"] in common]
 
     judgments = read_jsonl(res_dir / "judgments.jsonl")
-    keys = {ep_key(r) for r in rows}
-    if not a.judge:
-        used = Counter(j["judge"] for j in judgments if j["key"] in keys)
-        a.judge = used.most_common(1)[0][0] if used else None
-    grade = {}
-    for j in judgments:
-        if j["judge"] == a.judge:
-            grade[j["key"]] = j["root_cause"]  # later lines win
-
-    pr = prices()
-    by = defaultdict(list)
-    for r in rows:
-        by[r["model"]].append(r)
-
-    table = []
-    for m, rs in by.items():
-        n = len(rs)
-        judged = [r for r in rs if ep_key(r) in grade]
-        diag = sum(grade[ep_key(r)] == "correct" for r in judged)
-        e2e = sum(bool(r.get("passed")) and grade[ep_key(r)] == "correct" for r in judged)
-        mit = sum(bool(r.get("passed")) for r in rs)
-        costs = [cost(r, pr.get(m)) for r in rs]
-        total = sum(c for c in costs if c is not None) if any(c is not None for c in costs) else None
-        table.append({
-            "Model": m, "Episodes": n,
-            "Diag. (%)": pct(diag, len(judged)) if judged else "not judged",
-            "Mit. (%)": pct(mit, n),
-            "E2E (%)": pct(e2e, len(judged)) if judged else "not judged",
-            "TTD (s)": "-" if mean(r.get("ttd_s") for r in rs) is None else f"{mean(r.get('ttd_s') for r in rs):.0f}",
-            "TTM (s)": "-" if mean(r.get("ttm_s") for r in rs if r.get("passed")) is None
-                       else f"{mean(r.get('ttm_s') for r in rs if r.get('passed')):.0f}",
-            "Tokens": fmt_tokens(mean((r.get("tokens_in", 0) or 0) + (r.get("tokens_out", 0) or 0) for r in rs)),
-            "Clean (%)": pct(sum(bool(r.get("clean")) for r in rs), n),
-            "Worse": str(sum(bool(r.get("made_worse")) for r in rs)),
-            "$/solved": "-" if total is None or not mit else f"{total / mit:.2f}",
-            "_judged": len(judged), "_mit": mit,
-            "_timed": sum(r.get("agent_s") is not None for r in rs),  # rows from the timing-aware runner
-        })
-    table.sort(key=lambda t: (-t["_mit"] / t["Episodes"], t["Model"]))
+    a.judge, grade = judge_grades(judgments, rows, a.judge)
+    table = score_table(rows, grade, prices())
 
     cols = ["Model", "Episodes", "Diag. (%)", "Mit. (%)", "E2E (%)", "TTD (s)", "TTM (s)", "Tokens",
             "Clean (%)", "Worse", "$/solved"]

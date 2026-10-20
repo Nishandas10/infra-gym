@@ -125,6 +125,22 @@ One job per cluster: `run`, `oracle`, `preflight`, `scripts/validate_scenario.py
 cluster's lock (`gym/lock.py`, machine-wide, keyed by the kube context) while they run; a second one on the same
 cluster refuses to start and names the job that holds it.
 
+For a program that launches runs (the web app's runner), with nothing graded differently:
+
+    python bench/agent_bench.py run --suite S --model M --config job/models.yaml --events job/events-1.jsonl --stop-file job/STOP --job ID [--shard i/N --max-cost USD]
+    python bench/agent_bench.py status --json    # clusters (lock holder, undo logs, sandbox, nodes, free), suites, models; read-only, no lock
+    python bench/export.py --suite S [--mode M] [--out F]   # leaderboard, scoreboard, breakdowns, calibration, catalog as JSON
+
+- `--config PATH`: a YAML file with a `models:` list (entries as in `config.yaml`); its other top-level keys override
+  `config.yaml`'s. Models added outside the repo keep `git_dirty: false`; every row records `model_config_hash` (the
+  entry's hash) and `price`, which the reports use when `config.yaml` has no price for the model.
+- `--events PATH`: live events, one JSON line each (`bench/events.py` lists them: run_start, episode_start, injected,
+  agent_start, step, agent_done, verdict, cleanup, episode_end, run_end with its reason). `seq` continues when a
+  resumed run appends to the same file. Events report; the rows stay the record.
+- `--stop-file PATH`: the run stops before its next episode once the file exists (the episode in flight finishes and
+  is cleaned up); the same command resumes after the file is removed.
+- `--job ID`: recorded as `job` in every row and event.
+
 Without `--suite`, `run` uses every bench-eligible, validated scenario (`config.yaml` include/exclude apply). `--set`
 still works as an alias of `--suite` for one release; `.txt` set files are no longer accepted.
 
