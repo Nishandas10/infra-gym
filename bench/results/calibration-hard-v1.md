@@ -10,13 +10,13 @@ Fix mode, prompt v3, finished episodes only. Diagnosis grades: judge `claude-son
 | claude-sonnet-5-5 | 16 | 14/16 (88%; 64%-96%) | 15/16 | 14 | 1 | 0 |
 | deepseek-v4-pro | 16 | 12/16 (75%; 50%-90%) | 12/16 | 12 | 0 | 0 |
 | gemini-4-argon | 16 | 16/16 (100%; 81%-100%) | 16/16 | 16 | 0 | 0 |
-| moonshotai/kimi-k3 | 16 | 11/16 (69%; 44%-86%) | 11/16 | 10 | 1 | 0 |
+| moonshotai/kimi-k3 | 16 | 12/16 (75%; 50%-90%) | 11/16 | 11 | 0 | 0 |
 | openai/gpt-6.1-sol | 16 | 15/16 (94%; 72%-99%) | 15/16 | 15 | 0 | 0 |
 | z-ai/glm-5.3 | 16 | 15/16 (94%; 72%-99%) | 12/16 | 12 | 0 | 2 |
 
 ## Suite
 
-Bands: 15 easy, 1 medium, 0 hard. Signal: 7 separate the models, 9 all pass, 0 all fail.
+Bands: 15 easy, 1 medium, 0 hard. Signal: 6 separate the models, 10 all pass, 0 all fail.
 
 ## Scenarios
 
@@ -28,12 +28,12 @@ Bands: 15 easy, 1 medium, 0 hard. Signal: 7 separate the models, 9 all pass, 0 a
 | hard-pinned-endpoints-108 | 1/1 | 0/1 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 71% | easy | separates | C / P / C / C / P / C / C |
 | hard-cart-chained-addr-auth-103 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 1/1 | 1/1 | 86% | easy | separates | C / C / P / C / C / C / M |
 | hard-egress-policy-blocks-db-102 | 1/1 | 1/1 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 86% | easy | separates | C / C / C / C / W / C / C |
-| hard-job-sidecar-never-completes-127 | 1/1 | 1/1 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 86% | easy | separates | C / C / C / C / C / C / C |
 | hard-allowlist-forgets-checkout-106 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-duplicate-env-override-109 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-flag-in-source-of-truth-111 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / M |
 | hard-flag-targeting-rule-132 | 3/3 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | PCC / C / C / C / C / C / C |
 | hard-ghost-legacy-email-pods-104 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
+| hard-job-sidecar-never-completes-127 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-masked-second-fault-107 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-oom-fix-blocked-by-limitrange-110 | 3/3 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | CCC / C / C / C / C / C / C |
 | hard-silent-ledger-write-denied-105 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / P / C / C |

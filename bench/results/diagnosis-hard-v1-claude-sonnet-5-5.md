@@ -9,7 +9,7 @@ Judge: claude-sonnet-5-5, rubric v2. The judge saw only the answer key, the inci
 | claude-sonnet-5-5 | 16 | 14/16 (88%) | 15/16 (94%) | 15/16 | 15/16 | 0.97 | 14/16 | 0/16 | 0 | 0 |
 | deepseek-v4-pro | 16 | 12/16 (75%) | 12/16 (75%) | 12/16 | 12/16 | 0.81 | 12/16 | 0/16 | 0 | 0 |
 | gemini-4-argon | 16 | 16/16 (100%) | 16/16 (100%) | 16/16 | 16/16 | 1.00 | 16/16 | 0/16 | 0 | 0 |
-| moonshotai/kimi-k3 | 16 | 11/16 (69%) | 11/16 (69%) | 12/16 | 12/16 | 0.81 | 10/16 | 0/16 | 1 | 0 |
+| moonshotai/kimi-k3 | 16 | 12/16 (75%) | 11/16 (69%) | 12/16 | 12/16 | 0.81 | 11/16 | 0/16 | 1 | 0 |
 | openai/gpt-6.1-sol | 16 | 15/16 (94%) | 15/16 (94%) | 15/16 | 15/16 | 0.97 | 15/16 | 0/16 | 0 | 0 |
 | z-ai/glm-5.3 | 16 | 15/16 (94%) | 12/16 (75%) | 12/16 | 12/16 | 0.81 | 12/16 | 2/16 | 0 | 0 |
 
@@ -100,7 +100,7 @@ Diagnosis score: correct = 1, partial = 0.5, wrong or missing = 0, averaged over
 | hard-flag-in-source-of-truth-111 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | the `paymentFailure` feature flag's `defaultVariant` was changed from "off" to "50%" (numeric value 0.5) |
 | hard-flag-targeting-rule-132 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | contained an injected targeting rule ... Once $flagd.timestamp ≥ 1792490763 the flag evaluated to variant "90%" ... ~95% of payment charge r |
 | hard-ghost-legacy-email-pods-104 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | A leftover "legacy" deployment, `email-v1-legacy`... had been rolled out with that exact same label... registered as a second endpoint of th |
-| hard-job-sidecar-never-completes-127 | moonshotai/kimi-k3 | FAIL | correct | Understood, not fixed | its companion `log-shipper` container runs `while true; do sleep 1; done` and never terminates... the Job never received a `Complete` status |
+| hard-job-sidecar-never-completes-127 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | Its pod contained a `log-shipper` sidecar running `while true; do sleep 1; done` — an infinite loop that never exits — so ... the pod/job st |
 | hard-kafka-consumer-quota-130 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | a dynamic client config set `consumer_byte_rate=1.0` (1 byte/sec) for client-id `rdkafka`, which is exactly the client-id used by the `accou |
 | hard-masked-second-fault-107 | moonshotai/kimi-k3 | PASS | correct | Fixed + understood | checkout Deployment had PRODUCT_CATALOG_ADDR=product-catalog:9090 ... service/shipping had targetPort: 8888 while the shipping container lis |
 | hard-mutating-policy-rewrites-pods-131 | moonshotai/kimi-k3 | FAIL | partial | Not fixed | pods created from them consistently come up with `8081`, pointing to an admission-time mutation; the cluster has Chaos Mesh mutating webhook |

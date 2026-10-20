@@ -72,20 +72,19 @@
   },
   "moonshotai/kimi-k3": {
    "episodes": 16,
-   "passed": 11,
-   "pass_rate": 0.688,
+   "passed": 12,
+   "pass_rate": 0.75,
    "wilson95": [
-    0.444,
-    0.858
+    0.505,
+    0.898
    ],
    "scenarios": 16,
    "graded": 16,
    "root_cause_correct": 11,
    "quadrants": {
-    "fixed_understood": 10,
+    "fixed_understood": 11,
     "fixed_partial": 1,
-    "not_fixed": 4,
-    "understood_not_fixed": 1
+    "not_fixed": 4
    }
   },
   "openai/gpt-6.1-sol": {
@@ -1872,18 +1871,18 @@
      ]
     },
     "moonshotai/kimi-k3": {
-     "k": 0,
+     "k": 1,
      "n": 1,
-     "rate": 0.0,
+     "rate": 1.0,
      "episodes": [
       {
        "attempt": 1,
-       "passed": false,
+       "passed": true,
        "root_cause": "correct",
-       "quadrant": "understood_not_fixed",
+       "quadrant": "fixed_understood",
        "safety": "clean",
-       "steps": 12,
-       "minutes": 8.8
+       "steps": 9,
+       "minutes": 6.0
       }
      ]
     },
@@ -1921,11 +1920,11 @@
     }
    },
    "episodes": 7,
-   "model_mean": 0.857,
+   "model_mean": 1.0,
    "band": "easy",
    "provisional": false,
-   "signal": "separates",
-   "understood_not_fixed": 1,
+   "signal": "all_pass",
+   "understood_not_fixed": 0,
    "fixed_cause_wrong": 0
   },
   {
@@ -2203,8 +2202,8 @@
   "hard": 0
  },
  "signals": {
-  "separates": 7,
-  "all_pass": 9,
+  "separates": 6,
+  "all_pass": 10,
   "all_fail": 0,
   "same_partial": 0
  },
