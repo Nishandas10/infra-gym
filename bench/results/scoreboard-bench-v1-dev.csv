@@ -1,3 +1,8 @@
 Model,Episodes,Diag. (%),Mit. (%),E2E (%),TTD (s),TTM (s),Tokens,Clean (%),Worse,$/solved
-claude-opus-5-5,20,not judged,100.0,not judged,27,101,121K,100.0,0,0.15
-deepseek-v4-pro,20,not judged,75.0,not judged,53,108,204K,75.0,0,0.04
+claude-opus-5-5,20,100.0,100.0,100.0,27,101,123K,100.0,0,0.15
+gemini-4-argon,20,100.0,100.0,100.0,265,416,323K,100.0,0,0.20
+openai/gpt-6.1-sol,20,95.0,95.0,95.0,32,89,100K,90.0,0,0.06
+claude-sonnet-5-5,20,90.0,90.0,90.0,17,60,63K,85.0,0,0.06
+moonshotai/kimi-k3,20,90.0,85.0,85.0,58,108,131K,85.0,0,0.18
+z-ai/glm-5.3,20,90.0,85.0,85.0,24,102,155K,85.0,0,0.11
+deepseek-v4-pro,21,76.2,76.2,71.4,51,110,201K,76.2,0,0.04
