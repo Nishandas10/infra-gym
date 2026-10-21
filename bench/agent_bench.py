@@ -1268,7 +1268,10 @@ def cmd_run(cfg, args):
             and rows.mode(r) == cfg.get("mode", "fix")
             and not (args.retry_errors and r.get("status") in ("error", "invalid"))
             and not (args.rerun and matches_only(args, r["scenario"]))}
-    plan = [(a, sc, m) for a in range(1, cfg["attempts_per_model"] + 1) for sc in scenarios for m in models]
+    attempts = range(1, cfg["attempts_per_model"] + 1)
+    if getattr(args, "attempt", None):   # one attempt only (with --rerun: re-run just that attempt)
+        attempts = [args.attempt]
+    plan = [(a, sc, m) for a in attempts for sc in scenarios for m in models]
     shard = ""
     if getattr(args, "shard", None):   # one worker per cluster: disjoint shares of the same plan
         if not os.environ.get("KUBECONFIG"):
@@ -1471,15 +1474,16 @@ def cmd_oracle(cfg, args):
     cost). Results go to bench/results/oracle/, never into a leaderboard; a report lists every scenario whose
     episode is not a clean pass, and every episode that found the world broken by the one before."""
     mode = getattr(args, "mode", "fix")
-    scenarios = []
+    all_scenarios = []
     for spec_path in all_specs():
         spec, sdir = load(spec_path)
-        if spec.get("bench_eligible", True) and matches_only(args, spec["id"]) and modes.playable(spec, mode):
-            scenarios.append(entry(spec, sdir))
+        if spec.get("bench_eligible", True) and modes.playable(spec, mode):
+            all_scenarios.append(entry(spec, sdir))
+    # The report covers every bench-eligible scenario (an --only re-run must not shrink it); --only, --limit and
+    # --shard pick what this process plays (one shard per cluster, in parallel).
+    scenarios = [s for s in all_scenarios if matches_only(args, s["id"])]
     if args.limit:
         scenarios = scenarios[:args.limit]
-    # The report covers every selected scenario; a shard plays only its share (one shard per cluster, in parallel).
-    all_scenarios = scenarios
     if getattr(args, "shard", None):
         i, n = (int(x) for x in args.shard.split("/"))
         scenarios = scenarios[i - 1::n]
@@ -1546,6 +1550,8 @@ def main():
                    help="run again even if finished (with --only: just those scenarios); the newest row of an "
                         "episode replaces the older one in every report")
     p.add_argument("--attempts", type=int, help="attempts per model for this run (overrides config)")
+    p.add_argument("--attempt", type=int, metavar="N",
+                   help="run: only attempt N (with --rerun --only: re-run just that attempt of those scenarios)")
     p.add_argument("--api-key-env", help="read the selected models' API key from this .env variable instead of the "
                                          "config's (e.g. GEMINI_FREE_API_KEY for a free-tier key)")
     p.add_argument("--min-seconds-between-calls", type=float,

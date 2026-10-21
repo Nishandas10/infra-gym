@@ -33,6 +33,29 @@ def test_oracle_reports_failed_commands(monkeypatch):
     assert len(out["oracle_errors"]) == 1 and "Forbidden" in out["oracle_errors"][0]
 
 
+def test_an_only_rerun_keeps_every_scenario_in_the_report(monkeypatch, tmp_path):
+    import argparse
+    import rows
+    played = []
+
+    def episode(sc, ms, attempt, client, cfg, run):
+        played.append(sc["id"])
+        return {"scenario": sc["id"], "model": "oracle", "attempt": 1, "content_hash": sc["spec"]["content_hash"],
+                "mode": "fix", "status": "done", "fixed": True, "held": True, "invariants_ok": True, "durable": None,
+                "forbidden": [], "made_worse": [], "collateral": [], "distractors_touched": [], "cleanup": [],
+                "oracle_errors": [], "minutes": 0.1}
+
+    monkeypatch.setattr(rows, "RESULTS", tmp_path)
+    monkeypatch.setattr(ab.toolbox, "ensure", lambda: None)
+    monkeypatch.setattr(ab, "refresh_sandbox", lambda: None)
+    monkeypatch.setattr(ab, "episode", episode)
+    args = argparse.Namespace(only="kafka-backlog-010", rerun=True, limit=None, shard=None, mode="fix")
+    ab.cmd_oracle({}, args)
+    report = (tmp_path / "oracle" / "report.md").read_text()
+    assert played == ["kafka-backlog-010"]
+    assert "| `kafka-backlog-010` | ok |" in report and "| `cache-leak-009` | not run |" in report
+
+
 def test_oracle_problems():
     clean = {"status": "done", "fixed": True, "held": True, "invariants_ok": True, "durable": None, "forbidden": [],
              "made_worse": [], "collateral": [], "distractors_touched": [], "cleanup": [], "oracle_errors": []}

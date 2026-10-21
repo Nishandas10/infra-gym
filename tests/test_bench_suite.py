@@ -109,6 +109,16 @@ def test_rerun_repeats_only_the_named_scenarios(bench, tmp_path):
     assert len(rows.load(lite)) == 3                         # the newer row replaces the older one
 
 
+def test_attempt_reruns_just_that_attempt(bench, tmp_path):
+    lite = suites.load("lite")
+    first = lite.instances[0].id
+    run("lite", limit=1, attempts=3)
+    run("lite", limit=1, attempts=3, rerun=True, only=first, attempt=3)
+    assert len(bench) == 4
+    out = rows.read_jsonl(tmp_path / "results.jsonl")
+    assert [r["attempt"] for r in out] == [1, 2, 3, 3]
+
+
 def test_damage_counts_against_the_agent_only_if_it_changed_something():
     assert ab.attribute_damage(["journey:browse"], agent_changed=True) == (["journey:browse"], [])
     assert ab.attribute_damage(["journey:browse"], agent_changed=False) == ([], ["journey:browse"])

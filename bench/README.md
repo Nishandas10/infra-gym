@@ -112,7 +112,7 @@ All suites are graded at hint level `page` (symptoms only). `bench-v1-dev` and `
 
     python bench/agent_bench.py preflight    # cluster, restore logic, agent permissions
     python bench/agent_bench.py smoke        # API key, model IDs, tool calling
-    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted] [--api-key-env NAME] [--min-seconds-between-calls S] [--shard i/N] [--max-cost USD]
+    python bench/agent_bench.py run --suite S [--limit N] [--only ID] [--model ID] [--attempts N] [--attempt N] [--retry-errors] [--rerun] [--hint-level page|ticket|hinted] [--api-key-env NAME] [--min-seconds-between-calls S] [--shard i/N] [--max-cost USD]
     python bench/leaderboard.py --suite S [--common]
 
 `--shard i/N` (one worker per cluster, each with its own `KUBECONFIG`, all started together) splits the episodes over
@@ -156,7 +156,7 @@ Results: `bench/results/results.jsonl` (one line per episode), plus full transcr
 episode is done when that model and attempt already ran this exact instance (`content_hash`) at this hint level with
 the current prompt version.
 `--rerun --only a,b` runs those scenarios again even if finished; the newest row of an episode replaces the older one
-in every report.
+in every report. `--attempt N` limits a run to attempt N (with `--rerun --only`: re-run just that attempt).
 
 Every report (`leaderboard.py`, `scoreboard.py`, `judge.py`, `cost.py`, `passk.py`, `show.py`, `quality_card.py`)
 takes `--suite S` and then counts only rows whose `(scenario, content_hash)` is a member of the suite at its hint
