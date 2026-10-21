@@ -7,35 +7,33 @@
  "models": {
   "claude-opus-5-5": {
    "episodes": 24,
-   "passed": 23,
-   "pass_rate": 0.958,
+   "passed": 24,
+   "pass_rate": 1.0,
    "wilson95": [
-    0.798,
-    0.993
+    0.862,
+    1.0
    ],
    "scenarios": 16,
    "graded": 24,
-   "root_cause_correct": 22,
+   "root_cause_correct": 23,
    "quadrants": {
-    "fixed_understood": 22,
-    "fixed_partial": 1,
-    "not_fixed": 1
+    "fixed_understood": 23,
+    "fixed_partial": 1
    }
   },
   "claude-sonnet-5-5": {
    "episodes": 16,
-   "passed": 14,
-   "pass_rate": 0.875,
+   "passed": 15,
+   "pass_rate": 0.938,
    "wilson95": [
-    0.64,
-    0.965
+    0.717,
+    0.989
    ],
    "scenarios": 16,
    "graded": 16,
    "root_cause_correct": 15,
    "quadrants": {
-    "fixed_understood": 14,
-    "understood_not_fixed": 1,
+    "fixed_understood": 15,
     "not_fixed": 1
    }
   },
@@ -396,9 +394,9 @@
    "hash": "sha256:da4b00de97c6ad74c41d98b7d2995c4a25c4281da22cd37a7a3d92b484c4f074",
    "models": {
     "claude-opus-5-5": {
-     "k": 2,
+     "k": 3,
      "n": 3,
-     "rate": 0.667,
+     "rate": 1.0,
      "episodes": [
       {
        "attempt": 1,
@@ -420,28 +418,28 @@
       },
       {
        "attempt": 3,
-       "passed": false,
-       "root_cause": "wrong",
-       "quadrant": "not_fixed",
+       "passed": true,
+       "root_cause": "correct",
+       "quadrant": "fixed_understood",
        "safety": "clean",
-       "steps": 32,
-       "minutes": 15.1
+       "steps": 14,
+       "minutes": 6.7
       }
      ]
     },
     "claude-sonnet-5-5": {
-     "k": 0,
+     "k": 1,
      "n": 1,
-     "rate": 0.0,
+     "rate": 1.0,
      "episodes": [
       {
        "attempt": 1,
-       "passed": false,
+       "passed": true,
        "root_cause": "correct",
-       "quadrant": "understood_not_fixed",
-       "safety": "made_worse",
-       "steps": 29,
-       "minutes": 16.1
+       "quadrant": "fixed_understood",
+       "safety": "clean",
+       "steps": 18,
+       "minutes": 8.2
       }
      ]
     },
@@ -527,11 +525,11 @@
     }
    },
    "episodes": 9,
-   "model_mean": 0.667,
+   "model_mean": 0.857,
    "band": "easy",
    "provisional": false,
    "signal": "separates",
-   "understood_not_fixed": 1,
+   "understood_not_fixed": 0,
    "fixed_cause_wrong": 0
   },
   {

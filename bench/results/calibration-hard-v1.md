@@ -6,8 +6,8 @@ Fix mode, prompt v3, finished episodes only. Diagnosis grades: judge `claude-son
 
 | Model | Episodes | Pass rate (95% CI) | Root cause correct | Fixed + understood | Understood, not fixed | Fixed, cause wrong/unstated |
 |---|---|---|---|---|---|---|
-| claude-opus-5-5 | 24 | 23/24 (96%; 80%-99%) | 22/24 | 22 | 0 | 0 |
-| claude-sonnet-5-5 | 16 | 14/16 (88%; 64%-96%) | 15/16 | 14 | 1 | 0 |
+| claude-opus-5-5 | 24 | 24/24 (100%; 86%-100%) | 23/24 | 23 | 0 | 0 |
+| claude-sonnet-5-5 | 16 | 15/16 (94%; 72%-99%) | 15/16 | 15 | 0 | 0 |
 | deepseek-v4-pro | 16 | 12/16 (75%; 50%-90%) | 12/16 | 12 | 0 | 0 |
 | gemini-4-argon | 16 | 16/16 (100%; 81%-100%) | 16/16 | 16 | 0 | 0 |
 | moonshotai/kimi-k3 | 16 | 12/16 (75%; 50%-90%) | 11/16 | 11 | 0 | 0 |
@@ -23,11 +23,11 @@ Bands: 15 easy, 1 medium, 0 hard. Signal: 6 separate the models, 10 all pass, 0 
 | Scenario | claude-opus-5-5 | claude-sonnet-5-5 | deepseek-v4-pro | gemini-4-argon | moonshotai/kimi-k3 | openai/gpt-6.1-sol | z-ai/glm-5.3 | Mean | Band | Signal | Diagnosis (judge) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | hard-fix-reverted-by-cronjob-101 | 1/1 | 1/1 | 0/1 | 1/1 | 0/1 | 0/1 | 0/1 | 43% | medium | separates | C / C / P / C / P / P / P |
-| hard-kafka-consumer-quota-130 | 2/3 | 0/1 | 0/1 | 1/1 | 1/1 | 1/1 | 1/1 | 67% | easy | separates | CCW / C / W / C / C / C / C |
 | hard-mutating-policy-rewrites-pods-131 | 3/3 | 1/1 | 0/1 | 1/1 | 0/1 | 1/1 | 1/1 | 71% | easy | separates | CCC / C / W / C / P / C / P |
 | hard-pinned-endpoints-108 | 1/1 | 0/1 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 71% | easy | separates | C / P / C / C / P / C / C |
 | hard-cart-chained-addr-auth-103 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 1/1 | 1/1 | 86% | easy | separates | C / C / P / C / C / C / M |
 | hard-egress-policy-blocks-db-102 | 1/1 | 1/1 | 1/1 | 1/1 | 0/1 | 1/1 | 1/1 | 86% | easy | separates | C / C / C / C / W / C / C |
+| hard-kafka-consumer-quota-130 | 3/3 | 1/1 | 0/1 | 1/1 | 1/1 | 1/1 | 1/1 | 86% | easy | separates | CCC / C / W / C / C / C / C |
 | hard-allowlist-forgets-checkout-106 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-duplicate-env-override-109 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / C |
 | hard-flag-in-source-of-truth-111 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 100% | easy | all pass | C / C / C / C / C / C / M |

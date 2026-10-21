@@ -5,8 +5,8 @@ Judge: claude-sonnet-5-5, rubric v2. The judge saw only the answer key, the inci
 
 | Model | Episodes | Pass rate | Root cause correct | Location correct | Mechanism correct | Diagnosis score | Fixed + understood | Fixed, cause wrong/unstated | Blamed noise | Judge votes split |
 |---|---|---|---|---|---|---|---|---|---|---|
-| claude-opus-5-5 | 24 | 23/24 (96%) | 22/24 (92%) | 23/24 | 22/24 | 0.94 | 22/24 | 0/24 | 0 | 0 |
-| claude-sonnet-5-5 | 16 | 14/16 (88%) | 15/16 (94%) | 15/16 | 15/16 | 0.97 | 14/16 | 0/16 | 0 | 0 |
+| claude-opus-5-5 | 24 | 24/24 (100%) | 23/24 (96%) | 24/24 | 23/24 | 0.98 | 23/24 | 0/24 | 0 | 0 |
+| claude-sonnet-5-5 | 16 | 15/16 (94%) | 15/16 (94%) | 15/16 | 15/16 | 0.97 | 15/16 | 0/16 | 0 | 0 |
 | deepseek-v4-pro | 16 | 12/16 (75%) | 12/16 (75%) | 12/16 | 12/16 | 0.81 | 12/16 | 0/16 | 0 | 0 |
 | gemini-4-argon | 16 | 16/16 (100%) | 16/16 (100%) | 16/16 | 16/16 | 1.00 | 16/16 | 0/16 | 0 | 0 |
 | moonshotai/kimi-k3 | 16 | 12/16 (75%) | 11/16 (69%) | 12/16 | 12/16 | 0.81 | 11/16 | 0/16 | 1 | 0 |
@@ -33,7 +33,7 @@ Diagnosis score: correct = 1, partial = 0.5, wrong or missing = 0, averaged over
 | hard-job-sidecar-never-completes-127 | claude-opus-5-5 | PASS | correct | Fixed + understood | the Job's pod also has a `log-shipper` helper container that loops forever and never exits on its own. A Job only counts as Complete when ev |
 | hard-kafka-consumer-quota-130 | claude-opus-5-5 | PASS | correct | Fixed + understood | a Kafka quota that limited client-id `rdkafka` to 1 byte per second for reading (`consumer_byte_rate=1.0`). `rdkafka` is the name the accoun |
 | hard-kafka-consumer-quota-130 | claude-opus-5-5 | PASS | correct | Fixed + understood | Kafka client quota of `consumer_byte_rate=1.0` (1 byte per second) on client-id `rdkafka`. That's the client ID the accounting service uses |
-| hard-kafka-consumer-quota-130 | claude-opus-5-5 | FAIL | wrong | Not fixed | the most likely cause is that accounting's existing Kafka connection hung and the client never gave up on it and reconnected |
+| hard-kafka-consumer-quota-130 | claude-opus-5-5 | PASS | correct | Fixed + understood | added a fetch quota on the Kafka broker: `consumer_byte_rate=1.0` (1 byte per second) for client-id `rdkafka`. The accounting service uses ` |
 | hard-masked-second-fault-107 | claude-opus-5-5 | PASS | correct | Fixed + understood | checkout deployment had `PRODUCT_CATALOG_ADDR=product-catalog:9090`... shipping service's target port to 8888. The shipping app listens on 8 |
 | hard-mutating-policy-rewrites-pods-131 | claude-opus-5-5 | PASS | correct | Fixed + understood | a cluster-wide admission rule (a MutatingAdmissionPolicy) called `platform-pod-defaults`, plus the binding... it overwrites `PAYMENT_ADDR` w |
 | hard-mutating-policy-rewrites-pods-131 | claude-opus-5-5 | PASS | correct | Fixed + understood | a cluster-wide rule called `platform-pod-defaults`. It's a MutatingAdmissionPolicy... changed the payment address from `payment:8080` to `pa |
@@ -53,7 +53,7 @@ Diagnosis score: correct = 1, partial = 0.5, wrong or missing = 0, averaged over
 | hard-flag-targeting-rule-132 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | The `paymentFailure` flag had a `targeting` rule. Once `$flagd.timestamp` passed 1792480411, the rule returned the `90%` variant |
 | hard-ghost-legacy-email-pods-104 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | The `email-v1-legacy` deployment ... pod template carried the label `opentelemetry.io/name: email`, which is the Service's selector... answe |
 | hard-job-sidecar-never-completes-127 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | The job's second container, a `log-shipper` sidecar, runs `while true; do sleep 1; done` and never exits. The pod therefore stayed running,  |
-| hard-kafka-consumer-quota-130 | claude-sonnet-5-5 | FAIL | correct | Understood, not fixed | Someone had set a Kafka client quota on client-id `rdkafka` with `consumer_byte_rate=1`... The accounting service's Kafka consumer uses that |
+| hard-kafka-consumer-quota-130 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | The Kafka broker had a client quota of `consumer_byte_rate=1` (1 byte/sec) for client-id `rdkafka`. That is the client-id the accounting ser |
 | hard-masked-second-fault-107 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | the `shipping` Service had `targetPort: 8888`, but the shipping container listens on 8080... checkout Deployment had `PRODUCT_CATALOG_ADDR=p |
 | hard-mutating-policy-rewrites-pods-131 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | A `MutatingAdmissionPolicy` named `platform-pod-defaults` ... At pod creation it overwrites the container's `PAYMENT_ADDR` with `payment:808 |
 | hard-oom-fix-blocked-by-limitrange-110 | claude-sonnet-5-5 | PASS | correct | Fixed + understood | The `ad` deployment had a memory limit of 48Mi... A LimitRange called `namespace-container-limits` capped every container at 128Mi, so the n |
@@ -145,4 +145,4 @@ Diagnosis score: correct = 1, partial = 0.5, wrong or missing = 0, averaged over
 
 No human grades yet. Run: python bench/judge.py audit --suite hard-v1
 
-Judge cost for these grades: $1.423
+Judge cost for these grades: $1.422
