@@ -32,7 +32,7 @@ def test_build(monkeypatch):
             row("b", "opus", 1, True, "e4"), row("b", "ds", 1, True, "e5"),
             {**row("b", "ds", 2, False, "e6"), "status": "error"}]          # not finished: not counted
     grades = {"e1": {"root_cause": "correct"}, "e3": {"root_cause": "correct"}, "e4": {"root_cause": "wrong"}}
-    monkeypatch.setattr(cal.R, "load", lambda suite: rows)
+    monkeypatch.setattr(cal.R, "load", lambda suite, max_attempt=None: rows)
     monkeypatch.setattr(cal, "judgments", lambda judge, results=None: grades)
     suite = SimpleNamespace(name="s", version=1, visibility="public",
                             instances=[SimpleNamespace(id=i, hash="h" + i) for i in "abc"])
