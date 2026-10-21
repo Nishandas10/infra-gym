@@ -124,9 +124,11 @@ def in_suite(rows, suite, any_version=False):
             and hint_level(r) == suite.hint_level and prompt_version(r) == PROMPT_VERSION]
 
 
-def load(suite=None, any_version=False, run_mode="fix"):
-    """The latest row of every episode in one run mode, limited to the suite's members when a suite is given."""
-    rows = [r for r in latest(read_jsonl(results_dir(suite) / "results.jsonl")) if mode(r) == run_mode]
+def load(suite=None, any_version=False, run_mode="fix", max_attempt=None):
+    """The latest row of every episode in one run mode, limited to the suite's members when a suite is given, and to
+    attempts 1..max_attempt when given (max_attempt=1: a pass@1 leaderboard)."""
+    rows = [r for r in latest(read_jsonl(results_dir(suite) / "results.jsonl")) if mode(r) == run_mode
+            and (max_attempt is None or (r.get("attempt") or 1) <= max_attempt)]
     return rows if suite is None else in_suite(rows, suite, any_version)
 
 

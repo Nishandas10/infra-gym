@@ -71,8 +71,8 @@ def judgments(judge, results=None):
     return out
 
 
-def build(suite, judge):
-    rows = [r for r in R.load(suite) if r.get("status") == "done"]
+def build(suite, judge, max_attempt=None):
+    rows = [r for r in R.load(suite, max_attempt=max_attempt) if r.get("status") == "done"]
     grades = judgments(judge, R.results_dir(suite))
     models = sorted({r["model"] for r in rows})
     eps = defaultdict(lambda: defaultdict(list))   # scenario -> model -> episodes

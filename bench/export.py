@@ -6,6 +6,7 @@ result.
 
   python bench/export.py --suite bench-v1-dev                    JSON on stdout
   python bench/export.py --suite hard-v1 --mode diagnose --out hard-v1-diagnose.json
+  python bench/export.py --suite hard-v1 --max-attempt 1          attempt 1 only (leaderboard v1)
 
 The catalog has every member's title, tags, prompt at the suite's hint level, validation status and oracle result.
 Whether a page may show a prompt or a transcript is the web app's decision (private suites and Hard stay private).
@@ -94,8 +95,8 @@ def catalog_part(suite, mode):
     return out
 
 
-def build(suite, mode="fix", judge=None):
-    latest = R.load(suite, run_mode=mode)
+def build(suite, mode="fix", judge=None, max_attempt=None):
+    latest = R.load(suite, run_mode=mode, max_attempt=max_attempt)
     finished = [r for r in latest if r.get("status") not in ("error", "invalid")]
     res_dir = R.results_dir(suite)
     judge, grade = scoreboard.judge_grades(R.read_jsonl(res_dir / "judgments.jsonl"), finished, judge)
@@ -106,12 +107,12 @@ def build(suite, mode="fix", judge=None):
         "suite": {"name": suite.name, "version": suite.version, "visibility": suite.visibility,
                   "hint_level": suite.hint_level, "fingerprint": suites.fingerprint(suite),
                   "instances": len(suite.instances)},
-        "mode": mode, "judge": judge,
+        "mode": mode, "judge": judge, "max_attempt": max_attempt,
         "episodes": len(latest), "models": sorted({r["model"] for r in latest}),
         "leaderboard": leaderboard_part(latest) if latest else [],
         "scoreboard": scoreboard_part(finished, grade) if finished else [],
         "breakdowns": R.axis_counts(latest),
-        "calibration": calibration.build(suite, judge) if mode == "fix" and latest else None,
+        "calibration": calibration.build(suite, judge, max_attempt) if mode == "fix" and latest else None,
         "catalog": catalog_part(suite, mode),
     }
 
@@ -121,10 +122,12 @@ def main():
     ap.add_argument("--suite", required=True, help="suite name (bench-v1-dev) or path")
     ap.add_argument("--mode", choices=("fix", "diagnose", "detect"), default="fix")
     ap.add_argument("--judge", help="whose diagnosis grades to use (default: the one that graded most episodes)")
+    ap.add_argument("--max-attempt", type=int, metavar="N",
+                    help="only attempts 1..N (1: the pass@1 leaderboard v1; default: every attempt)")
     ap.add_argument("--out", help="write the JSON here instead of stdout")
     a = ap.parse_args()
     suite = R.suite_from_args(argparse.Namespace(suite=a.suite, any_version=False))
-    text = json.dumps(build(suite, a.mode, a.judge), indent=1) + "\n"
+    text = json.dumps(build(suite, a.mode, a.judge, a.max_attempt), indent=1) + "\n"
     if a.out:
         Path(a.out).write_text(text)
     else:

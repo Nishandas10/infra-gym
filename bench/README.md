@@ -129,7 +129,7 @@ For a program that launches runs (the web app's runner), with nothing graded dif
 
     python bench/agent_bench.py run --suite S --model M --config job/models.yaml --events job/events-1.jsonl --stop-file job/STOP --job ID [--shard i/N --max-cost USD]
     python bench/agent_bench.py status --json    # clusters (lock holder, undo logs, sandbox, nodes, free), suites, models; read-only, no lock
-    python bench/export.py --suite S [--mode M] [--out F]   # leaderboard, scoreboard, breakdowns, calibration, catalog as JSON
+    python bench/export.py --suite S [--mode M] [--max-attempt N] [--out F]   # leaderboard, scoreboard, breakdowns, calibration, catalog as JSON
 
 - `--config PATH`: a YAML file with a `models:` list (entries as in `config.yaml`); its other top-level keys override
   `config.yaml`'s. Models added outside the repo keep `git_dirty: false`; every row records `model_config_hash` (the

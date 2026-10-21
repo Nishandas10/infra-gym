@@ -140,3 +140,11 @@ def test_export(tmp_path, monkeypatch):
     assert (c0["oracle"], c1["oracle"]) == ("ok", None)
     diag = export.build(lite, mode="diagnose")
     assert diag["episodes"] == 0 and diag["leaderboard"] == [] and diag["calibration"] is None
+    # leaderboard v1 = attempt 1 only: --max-attempt leaves later attempts out of every part
+    with open(tmp_path / "results.jsonl", "a") as f:
+        f.write(json.dumps({**out[0], "episode": "e5", "attempt": 2, "passed": False}) + "\n")
+    every, first = export.build(lite), export.build(lite, max_attempt=1)
+    assert (every["episodes"], first["episodes"], first["max_attempt"]) == (5, 4, 1)
+    assert {s["model"]: s["episodes"] for s in first["leaderboard"]}["opus"] == 2
+    n = {s["id"]: s["models"]["opus"]["n"] for s in first["calibration"]["scenarios"] if "opus" in s["models"]}
+    assert n[m0.id] == 1
